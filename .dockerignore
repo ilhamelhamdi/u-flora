@@ -1,0 +1,25 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+
+# Project specific
+results/
+wandb/
+
+
+# Docker/Singularity
+Dockerfile
+.dockerignore
+*.sif
+*.sbatch
+*.sh
+
+# Slurm Scripts
+scripts/*/*.sh

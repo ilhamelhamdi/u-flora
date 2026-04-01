@@ -1,0 +1,80 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "u-flora"
+version = "1.0.0"
+description = "U-Flora: Efficient federated LoRA fine-tuning of large language models with Flower"
+license = "Apache-2.0"
+dependencies = [
+    "flwr[simulation]>=1.27.0",
+    "flwr-datasets>=0.6.0",
+    "torch==2.8.0",
+    "bitsandbytes==0.49.1",
+    "scipy==1.13.0",
+    "peft==0.6.2",
+    "transformers==4.53.0",
+    "sentencepiece==0.2.1",
+    "omegaconf==2.3.0",
+    "hf_transfer==0.1.9",
+    "evaluate>=0.4.6",
+    "scikit-learn>=1.8.0",
+    "wandb>=0.25.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.flwr.app]
+publisher = "flwrlabs"
+
+[tool.flwr.app.components]
+serverapp = "u_flora.server_app:app"
+clientapp = "u_flora.client_app:app"
+
+[tool.flwr.app.config]
+dataset = "sst2" # Default dataset, can be overridden in CLI
+model.name = "distilbert-base-uncased"
+model.lora.peft-lora-r = 8
+model.lora.peft-lora-alpha = 16
+model.lora.peft-lora-dropout = 0.075
+model.lora.peft-target-modules = "q_lin,v_lin"
+train.save-every-round = 5
+train.learning-rate-max = 5e-4
+train.learning-rate-min = 1e-5
+train.training-arguments.output-dir = ""
+train.training-arguments.learning-rate = ""
+train.training-arguments.per-device-train-batch-size = 32
+train.training-arguments.per-device-eval-batch-size = 32
+train.training-arguments.logging-steps = 32
+train.training-arguments.report-to = "wandb"
+train.training-arguments.num-train-epochs = 3
+train.training-arguments.max-steps = 10
+train.training-arguments.save-steps = 100
+train.training-arguments.save-total-limit = 10
+train.training-arguments.gradient-checkpointing = false
+train.training-arguments.lr-scheduler-type = "constant"
+strategy.fraction-train = 0.2
+strategy.fraction-evaluate = 0.0
+eval.batch-size = 64
+num-server-rounds = 10
+wandb.project = "flowertune-distilbert"
+wandb.entity = "ilham-abdillah-alhamdi-universitas-indonesia"
+wandb.run-name = ""
+
+[tool.flwr.app.config.datasets.sst2]
+name = "glue"
+subset = "sst2"
+text_fields = "sentence"
+
+[tool.flwr.app.config.datasets.qnli]
+name = "glue"
+subset = "qnli"
+text_fields = "question,sentence"
+
+
+[tool.flwr.app.config.datasets.qqp]
+name = "glue"
+subset = "qqp"
+text_fields = "question1,question2"

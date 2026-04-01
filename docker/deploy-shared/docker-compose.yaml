@@ -1,0 +1,70 @@
+services:
+  superlink:
+    image: ilhamelhamdi/flwr-superlink:latest
+    build:
+      context: ${PROJECT_DIR:-.}
+      dockerfile: ${PROJECT_DIR:-.}/docker/deploy-shared/superlink.Dockerfile
+    command:
+      - --insecure
+      - --isolation
+      - subprocess
+    volumes:
+      - ${PROJECT_DIR:-.}/.venv:/app/.venv:ro
+    ports:
+      - 9091:9091
+      - 9092:9092
+      - 9093:9093
+
+
+  # create two SuperNode services with different node configs
+  supernode-1:
+    image: ilhamelhamdi/flwr-supernode:latest
+    build:
+      context: ${PROJECT_DIR:-.}
+      dockerfile: ${PROJECT_DIR:-.}/docker/deploy-shared/supernode.Dockerfile
+    command:
+      - --insecure
+      - --superlink
+      - superlink:9092
+      - --clientappio-api-address
+      - 0.0.0.0:9094
+      - --isolation
+      - subprocess
+      - --node-config
+      - "partition-id=0 num-partitions=2"
+    volumes:
+      - ${PROJECT_DIR:-.}/.venv:/app/.venv:ro
+    ports:
+      - 9094:9094
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+    depends_on:
+      - superlink
+
+  supernode-2:
+    image: ilhamelhamdi/flwr-supernode:latest
+    build:
+      context: ${PROJECT_DIR:-.}
+      dockerfile: ${PROJECT_DIR:-.}/docker/deploy-shared/supernode.Dockerfile
+    command:
+      - --insecure
+      - --superlink
+      - superlink:9092
+      - --clientappio-api-address
+      - 0.0.0.0:9095
+      - --isolation
+      - subprocess
+      - --node-config
+      - "partition-id=1 num-partitions=2"
+    volumes:
+      - ${PROJECT_DIR:-.}/.venv:/app/.venv:ro
+    ports:
+      - 9095:9095
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+    depends_on:
+      - superlink

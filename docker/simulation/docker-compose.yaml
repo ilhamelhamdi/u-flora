@@ -1,0 +1,17 @@
+services:
+  trainer:
+    build: .
+    image: ilhamelhamdi/flowertune-distilbert-lora:latest
+    container_name: flowertune_trainer
+    volumes:
+      - .:/root
+    env_file:
+      - .env
+    deploy:
+      # resources:
+      #   reservations:
+      #     devices:
+      #       - driver: nvidia
+      #         count: 1
+      #         capabilities: [gpu]
+    command: flwr run . --run-config 'wandb.run-name="dgx-run"'
