@@ -1,0 +1,4 @@
+peft_lora_r: 8
+peft_lora_alpha: 16
+peft_lora_dropout: 0.075
+peft_target_modules: "q_lin,v_lin"

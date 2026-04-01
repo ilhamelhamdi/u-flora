@@ -1,99 +1,216 @@
-"""flowertune-llm: A Flower / FlowerTune app."""
+"""Flower ServerApp — task-agnostic with pluggable client selection."""
 
+import json
+import logging
 import os
 from datetime import datetime
 
-import wandb
 import pandas as pd
+import wandb
 from flwr.app import ArrayRecord, ConfigRecord, Context, MetricRecord
 from flwr.common.config import unflatten_dict
 from flwr.serverapp import Grid, ServerApp
-from flwr.serverapp.strategy import FedAvg
-from omegaconf import DictConfig
-from transformers import TrainingArguments, Trainer
+from omegaconf import DictConfig, OmegaConf
 from peft import get_peft_model_state_dict, set_peft_model_state_dict
+from transformers import TrainingArguments, Trainer
 
+from .tasks.registry import get_task_adapter
+from .dataset import load_data_centralized
 from .utils import replace_keys
-from .models import get_model
-from .dataset import get_encoding_func_and_data_collator, compute_metrics
-from .strategy import CustomStrategy
+from .strategy import SelectionStrategy
+from .selection.base import ClientState, DeviceProfile
+from .selection import RandomSelector, FedCSSelector, OortSelector
 
-# Create ServerApp
+logger = logging.getLogger(__name__)
+
 app = ServerApp()
 
+
+# -- Selector Factory ----------------------------------------------------------
+
+def _build_selector(cfg: DictConfig):
+    """Instantiate the configured ClientSelector.
+
+    Reads from ``cfg.strategy`` which maps to one of the
+    strategy/*.yaml configs (name: random|fedcs|oort).
+    """
+    strategy_cfg = cfg.strategy
+    name = str(getattr(strategy_cfg, "name", "random")).lower()
+    num_to_select = int(getattr(strategy_cfg, "num_to_select", 10))
+    seed = int(getattr(strategy_cfg, "seed", 42))
+
+    if name == "random":
+        return RandomSelector(num_to_select=num_to_select, seed=seed)
+
+    elif name == "fedcs":
+        return FedCSSelector(
+            num_to_select=num_to_select,
+            round_deadline_s=float(
+                getattr(strategy_cfg, "round_deadline_s", 30.0)),
+            model_size_kb=float(
+                getattr(strategy_cfg, "model_size_kb", 1000.0)),
+            exploration_fraction=float(
+                getattr(strategy_cfg, "exploration_fraction", 0.1)),
+            seed=seed,
+        )
+
+    elif name == "oort":
+        return OortSelector(
+            num_to_select=num_to_select,
+            epsilon=float(getattr(strategy_cfg, "epsilon", 0.1)),
+            alpha=float(getattr(strategy_cfg, "alpha", 2.0)),
+            pacer_delta=float(getattr(strategy_cfg, "pacer_delta", 5.0)),
+            pacer_window=int(getattr(strategy_cfg, "pacer_window", 10)),
+            seed=seed,
+        )
+
+    else:
+        logger.warning("Unknown strategy '%s', falling back to Random", name)
+        return RandomSelector(num_to_select=num_to_select, seed=seed)
+
+
+def _build_client_states(
+    num_clients: int,
+    profile_dir: str = "device_profiles",
+) -> dict[int, ClientState]:
+    """Build ClientState registry from generated device profiles.
+
+    Reads from ``device_profiles/all_profiles.json`` if available,
+    otherwise creates default profiles.
+    """
+    states: dict[int, ClientState] = {}
+    profiles_path = os.path.join(profile_dir, "all_profiles.json")
+
+    if os.path.exists(profiles_path):
+        with open(profiles_path) as f:
+            profile_dicts = json.load(f)
+        logger.info("Loaded %d device profiles from %s",
+                    len(profile_dicts), profiles_path)
+
+        for pd_dict in profile_dicts[:num_clients]:
+            cid = pd_dict["client_id"]
+            profile = DeviceProfile(
+                client_id=cid,
+                computation_latency_ms=pd_dict.get(
+                    "computation_latency_ms", 50.0),
+                download_kbps=pd_dict.get("download_kbps", 5000.0),
+                upload_kbps=pd_dict.get("upload_kbps", 3000.0),
+                latency_ms=pd_dict.get("latency_ms", 50.0),
+                jitter_ms=pd_dict.get("jitter_ms", 5.0),
+                network_type=pd_dict.get("network_type", "unknown"),
+                device_name=pd_dict.get("device_name", f"device_{cid}"),
+            )
+            states[cid] = ClientState(client_id=cid, profile=profile)
+    else:
+        logger.info(
+            "No device profiles found at %s, using default profiles for %d clients",
+            profiles_path, num_clients,
+        )
+        for cid in range(num_clients):
+            profile = DeviceProfile(
+                client_id=cid,
+                computation_latency_ms=50.0,
+                download_kbps=5000.0,
+                upload_kbps=3000.0,
+                latency_ms=50.0,
+            )
+            states[cid] = ClientState(client_id=cid, profile=profile)
+
+    return states
+
+
+# -- Main ----------------------------------------------------------------------
 
 @app.main()
 def main(grid: Grid, context: Context) -> None:
     """Main entry point for the ServerApp."""
-    # Create output directory given current timestamp
     timestamp = datetime.now()
     folder_name = timestamp.strftime("%Y-%m-%d_%H-%M-%S")
     save_path = os.path.join(os.getcwd(), f"results/training/{folder_name}")
     os.makedirs(save_path, exist_ok=True)
 
-    # Read from config
     cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
 
-    # Initialize Weights & Biases
-    wandb_run = initialize_wandb(cfg)
+    # Initialize W&B
+    wandb_run = _initialize_wandb(cfg)
+
+    # Resolve task adapter
+    task_name = getattr(cfg, "task", "text_classification")
+    adapter = get_task_adapter(task_name)
 
     # Get initial model weights
-    init_model = get_model(cfg.model)
+    init_model = adapter.get_model(cfg.model)
     arrays = ArrayRecord(get_peft_model_state_dict(init_model))
 
-    # Prepare validation set for evaluation function
-    val_set, data_collator = get_validation_set_and_data_collator(cfg)
+    # Prepare validation set
+    val_set, data_collator = _get_validation_set(cfg, adapter)
 
-    # Define strategy
-    strategy = CustomStrategy(
-        fraction_train=cfg.strategy.fraction_train,
-        fraction_evaluate=cfg.strategy.fraction_evaluate,
+    # Build client selector and state registry
+    num_clients = int(getattr(cfg, "num_clients", 20))
+    selector = _build_selector(cfg)
+    client_states = _build_client_states(num_clients)
+
+    logger.info(
+        "Strategy: %s, Clients: %d, Rounds: %d",
+        selector.name, num_clients, cfg.num_server_rounds,
     )
 
-    # Start strategy, run FedAvg for `num_rounds`
+    # Define strategy
+    strategy = SelectionStrategy(
+        selector=selector,
+        client_states=client_states,
+        fraction_train=float(getattr(cfg, "fraction_train", 0.2)),
+        fraction_evaluate=0.0,
+        use_wandb=True,
+    )
+
+    # Run federation
     strategy.start(
         grid=grid,
         initial_arrays=arrays,
         train_config=ConfigRecord({"save_path": save_path}),
         num_rounds=cfg.num_server_rounds,
-        evaluate_fn=get_evaluate_fn(
-            cfg, val_set, data_collator, save_path
-        ),
+        evaluate_fn=_get_evaluate_fn(
+            cfg, adapter, val_set, data_collator, save_path),
     )
 
     wandb_run.finish()
 
 
-def get_validation_set_and_data_collator(cfg):
-    """Load validation set for evaluation."""
+# -- Evaluation ----------------------------------------------------------------
+
+def _get_validation_set(cfg, adapter):
+    """Load validation set using the task adapter."""
     from datasets import load_dataset
 
     chosen_dataset = cfg.dataset
     dataset_config = cfg.datasets[chosen_dataset]
 
-    raw_val_set = load_dataset(
-        dataset_config.name, dataset_config.subset, split="validation")
-    encoding_func, data_collator = get_encoding_func_and_data_collator(
-        cfg.model.name, dataset_config)
-    val_set = raw_val_set.map(encoding_func, batched=True)
+    # Load raw validation data
+    subset = getattr(dataset_config, "subset", None)
+    raw_val = load_dataset(dataset_config.name, subset, split="validation")
+
+    encoding_fn = adapter.get_encoding_fn(cfg.model.name, dataset_config)
+    data_collator = adapter.get_data_collator(cfg.model.name)
+    val_set = raw_val.map(encoding_fn, batched=True)
     return val_set, data_collator
 
 
-def get_evaluate_fn(cfg, validation_set, data_collator, save_path):
-    """Return an evaluation function for saving global model ."""
+def _get_evaluate_fn(cfg, adapter, validation_set, data_collator, save_path):
+    """Return evaluation closure for centralized evaluation."""
 
     def evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
-        # Initialize model with current aggregated weights
-        model = get_model(cfg.model)
+        model = adapter.get_model(cfg.model)
         set_peft_model_state_dict(model, arrays.to_torch_state_dict())
 
-        # Save model
+        # Periodically save model
         if server_round != 0 and (
-            server_round == cfg.num_server_rounds or server_round % cfg.train.save_every_round == 0
+            server_round == cfg.num_server_rounds
+            or server_round % cfg.train.save_every_round == 0
         ):
             model.save_pretrained(f"{save_path}/peft_{server_round}")
 
-        # Evaluate model on validation set
+        # Evaluate
         trainer_args = TrainingArguments(
             output_dir=f"{save_path}/eval",
             per_device_eval_batch_size=cfg.eval.batch_size,
@@ -102,40 +219,47 @@ def get_evaluate_fn(cfg, validation_set, data_collator, save_path):
             model=model,
             args=trainer_args,
             eval_dataset=validation_set,
-            compute_metrics=compute_metrics,
+            compute_metrics=adapter.compute_metrics,
             data_collator=data_collator,
         )
         metrics = trainer.evaluate()
 
-        wandb.log(
-            {
-                "server_round": server_round,
-                "eval_loss": metrics["eval_loss"],
-                "eval_accuracy": metrics["eval_accuracy"],
-            }
-        )
+        # Log to W&B
+        log_dict = {"server_round": server_round,
+                    "eval_loss": metrics["eval_loss"]}
+        if "eval_accuracy" in metrics:
+            log_dict["eval_accuracy"] = metrics["eval_accuracy"]
+        if "eval_perplexity" in metrics:
+            log_dict["eval_perplexity"] = metrics["eval_perplexity"]
+        wandb.log(log_dict)
 
-        # Save to local CSV
-        res = {"round": [server_round], "accuracy": [
-            metrics["eval_accuracy"]], "loss": [metrics["eval_loss"]]}
+        # Save to CSV
+        res = {"round": [server_round]}
+        res.update({k: [v] for k, v in metrics.items()
+                   if isinstance(v, (int, float))})
         df = pd.DataFrame(res)
-        df.to_csv(f"{save_path}/results.csv", mode='a', index=False,
-                  header=not os.path.exists(f"{save_path}/results.csv"))
+        csv_path = f"{save_path}/results.csv"
+        df.to_csv(csv_path, mode="a", index=False,
+                  header=not os.path.exists(csv_path))
 
         return MetricRecord(metrics)
 
     return evaluate
 
 
-def initialize_wandb(cfg):
-    """Initialize Weights & Biases for experiment tracking."""
+def _initialize_wandb(cfg):
+    """Initialize W&B with experiment metadata."""
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    task_name = cfg.dataset
-    run_name = f"{task_name}-{timestamp}{('-' + cfg.wandb.run_name) if cfg.wandb.run_name else ''}"
+    task_name = getattr(cfg, "task", cfg.dataset)
+    strategy_name = getattr(cfg.strategy, "name", "unknown")
+    run_name_suffix = getattr(cfg.wandb, "run_name", "")
+    run_name = f"{strategy_name}-{task_name}-{timestamp}"
+    if run_name_suffix:
+        run_name += f"-{run_name_suffix}"
 
     return wandb.init(
         project=cfg.wandb.project,
-        entity=cfg.wandb.entity,
-        config=cfg,
+        entity=cfg.wandb.entity if cfg.wandb.entity else None,
+        config=OmegaConf.to_container(cfg, resolve=True),
         name=run_name,
     )
