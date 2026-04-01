@@ -1,0 +1,84 @@
+# Baseline comparison experiments for SST-2 text classification
+# Run with: python setup.py batch --batch-config experiments.yaml
+
+experiments:
+  # -- Phase 0: LoRA rank sweep (centralized, to find best r) ----------
+  # Run these first to determine optimal LoRA rank
+  # - name: "lora_r2_centralized"
+  #   overrides:
+  #     - "lora.peft_lora_r=2"
+  #     - "num_server_rounds=1"
+  #     - "num_clients=1"
+  # - name: "lora_r4_centralized"
+  #   overrides:
+  #     - "lora.peft_lora_r=4"
+  # ...
+
+  # -- Phase 1: Baseline comparison ------------------------------------
+  - name: "random_sst2"
+    overrides:
+      - "strategy=random"
+      - "task=text_classification"
+      - "model=distilbert"
+      - "dataset=sst2"
+      - "num_server_rounds=100"
+      - "num_clients=50"
+      - "fraction_train=0.2"
+
+  # - name: "fedcs_sst2_p50"
+  #   overrides:
+  #     - "strategy=fedcs"
+  #     - "strategy.round_deadline_s=30.0"
+  #     - "task=text_classification"
+  #     - "model=distilbert"
+  #     - "dataset=sst2"
+  #     - "num_server_rounds=100"
+  #     - "num_clients=50"
+
+  # - name: "fedcs_sst2_p75"
+  #   overrides:
+  #     - "strategy=fedcs"
+  #     - "strategy.round_deadline_s=60.0"
+  #     - "task=text_classification"
+  #     - "model=distilbert"
+  #     - "dataset=sst2"
+  #     - "num_server_rounds=100"
+  #     - "num_clients=50"
+
+  # - name: "oort_sst2"
+  #   overrides:
+  #     - "strategy=oort"
+  #     - "task=text_classification"
+  #     - "model=distilbert"
+  #     - "dataset=sst2"
+  #     - "num_server_rounds=100"
+  #     - "num_clients=50"
+
+  # - name: "oort_sst2_alpha5"
+  #   overrides:
+  #     - "strategy=oort"
+  #     - "strategy.alpha=5.0"
+  #     - "task=text_classification"
+  #     - "model=distilbert"
+  #     - "dataset=sst2"
+  #     - "num_server_rounds=100"
+  #     - "num_clients=50"
+
+  # -- Phase 1b: QQP (harder task) ------------------------------------
+  - name: "random_qqp"
+    overrides:
+      - "strategy=random"
+      - "task=text_classification"
+      - "model=distilbert"
+      - "dataset=qqp"
+      - "num_server_rounds=100"
+      - "num_clients=50"
+
+  # - name: "oort_qqp"
+  #   overrides:
+  #     - "strategy=oort"
+  #     - "task=text_classification"
+  #     - "model=distilbert"
+  #     - "dataset=qqp"
+  #     - "num_server_rounds=100"
+  #     - "num_clients=50"
