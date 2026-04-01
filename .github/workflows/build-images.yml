@@ -28,8 +28,8 @@ jobs:
       - name: Build and Push Unified flwr Image
         uses: docker/build-push-action@v5
         with:
-          context: ./flowertune-distilbert
-          file: ./flowertune-distilbert/docker/deploy/Dockerfile
+          context: .
+          file: ./docker/deploy/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/flwr:${{ github.event.inputs.tag }}
           # Enables GitHub's internal build cache for faster subsequent runs
