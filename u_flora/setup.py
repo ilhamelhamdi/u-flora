@@ -305,15 +305,14 @@ def down() -> None:
 
 # -- Experiment Execution ------------------------------------------------------
 
-def run_task(overrides: list[str]) -> None:
+def run_task(overrides: str | None) -> None:
     """Run a single FL experiment via ``flwr run``.
 
     Overrides are Hydra-style key=value pairs that get forwarded to
     the Flower run config.
 
     Example:
-        run_task(["task=text_classification", "model=distilbert", "dataset=sst2",
-                  "strategy=oort", "num_server_rounds=100"])
+        run_task("task='text_classification' model='distilbert' dataset='sst2' strategy='oort',num_server_rounds=100")
     """
     # Build the flwr run command with overrides
     cmd = [
@@ -324,8 +323,8 @@ def run_task(overrides: list[str]) -> None:
     ]
 
     # Forward overrides as Flower run-config
-    for ov in overrides:
-        cmd.extend(["--run-config", ov])
+    if overrides:
+        cmd.extend(["--run-config", overrides])
 
     logger.info("Running: %s", " ".join(cmd))
 
@@ -418,7 +417,7 @@ def main() -> None:
 
     # --- run ---
     p_run = sub.add_parser("run", help="Run single experiment")
-    p_run.add_argument("overrides", nargs="*", help="Hydra-style overrides")
+    p_run.add_argument("--run-config", type=str, help="Overrides for flwr run config")
 
     # --- batch ---
     p_batch = sub.add_parser("batch", help="Run batch experiments")
@@ -447,7 +446,7 @@ def main() -> None:
     elif args.command == "down":
         down()
     elif args.command == "run":
-        run_task(args.overrides)
+        run_task(args.run_config)
     elif args.command == "batch":
         run_batch(args.batch_config)
     elif args.command == "profiles":
