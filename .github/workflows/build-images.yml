@@ -1,0 +1,37 @@
+name: Build and Push FL Images
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag'
+        required: true
+        default: 'latest'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Unified flwr Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./flowertune-distilbert
+          file: ./flowertune-distilbert/docker/deploy/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/flwr:${{ github.event.inputs.tag }}
+          # Enables GitHub's internal build cache for faster subsequent runs
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
