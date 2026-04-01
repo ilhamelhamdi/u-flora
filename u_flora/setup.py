@@ -396,7 +396,8 @@ def main() -> None:
 
     root_dir = Path(__file__).resolve().parent.parent
     default_net_trace = str(root_dir / "traces" / "network" / "trace.json")
-    default_comp_trace = str(root_dir / "traces" / "computation" / "client_device_capacity.json")
+    default_comp_trace = str(root_dir / "traces" /
+                             "computation" / "client_device_capacity.json")
 
     parser = argparse.ArgumentParser(
         description="U-Flora experiment orchestrator",
@@ -428,7 +429,8 @@ def main() -> None:
         "profiles", help="Generate/inspect device profiles")
     p_prof.add_argument("-n", "--num-clients", type=int, default=100)
     p_prof.add_argument("--network-trace", type=str, default=default_net_trace)
-    p_prof.add_argument("--compute-trace", type=str, default=default_comp_trace)
+    p_prof.add_argument("--compute-trace", type=str,
+                        default=default_comp_trace)
     p_prof.add_argument("--seed", type=int, default=42)
     p_prof.add_argument("--show", action="store_true", help="Print summary")
 
@@ -461,6 +463,7 @@ def _print_profile_summary(profiles: list[dict]) -> None:
     n = len(profiles)
     comp = sorted(p["computation_latency_ms"] for p in profiles)
     dl = sorted(p["download_kbps"] for p in profiles)
+    ul = sorted(p["upload_kbps"] for p in profiles)
     rtt = sorted(p["latency_ms"] for p in profiles)
     net_types = {}
     for p in profiles:
@@ -480,15 +483,16 @@ def _print_profile_summary(profiles: list[dict]) -> None:
     for label, vals in [
         ("Compute (ms/sample)", comp),
         ("Download (kbps)", dl),
-        ("RTT (ms)", rtt),
+        ("Upload (kbps)", ul),
+        ("Latency (ms)", rtt),
     ]:
         row = [f"{percentile(vals, p):.1f}" for p in [10, 25, 50, 75, 90]]
-        print(f"  {label:<25} {'':>3}".rstrip() +
-              "  ".join(f"{v:>10}" for v in row))
+        print(f"  {label:<25}" + "  ".join(f"{v:>10}" for v in row))
 
     print(f"\n  Network types: {net_types}")
     print(f"  Heterogeneity (compute): {comp[-1] / max(comp[0], 0.01):.1f}x")
-    print(f"  Heterogeneity (network): {dl[-1] / max(dl[0], 0.01):.1f}x")
+    print(f"  Heterogeneity (network - download): {dl[-1] / max(dl[0], 0.01):.1f}x")
+    print(f"  Heterogeneity (network - upload): {ul[-1] / max(ul[0], 0.01):.1f}x")
 
 
 if __name__ == "__main__":
