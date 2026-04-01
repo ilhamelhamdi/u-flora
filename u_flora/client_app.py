@@ -27,13 +27,6 @@ app = ClientApp()
 
 
 def _load_device_profile() -> dict | None:
-    """Load the device profile for this client from the environment.
-
-    The ``setup.py`` sets ``DEVICE_PROFILE_PATH`` to point at the
-    per-client JSON profile generated from trace data.
-
-    Returns None if no profile is configured (e.g. in simulation mode).
-    """
     profile_path = os.environ.get("DEVICE_PROFILE_PATH")
     if not profile_path or not os.path.exists(profile_path):
         return None
@@ -79,7 +72,6 @@ def _inject_compute_delay(
 
 @app.train()
 def train(msg: Message, context: Context):
-    """Train the model on local data using the appropriate TaskAdapter."""
     # -- Parse config --------------------------------------------------
     partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]

@@ -1,3 +1,0 @@
-name: "glue"
-subset: "qnli"
-text_fields: "question,sentence"

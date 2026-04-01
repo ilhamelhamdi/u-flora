@@ -34,12 +34,22 @@ serverapp = "u_flora.server_app:app"
 clientapp = "u_flora.client_app:app"
 
 [tool.flwr.app.config]
-dataset = "sst2" # Default dataset, can be overridden in CLI
+# -- Task selector -------------------------------------------------------------
+# Controls which TaskAdapter is used. One of: text_classification, causal_lm
+task = "text_classification"
+
+# -- Dataset selector ----------------------------------------------------------
+# Key into [tool.flwr.app.config.datasets.*] below
+dataset = "sst2"
+
+# -- Model ---------------------------------------------------------------------
 model.name = "distilbert-base-uncased"
 model.lora.peft-lora-r = 8
 model.lora.peft-lora-alpha = 16
 model.lora.peft-lora-dropout = 0.075
 model.lora.peft-target-modules = "q_lin,v_lin"
+
+# -- Training ------------------------------------------------------------------
 train.save-every-round = 5
 train.learning-rate-max = 5e-4
 train.learning-rate-min = 1e-5
@@ -48,20 +58,37 @@ train.training-arguments.learning-rate = ""
 train.training-arguments.per-device-train-batch-size = 32
 train.training-arguments.per-device-eval-batch-size = 32
 train.training-arguments.logging-steps = 32
-train.training-arguments.report-to = "wandb"
+train.training-arguments.report-to = "none"
 train.training-arguments.num-train-epochs = 3
 train.training-arguments.max-steps = 10
-train.training-arguments.save-steps = 100
-train.training-arguments.save-total-limit = 10
+train.training-arguments.save-steps = 1000
+train.training-arguments.save-total-limit = 2
 train.training-arguments.gradient-checkpointing = false
 train.training-arguments.lr-scheduler-type = "constant"
+
+# -- Client selection strategy -------------------------------------------------
+# name: random | fedcs | oort
+strategy.name = "random"
+strategy.num-to-select = 10
+strategy.seed = 42
 strategy.fraction-train = 0.2
 strategy.fraction-evaluate = 0.0
-eval.batch-size = 64
+
+# -- Federation ----------------------------------------------------------------
 num-server-rounds = 10
-wandb.project = "flowertune-distilbert"
+num-clients = 50
+
+# -- Evaluation ----------------------------------------------------------------
+eval.batch-size = 64
+
+# -- Experiment tracking -------------------------------------------------------
+wandb.project = "u-flora-testbed"
 wandb.entity = "ilham-abdillah-alhamdi-universitas-indonesia"
 wandb.run-name = ""
+
+# ==============================================================================
+# Dataset definitions
+# ==============================================================================
 
 [tool.flwr.app.config.datasets.sst2]
 name = "glue"
@@ -72,7 +99,6 @@ text_fields = "sentence"
 name = "glue"
 subset = "qnli"
 text_fields = "question,sentence"
-
 
 [tool.flwr.app.config.datasets.qqp]
 name = "glue"

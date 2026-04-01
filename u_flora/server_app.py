@@ -19,7 +19,7 @@ from .dataset import load_data_centralized
 from .utils import replace_keys
 from .strategy import SelectionStrategy
 from .selection.base import ClientState, DeviceProfile
-from .selection import RandomSelector, FedCSSelector, OortSelector
+from .selection import RandomSelector
 
 logger = logging.getLogger(__name__)
 
@@ -41,28 +41,6 @@ def _build_selector(cfg: DictConfig):
 
     if name == "random":
         return RandomSelector(num_to_select=num_to_select, seed=seed)
-
-    elif name == "fedcs":
-        return FedCSSelector(
-            num_to_select=num_to_select,
-            round_deadline_s=float(
-                getattr(strategy_cfg, "round_deadline_s", 30.0)),
-            model_size_kb=float(
-                getattr(strategy_cfg, "model_size_kb", 1000.0)),
-            exploration_fraction=float(
-                getattr(strategy_cfg, "exploration_fraction", 0.1)),
-            seed=seed,
-        )
-
-    elif name == "oort":
-        return OortSelector(
-            num_to_select=num_to_select,
-            epsilon=float(getattr(strategy_cfg, "epsilon", 0.1)),
-            alpha=float(getattr(strategy_cfg, "alpha", 2.0)),
-            pacer_delta=float(getattr(strategy_cfg, "pacer_delta", 5.0)),
-            pacer_window=int(getattr(strategy_cfg, "pacer_window", 10)),
-            seed=seed,
-        )
 
     else:
         logger.warning("Unknown strategy '%s', falling back to Random", name)
