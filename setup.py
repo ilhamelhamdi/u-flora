@@ -182,6 +182,31 @@ def setup_toxiproxy(
         TOXIPROXY_PROXY_PORT_START + len(profiles) - 1,
     )
 
+def reset_toxiproxy() -> None:
+    """Delete all ToxiProxy proxies."""
+    logger.info("Resetting ToxiProxy configuration...")
+    api = f"http://localhost:{TOXIPROXY_API_PORT}"
+    result = subprocess.run(
+        ["curl", "-s", f"{api}/proxies"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        logger.error("Failed to query ToxiProxy: %s", result.stderr)
+        return
+
+    try:
+        proxies = json.loads(result.stdout)
+        logger.info("Found %d existing ToxiProxy proxies", len(proxies))
+    except json.JSONDecodeError as e:
+        logger.error("Invalid JSON from ToxiProxy: %s", e)
+        return
+
+    for proxy_name, _ in proxies.items():
+        subprocess.run(
+            ["curl", "-s", "-X", "DELETE", f"{api}/proxies/{proxy_name}"],
+            capture_output=True,
+        )
+        logger.debug("Deleted ToxiProxy proxy: %s", proxy_name)
 
 def _add_toxic(
     api: str, proxy: str, name: str, toxic_type: str,
@@ -299,6 +324,11 @@ def up(
 
 def down() -> None:
     """Stop all Apptainer instances."""
+    try:
+        reset_toxiproxy()
+    except Exception as e:
+        logger.warning("ToxiProxy reset failed: %s (continuing with cleanup)", e)
+
     logger.info("Stopping all Flower instances...")
     subprocess.run(["apptainer", "instance", "stop", "--all"], check=False)
     logger.info("Done.")
