@@ -29,7 +29,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger("u_flora.setup")
+logger = logging.getLogger("setup")
 
 # -- Paths & Ports -------------------------------------------------------------
 
