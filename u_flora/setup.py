@@ -316,10 +316,7 @@ def run_task(overrides: str | None) -> None:
     """
     # Build the flwr run command with overrides
     cmd = [
-        "flwr", "run", ".",
-        "--insecure",
-        "--serverappio-api-address",
-        f"127.0.0.1:{SUPERLINK_PORTS['serverappio']}",
+        "flwr", "run", "."
     ]
 
     # Forward overrides as Flower run-config
