@@ -32,9 +32,10 @@ from typing import Any
 logger = logging.getLogger("setup")
 
 # -- Paths & Ports -------------------------------------------------------------
+root_dir = Path(__file__).resolve().parent
 
 SIF_FILE = "flwr.sif"
-LOG_DIR = "logs"
+LOG_DIR = f"{root_dir}/logs"
 PROFILE_DIR = "device_profiles"
 
 SUPERLINK_PORTS = {
@@ -62,7 +63,7 @@ def generate_profiles(
     Returns the list of profile dicts.
     """
     # Import here to avoid requiring u_flora package for basic setup operations
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
     from u_flora.selection.profile_generator import generate_device_profiles
 
     profiles = generate_device_profiles(
@@ -305,7 +306,7 @@ def down() -> None:
 
 # -- Experiment Execution ------------------------------------------------------
 
-def run_task(overrides: str | None) -> None:
+def run_task(overrides: str | None, stream: bool = False) -> None:
     """Run a single FL experiment via ``flwr run``.
 
     Overrides are Hydra-style key=value pairs that get forwarded to
@@ -322,6 +323,9 @@ def run_task(overrides: str | None) -> None:
     # Forward overrides as Flower run-config
     if overrides:
         cmd.extend(["--run-config", overrides])
+
+    if stream:
+        cmd.append("--stream")
 
     logger.info("Running: %s", " ".join(cmd))
 
@@ -389,8 +393,6 @@ def main() -> None:
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
-
-    root_dir = Path(__file__).resolve().parent
     default_net_trace = str(root_dir / "traces" / "network" / "trace.json")
     default_comp_trace = str(root_dir / "traces" /
                              "computation" / "client_device_capacity.json")
@@ -415,6 +417,7 @@ def main() -> None:
     # --- run ---
     p_run = sub.add_parser("run", help="Run single experiment")
     p_run.add_argument("--run-config", type=str, help="Overrides for flwr run config")
+    p_run.add_argument("--stream", action="store_true", help="Stream logs to console")
 
     # --- batch ---
     p_batch = sub.add_parser("batch", help="Run batch experiments")
