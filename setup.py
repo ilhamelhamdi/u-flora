@@ -390,7 +390,7 @@ def main() -> None:
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
 
-    root_dir = Path(__file__).resolve().parent.parent
+    root_dir = Path(__file__).resolve().parent
     default_net_trace = str(root_dir / "traces" / "network" / "trace.json")
     default_comp_trace = str(root_dir / "traces" /
                              "computation" / "client_device_capacity.json")
