@@ -1,4 +1,4 @@
-"""Base abstractions for client selection in federated learning.
+"""Base abstractions for client selection strategy in federated learning.
 
 This module defines the Strategy pattern interface for client selection,
 along with the data models that all selectors operate on.
@@ -9,7 +9,7 @@ Design decisions:
   - ClientState is mutable and tracks *dynamic* per-round feedback such as
     training loss, round duration, and participation history.
   - ClientSelector is the abstract base that all selection algorithms implement.
-    It receives the full client roster and returns the selected subset each round.
+    It receives the full client list and returns the selected subset each round.
 """
 
 from __future__ import annotations
@@ -24,18 +24,16 @@ from typing import Any
 class DeviceProfile:
     """Static device characteristics from real-world trace data.
 
-    Combines network profile (from MobiPerf traces) and compute capability
-    (from AI Benchmark / Oort traces) into a single device descriptor.
+    Combines network profile and compute capability into a single device descriptor.
 
     The ``computation_latency_ms`` field represents the time (in ms) to process
     one training sample on this device. This is the Oort convention: the value
     is model-agnostic "per-sample latency" that can be scaled by the number of
     samples and local epochs to estimate total training time.
 
-    The ``communication_kbps`` field represents the network throughput. When
-    ToxiProxy is used for real traffic shaping, this value is informational
-    (the proxy enforces the actual rate). In simulation mode, the selector
-    uses this to *estimate* communication time analytically.
+    The network fields (download/upload bandwidth, latency, jitter) are used to
+    estimate communication time for model updates. The ``estimate_round_duration()``
+    method combines compute and communication to predict total round duration.
     """
 
     client_id: int
@@ -53,10 +51,6 @@ class DeviceProfile:
     network_type: str = "unknown"  # WIFI, LTE, MOBILE, etc.
     device_name: str = "unknown"
 
-    @property
-    def communication_kbps(self) -> float:
-        """Effective throughput (bottlenecked by the slower direction)."""
-        return min(self.download_kbps, self.upload_kbps)
 
     def estimate_round_duration(
         self,
@@ -131,15 +125,12 @@ class ClientSelector(ABC):
     """Abstract base class for FL client selection strategies.
 
     Implementations must provide ``select_clients`` which, given the current
-    round number and the full client roster, returns the indices of clients
+    round number and the full client list, returns the indices of clients
     to participate in this round.
 
     The two-phase design:
       1. ``select_clients()``: choose who participates (called at round start)
       2. ``update_feedback()``: receive training results (called at round end)
-
-    This matches the Flower strategy lifecycle where selection happens before
-    training and aggregation provides the feedback afterward.
     """
 
     def __init__(self, num_to_select: int, **kwargs: Any) -> None:

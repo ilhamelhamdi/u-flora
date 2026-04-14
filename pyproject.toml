@@ -36,11 +36,11 @@ clientapp = "u_flora.client_app:app"
 [tool.flwr.app.config]
 # -- Task selector -------------------------------------------------------------
 # Controls which TaskAdapter is used. One of: text_classification, causal_lm
-task = "text_classification"
+task_name = "text_classification"
 
 # -- Dataset selector ----------------------------------------------------------
 # Key into [tool.flwr.app.config.datasets.*] below
-dataset = "sst2"
+dataset_name = "sst2"
 
 # -- Model ---------------------------------------------------------------------
 model.name = "distilbert-base-uncased"
@@ -54,7 +54,7 @@ train.save-every-round = 5
 train.learning-rate-max = 5e-4
 train.learning-rate-min = 1e-5
 train.training-arguments.output-dir = ""
-train.training-arguments.learning-rate = ""
+train.training-arguments.learning-rate = "" # Overridden by dynamic lr scheduler
 train.training-arguments.per-device-train-batch-size = 32
 train.training-arguments.per-device-eval-batch-size = 32
 train.training-arguments.logging-steps = 32
