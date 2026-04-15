@@ -40,6 +40,7 @@ Architecture:
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import dataclasses
 import json
 import logging
@@ -210,10 +211,14 @@ def up(
             )
             return
 
-    # Phase 4 — Launch supernodes
+    # Phase 4 — Launch supernodes in parallel
     logger.info("Spawning %d supernodes...", len(specs))
-    for spec in specs:
-        _launch_supernode(spec)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(specs)) as pool:
+        futures = {pool.submit(_launch_supernode, spec): spec for spec in specs}
+        for future in concurrent.futures.as_completed(futures):
+            spec = futures[future]
+            if exc := future.exception():
+                logger.error("Failed to start supernode-%d: %s", spec.node_id, exc)
 
     logger.info("All %d supernodes started.", len(specs))
     subprocess.run(["apptainer", "instance", "list"], check=False)
