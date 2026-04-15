@@ -63,15 +63,20 @@ SIF_FILE = "flwr.sif"
 LOG_DIR = "logs"
 PROFILE_DIR = "device_profiles"
 
+TOXIPROXY_API_PORT = 8474 # Default ToxiProxy API port
 SUPERLINK_PORTS = {
-    "serverappio": 54001,
-    "fleet": 54002,
-    "control": 54003,
+    "serverappio": 15001,
+    "fleet": 15002,
+    "control": 15003,
 }
-SUPERNODE_PORT_START = 54100
-TOXIPROXY_API_PORT = 8474
-TOXIPROXY_PROXY_PORT_START = 18000
+SUPERNODE_PORT_START = 15100
+TOXIPROXY_PROXY_PORT_START = 16100
 
+# Note:
+# Check the availability of these ports before running, or adjust as needed to avoid conflicts
+# Command to check:
+# `ss -tlnp | awk 'NR>1 {print $4}' | grep -oP '(?<=:)\d+' | awk -v lo=15000 -v hi=15200 '$1>=lo && $1<=hi' | sort -n`
+# Change `lo` and `hi` to check different ranges.
 
 # ── Dataclasses ───────────────────────────────────────────────────────────────
 
