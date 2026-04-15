@@ -123,10 +123,10 @@ class BaseStrategy(Strategy):
         result = Result()
         t_start = time.time()
 
-        # Step 1: node_id ↔ partition_id mapping
+        # Step 1: node_id <-> partition_id mapping
         self.build_node_mapping(grid)
 
-        # Step 2: Pre-training phase (e.g. TiFL profiling). Default: no-op.
+        # Step 2: Pre-training phase for initial client profiling. Default: no-op.
         arrays = initial_arrays
         pretrain_arrays = self.configure_pretrain(grid, arrays, timeout)
         if pretrain_arrays is not None:
@@ -187,12 +187,11 @@ class BaseStrategy(Strategy):
     # ------------------------------------------------------------------
 
     def build_node_mapping(self, grid: Grid) -> None:
-        """Identify all nodes and build bidirectional partition_id ↔ node_id map."""
+        """Identify all nodes and build bidirectional partition_id <-> node_id map."""
         all_node_ids = list(grid.get_node_ids())
-        record = RecordDict(
-            {self.configrecord_key: ConfigRecord({"query_type": "identify"})}
-        )
-        messages = self._construct_messages(record, all_node_ids, MessageType.QUERY)
+        record = RecordDict({self.configrecord_key: ConfigRecord()})
+        message_type = f"{MessageType.QUERY}.identify"
+        messages = self._construct_messages(record, all_node_ids, message_type)
         replies = grid.send_and_receive(messages)
 
         for reply in replies:
