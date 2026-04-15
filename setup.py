@@ -62,6 +62,8 @@ logger = logging.getLogger("u_flora.setup")
 SIF_FILE = "flwr.sif"
 LOG_DIR = "logs"
 PROFILE_DIR = "device_profiles"
+NETWORK_PROFILE_TRACE_FILE = str(Path(__file__).parent / "traces" / "network" / "trace.json")
+COMPUTE_PROFILE_TRACE_FILE = str(Path(__file__).parent / "traces" / "computation" / "client_device_capacity.json")
 
 TOXIPROXY_API_PORT = 8474 # Default ToxiProxy API port
 SUPERLINK_PORTS = {
@@ -84,13 +86,15 @@ TOXIPROXY_PROXY_PORT_START = 16100
 @dataclasses.dataclass
 class SupernodeSpec:
     """Declarative description of one supernode instance."""
-
+    name: str
     node_id: int
     profile: dict
     clientappio_port: int
     superlink_address: str  # "127.0.0.1:{18000+N}" (via ToxiProxy) or "127.0.0.1:54002"
     total_nodes: int
 
+def get_node_name(node_id: int) -> str:
+    return f"supernode-{node_id:03d}"
 
 # ── Main CLI ──────────────────────────────────────────────────────────────────
 
@@ -110,8 +114,8 @@ def main() -> None:
     # --- up ---
     p_up = sub.add_parser("up", help="Start superlink + supernodes")
     p_up.add_argument("-n", "--num-clients", type=int, default=20)
-    p_up.add_argument("--network-trace", type=str, default=None)
-    p_up.add_argument("--compute-trace", type=str, default=None)
+    p_up.add_argument("--network-trace", type=str, default=NETWORK_PROFILE_TRACE_FILE)
+    p_up.add_argument("--compute-trace", type=str, default=COMPUTE_PROFILE_TRACE_FILE)
     p_up.add_argument("--seed", type=int, default=42)
     p_up.add_argument("--no-toxiproxy", action="store_true")
 
@@ -126,17 +130,19 @@ def main() -> None:
     p_batch = sub.add_parser("batch", help="Run batch experiments")
     p_batch.add_argument("--batch-config", required=True, type=str)
 
+   
     # --- profiles ---
     p_prof = sub.add_parser("profiles", help="Generate/inspect device profiles")
     p_prof.add_argument("-n", "--num-clients", type=int, default=100)
-    p_prof.add_argument("--network-trace", type=str, default=None)
-    p_prof.add_argument("--compute-trace", type=str, default=None)
+    p_prof.add_argument("--network-trace", type=str, default=NETWORK_PROFILE_TRACE_FILE)
+    p_prof.add_argument("--compute-trace", type=str, default=COMPUTE_PROFILE_TRACE_FILE)
     p_prof.add_argument("--seed", type=int, default=42)
     p_prof.add_argument("--show", action="store_true", help="Print summary")
 
     args = parser.parse_args()
 
     if args.command == "up":
+        logger.debug("Parsed args: %s", args)
         up(
             num_clients=args.num_clients,
             network_trace=args.network_trace,
@@ -188,6 +194,7 @@ def up(
 
     specs = [
         SupernodeSpec(
+            name=get_node_name(p["client_id"]),
             node_id=p["client_id"],
             profile=p,
             clientappio_port=SUPERNODE_PORT_START + p["client_id"],
@@ -278,8 +285,8 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
         "apptainer",
         "exec",
         "--env",
-        f"DEVICE_PROFILE_PATH={PROFILE_DIR}/client_{spec.node_id}.json",
-        f"instance://supernode-{spec.node_id}",
+        f"DEVICE_PROFILE_PATH={PROFILE_DIR}/{spec.name}.json",
+        f"instance://{spec.name}",
         "flower-supernode",
         "--insecure",
         "--superlink",
@@ -294,7 +301,7 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
 
 
 def _launch_supernode(spec: SupernodeSpec, log_dir: str = LOG_DIR) -> subprocess.Popen:
-    instance_name = f"supernode-{spec.node_id:03d}"
+    instance_name = spec.name
     subprocess.run(
         ["apptainer", "instance", "start", SIF_FILE, instance_name],
         check=False,
@@ -351,7 +358,7 @@ def down() -> None:
 
 
 def _teardown_toxiproxy() -> None:
-    """Delete all fl_client_* proxies from ToxiProxy (best-effort)."""
+    """Delete all supernode-* proxies from ToxiProxy (best-effort)."""
     api_base = f"http://localhost:{TOXIPROXY_API_PORT}"
     try:
         resp = requests.get(f"{api_base}/proxies", timeout=3)
@@ -361,7 +368,7 @@ def _teardown_toxiproxy() -> None:
         return
 
     proxies = resp.json()
-    fl_proxies = [name for name in proxies if name.startswith("fl_client_")]
+    fl_proxies = [name for name in proxies if name.startswith("supernode-")]
 
     if not fl_proxies:
         return
@@ -497,7 +504,7 @@ def generate_profiles(
     logger.info("Saved %d profiles to %s", len(profile_dicts), combined_path)
 
     for d in profile_dicts:
-        path = os.path.join(output_dir, f"client_{d['client_id']}.json")
+        path = os.path.join(output_dir, f"{get_node_name(d['client_id'])}.json")
         with open(path, "w") as f:
             json.dump(d, f, indent=2)
 
@@ -573,7 +580,7 @@ def _configure_toxiproxy_for_client(
     """Configure one ToxiProxy proxy with bandwidth and latency toxics."""
     upstream_port = upstream_port or SUPERLINK_PORTS["fleet"]
     cid = profile["client_id"]
-    proxy_name = f"fl_client_{cid:03d}"
+    proxy_name = get_node_name(cid)
 
     requests.delete(f"{api_base}/proxies/{proxy_name}", timeout=5)
 
