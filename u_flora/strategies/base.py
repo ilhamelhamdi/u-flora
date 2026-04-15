@@ -124,13 +124,18 @@ class BaseStrategy(Strategy):
         t_start = time.time()
 
         # Step 1: node_id <-> partition_id mapping
+        logger.info("Discovering nodes...")
         self.build_node_mapping(grid)
 
         # Step 2: Pre-training phase for initial client profiling. Default: no-op.
         arrays = initial_arrays
+        logger.info("Pre-training phase...")
         pretrain_arrays = self.configure_pretrain(grid, arrays, timeout)
         if pretrain_arrays is not None:
             arrays = pretrain_arrays
+            logger.info("Pre-training phase complete")
+        else:
+            logger.debug("Pre-training phase: no-op")
 
         # Step 3: Centralized evaluation before training
         if evaluate_fn:
@@ -139,6 +144,7 @@ class BaseStrategy(Strategy):
                 result.evaluate_metrics_serverapp[0] = res
 
         # Step 4: Main training loop
+        logger.info("Starting federated training (%d rounds)...", num_rounds)
         for current_round in range(1, num_rounds + 1):
             logger.info("")
             logger.info("[ROUND %d/%d]", current_round, num_rounds)
@@ -153,8 +159,17 @@ class BaseStrategy(Strategy):
                 )
                 continue
 
+            logger.info(
+                "[ROUND %d/%d] Selected %d clients, sending train messages...",
+                current_round, num_rounds, len(selected_pids),
+            )
+
             # Send messages and collect replies
             replies = grid.send_and_receive(messages, timeout=timeout)
+            logger.info(
+                "[ROUND %d/%d] Received %d/%d replies",
+                current_round, num_rounds, len(replies), len(messages),
+            )
 
             # aggregate_train: FedAvg + metrics logging
             new_arrays, train_metrics = self.aggregate_train(

@@ -44,6 +44,9 @@ def train(msg: Message, context: Context):
     num_rounds = cfg.num_server_rounds
     server_round = msg.content["config"]["server-round"]
 
+    # Shorthand prefix for all log lines from this client this round
+    tag = f"[C{partition_id:03d} | R{server_round}/{num_rounds}]"
+
     # Resolve task & dataset
     task_name = cfg.task_name
     dataset_name = cfg.dataset_name
@@ -53,13 +56,16 @@ def train(msg: Message, context: Context):
     adapter = get_task_adapter(task_name)
 
     # -- Data ----------------------------------------------------------
+    logger.debug("%s Loading dataset partition %d/%d...", tag, partition_id, num_partitions)
     encoding_func = adapter.get_encoding_fn(cfg.model.name, dataset_config)
     data_collator = adapter.get_data_collator(cfg.model.name)
 
     train_set, _ = load_data(partition_id, num_partitions, dataset_config)
     train_set = train_set.map(encoding_func, batched=True)
+    logger.debug("%s Dataset ready: %d samples", tag, len(train_set))
 
     # -- Model ---------------------------------------------------------
+    logger.debug("%s Loading model weights...", tag)
     model = adapter.get_model(cfg.model)
     set_peft_model_state_dict(model, msg.content["arrays"].to_torch_state_dict())
 
@@ -86,9 +92,22 @@ def train(msg: Message, context: Context):
     )
 
     # -- Train ---------------------------------------------------------
+    logger.info(
+        "%s Training started — samples=%d  epochs=%g  lr=%.2e",
+        tag,
+        len(train_set),
+        training_arguments.num_train_epochs,
+        new_lr,
+    )
     start_time = time.time()
     results = trainer.train()
     actual_train_time = time.time() - start_time
+    logger.info(
+        "%s Training done — loss=%.4f  time=%.1fs",
+        tag,
+        results.training_loss,
+        actual_train_time,
+    )
 
     # -- Inject compute heterogeneity delay ----------------------------
     profile = _load_device_profile()
@@ -96,6 +115,13 @@ def train(msg: Message, context: Context):
     total_duration = _inject_compute_delay(
         profile, len(train_set), int(local_epochs), actual_train_time
     )
+    if total_duration > actual_train_time:
+        logger.debug(
+            "%s Simulated duration: %.1fs (added %.1fs compute delay)",
+            tag,
+            total_duration,
+            total_duration - actual_train_time,
+        )
 
     # -- Build response ------------------------------------------------
     model_record = ArrayRecord(get_peft_model_state_dict(model))
@@ -108,6 +134,7 @@ def train(msg: Message, context: Context):
     }
     metric_record = MetricRecord(metrics)
     content = RecordDict({"arrays": model_record, "metrics": metric_record})
+    logger.debug("%s Response ready — total_duration=%.1fs", tag, total_duration)
     return Message(content=content, reply_to=msg)
 
 
@@ -115,6 +142,7 @@ def train(msg: Message, context: Context):
 def handle_identify(msg: Message, context: Context) -> Message:
     """Return this node's partition_id so the server can build its mapping."""
     partition_id = int(context.node_config["partition-id"])
+    logger.debug("[C%03d] Identify query received", partition_id)
     return Message(
         content=RecordDict({"config": ConfigRecord({"partition_id": partition_id})}),
         reply_to=msg,
@@ -131,6 +159,8 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
     partition_id = int(context.node_config["partition-id"])
     num_partitions = int(context.node_config["num-partitions"])
     cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
+
+    logger.debug("[C%03d] Resource request received", partition_id)
 
     # Load dataset to report num_samples
     dataset_config = cfg.datasets[cfg.dataset_name]
@@ -157,8 +187,13 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
 
 def _load_device_profile() -> dict | None:
     profile_path = os.environ.get("DEVICE_PROFILE_PATH")
-    if not profile_path or not os.path.exists(profile_path):
+    if not profile_path:
+        logger.warning("DEVICE_PROFILE_PATH not set — compute delay simulation disabled")
         return None
+    if not os.path.exists(profile_path):
+        logger.warning("Device profile not found at %s — compute delay simulation disabled", profile_path)
+        return None
+    logger.debug("Loaded device profile from %s", profile_path)
     with open(profile_path) as f:
         return json.load(f)
 

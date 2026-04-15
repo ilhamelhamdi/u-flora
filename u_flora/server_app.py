@@ -39,29 +39,45 @@ def main(grid: Grid, context: Context) -> None:
 
     cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
 
+    logger.info(
+        "Experiment — task=%s  dataset=%s  model=%s  strategy=%s  rounds=%d  clients=%d",
+        cfg.task_name,
+        cfg.dataset_name,
+        cfg.model.name,
+        getattr(cfg.strategy, "name", "random"),
+        cfg.num_server_rounds,
+        cfg.num_clients,
+    )
+
     # Initialize W&B
     wandb_run = _initialize_wandb(cfg)
+    logger.debug("W&B run: %s", wandb_run.name)
 
     # Resolve task adapter
     task_name = cfg.task_name
     task_adapter = get_task_adapter(task_name)
+    logger.debug("Task adapter: %s", task_name)
 
     # Get initial model weights
+    logger.info("Initializing model: %s", cfg.model.name)
     init_model = task_adapter.get_model(cfg.model)
     arrays = ArrayRecord(get_peft_model_state_dict(init_model))
+    logger.debug("Model initialized — LoRA state dict keys: %d", len(arrays))
 
     # Prepare validation set
+    logger.info("Loading validation set...")
     val_set, data_collator = _get_validation_set(cfg, task_adapter)
+    logger.info("Validation set loaded: %d examples", len(val_set))
 
     # Build empty client state registry — profiles are discovered at runtime
     num_clients = cfg.num_clients
     client_states = _build_client_states(num_clients)
+    logger.debug("Client state registry: %d clients", num_clients)
 
     # Build per-strategy class (selection + Flower integration)
     strategy = build_strategy(cfg, client_states, save_path, use_wandb=True)
-
     logger.info(
-        "Strategy: %s, Clients: %d, Rounds: %d",
+        "Strategy: %s  clients: %d  rounds: %d",
         getattr(cfg.strategy, "name", "random"),
         num_clients,
         cfg.num_server_rounds,
@@ -77,7 +93,9 @@ def main(grid: Grid, context: Context) -> None:
         ),
     )
 
+    logger.info("Federation complete. Finalizing W&B run...")
     wandb_run.finish()
+    logger.info("Done. Results saved to: %s", save_path)
 
 
 # -- Evaluation ----------------------------------------------------------------
@@ -106,6 +124,9 @@ def _get_evaluate_fn(
     """Return evaluation closure for centralized evaluation."""
 
     def evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
+        label = "pre-training" if server_round == 0 else f"round {server_round}"
+        logger.info("[Eval %s] Running centralized evaluation...", label)
+
         model = task_adapter.get_model(cfg.model)
         set_peft_model_state_dict(model, arrays.to_torch_state_dict())
 
@@ -114,7 +135,9 @@ def _get_evaluate_fn(
             server_round == cfg.num_server_rounds
             or server_round % cfg.train.save_every_round == 0
         ):
-            model.save_pretrained(f"{save_path}/peft_{server_round}")
+            ckpt_path = f"{save_path}/peft_{server_round}"
+            model.save_pretrained(ckpt_path)
+            logger.info("[Eval %s] Checkpoint saved → %s", label, ckpt_path)
 
         # Evaluate
         trainer_args = TrainingArguments(
@@ -129,6 +152,14 @@ def _get_evaluate_fn(
             data_collator=data_collator,
         )
         metrics = trainer.evaluate()
+
+        # Build readable result line for the log
+        metric_parts = [f"loss={metrics['eval_loss']:.4f}"]
+        if "eval_accuracy" in metrics:
+            metric_parts.append(f"acc={metrics['eval_accuracy']:.4f}")
+        if "eval_perplexity" in metrics:
+            metric_parts.append(f"ppl={metrics['eval_perplexity']:.2f}")
+        logger.info("[Eval %s] %s", label, "  ".join(metric_parts))
 
         # Log to W&B
         # TODO: can use task adapter to avoid hardcoding metric keys here
