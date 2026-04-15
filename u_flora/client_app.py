@@ -28,7 +28,10 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
 warnings.filterwarnings("ignore", category=UserWarning)
 
-configure_logging(log_file=os.environ.get("U_FLORA_CLIENT_LOG"))
+configure_logging(
+    level=os.environ.get("U_FLORA_LOG_LEVEL", "INFO"),
+    log_file=os.environ.get("U_FLORA_CLIENT_LOG"),
+)
 logger = logging.getLogger(__name__)
 
 app = ClientApp()

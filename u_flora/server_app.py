@@ -22,7 +22,10 @@ from .utils import replace_keys, configure_logging
 from .selection.base import ClientState
 from .strategies.factory import build_strategy
 
-configure_logging(log_file="logs/server_app.log")
+configure_logging(
+    level=os.environ.get("U_FLORA_LOG_LEVEL", "INFO"),
+    log_file="logs/server_app.log",
+)
 logger = logging.getLogger(__name__)
 
 app = ServerApp()
