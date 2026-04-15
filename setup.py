@@ -403,13 +403,7 @@ def run_task(overrides: list[str]) -> None:
         run_task(["task=text_classification", "model=distilbert", "dataset=sst2",
                   "strategy=oort", "num_server_rounds=100"])
     """
-    cmd = [
-        "flwr",
-        "run",
-        ".",
-        SUPERLINK_CONNECTION_NAME,
-        "--stream"
-    ]
+    cmd = ["flwr", "run", ".", SUPERLINK_CONNECTION_NAME, "--stream"]
 
     for ov in overrides:
         cmd.extend(["--run-config", ov])
@@ -418,12 +412,15 @@ def run_task(overrides: list[str]) -> None:
 
     log_path = f"{LOG_DIR}/flower-task.log"
     with open(log_path, "w") as log_file:
-        result = subprocess.run(cmd, stdout=log_file, stderr=log_file)
+        subprocess.Popen(
+            cmd,
+            stdout=log_file,
+            stderr=log_file,
+            text=True,
+            start_new_session=True,
+        )
 
-    if result.returncode == 0:
-        logger.info("Task completed successfully. Logs: %s", log_path)
-    else:
-        logger.error("Task failed (rc=%d). Check %s", result.returncode, log_path)
+    logger.info("Experiment started. See log file: %s", log_path)
 
 
 def run_batch(batch_config_path: str) -> None:
