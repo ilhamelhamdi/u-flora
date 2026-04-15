@@ -62,7 +62,280 @@ TOXIPROXY_API_PORT = 8474
 TOXIPROXY_PROXY_PORT_START = 18000
 
 
+# ── Main CLI ─────────────────────────────────────────────────────────────
+
+
+def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
+
+    parser = argparse.ArgumentParser(
+        description="U-Flora experiment orchestrator",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    # --- up ---
+    p_up = sub.add_parser("up", help="Start superlink + supernodes")
+    p_up.add_argument("-n", "--num-clients", type=int, default=20)
+    p_up.add_argument("--network-trace", type=str, default=None)
+    p_up.add_argument("--compute-trace", type=str, default=None)
+    p_up.add_argument("--seed", type=int, default=42)
+    p_up.add_argument("--no-toxiproxy", action="store_true")
+
+    # --- down ---
+    sub.add_parser("down", help="Stop all instances")
+
+    # --- run ---
+    p_run = sub.add_parser("run", help="Run single experiment")
+    p_run.add_argument("overrides", nargs="*", help="Hydra-style overrides")
+
+    # --- batch ---
+    p_batch = sub.add_parser("batch", help="Run batch experiments")
+    p_batch.add_argument("--batch-config", required=True, type=str)
+
+    # --- profiles ---
+    p_prof = sub.add_parser("profiles", help="Generate/inspect device profiles")
+    p_prof.add_argument("-n", "--num-clients", type=int, default=100)
+    p_prof.add_argument("--network-trace", type=str, default=None)
+    p_prof.add_argument("--compute-trace", type=str, default=None)
+    p_prof.add_argument("--seed", type=int, default=42)
+    p_prof.add_argument("--show", action="store_true", help="Print summary")
+
+    args = parser.parse_args()
+
+    if args.command == "up":
+        up(
+            num_clients=args.num_clients,
+            network_trace=args.network_trace,
+            compute_trace=args.compute_trace,
+            seed=args.seed,
+            use_toxiproxy=not args.no_toxiproxy,
+        )
+    elif args.command == "down":
+        down()
+    elif args.command == "run":
+        run_task(args.overrides)
+    elif args.command == "batch":
+        run_batch(args.batch_config)
+    elif args.command == "profiles":
+        profiles = generate_profiles(
+            args.num_clients, args.network_trace, args.compute_trace, args.seed
+        )
+        if args.show:
+            _print_profile_summary(profiles)
+
+
+# ── Apptainer Instance Management ────────────────────────────────────────────
+
+
+def up(
+    num_clients: int = 20,
+    network_trace: str | None = None,
+    compute_trace: str | None = None,
+    seed: int = 42,
+    use_toxiproxy: bool = True,
+) -> None:
+    """Start superlink, generate profiles, configure ToxiProxy, spawn supernodes."""
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    if not os.path.exists(SIF_FILE):
+        logger.error("%s not found. Build with 'apptainer pull' first.", SIF_FILE)
+        return
+
+    # 1. Generate device profiles
+    logger.info("Generating %d device profiles...", num_clients)
+    profiles = generate_profiles(num_clients, network_trace, compute_trace, seed)
+
+    # 2. Start Superlink
+    logger.info("Starting Superlink...")
+    subprocess.run(
+        ["apptainer", "instance", "start", SIF_FILE, "superlink"],
+        check=False,
+    )
+
+    superlink_log_file = open(f"{LOG_DIR}/superlink.log", "w")
+    up_superlink_cmd = [
+        "apptainer",
+        "exec",
+        "instance://superlink",
+        "flower-superlink",
+        "--insecure",
+        "--isolation",
+        "subprocess",
+        "--serverappio-api-address",
+        f"0.0.0.0:{SUPERLINK_PORTS['serverappio']}",
+        "--fleet-api-address",
+        f"0.0.0.0:{SUPERLINK_PORTS['fleet']}",
+        "--control-api-address",
+        f"0.0.0.0:{SUPERLINK_PORTS['control']}",
+    ]
+
+    proc = subprocess.Popen(
+        up_superlink_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        start_new_session=True,
+    )
+
+    def _filter_log():
+        """Filter Superlink logs to exclude heartbeat messages."""
+        for line in iter(proc.stdout.readline, ""):
+            if "Fleet.PullMessages" not in line:
+                superlink_log_file.write(line)
+                superlink_log_file.flush()
+
+    threading.Thread(target=_filter_log, daemon=True).start()
+    time.sleep(3)
+
+    # 3. Configure ToxiProxy (if available)
+    if use_toxiproxy:
+        try:
+            setup_toxiproxy(profiles)
+        except Exception as e:
+            logger.warning("ToxiProxy setup failed: %s (continuing without)", e)
+
+    # 4. Spawn Supernodes — one per client, each with its profile
+    total = len(profiles)
+    logger.info("Spawning %d supernodes...", total)
+
+    for p in profiles:
+        node_id = p["client_id"]
+        instance_name = f"supernode-{node_id}"
+        port = SUPERNODE_PORT_START + node_id
+
+        subprocess.run(
+            ["apptainer", "instance", "start", SIF_FILE, instance_name],
+            check=False,
+        )
+
+        supernode_log = open(f"{LOG_DIR}/{instance_name}.log", "w")
+        supernode_exec_cmd = [
+            "apptainer",
+            "exec",
+            "--env",
+            f"DEVICE_PROFILE_PATH={PROFILE_DIR}/client_{node_id}.json",
+            f"instance://{instance_name}",
+            "flower-supernode",
+            "--insecure",
+            "--superlink",
+            f"127.0.0.1:{SUPERLINK_PORTS['fleet']}",
+            "--clientappio-api-address",
+            f"0.0.0.0:{port}",
+            "--isolation",
+            "subprocess",
+            "--node-config",
+            f"partition-id={node_id} num-partitions={total}",
+        ]
+
+        subprocess.Popen(
+            supernode_exec_cmd,
+            stdout=supernode_log,
+            stderr=supernode_log,
+            start_new_session=True,
+        )
+        logger.debug("Started %s on port %d", instance_name, port)
+
+    logger.info("All %d supernodes started.", total)
+    subprocess.run(["apptainer", "instance", "list"], check=False)
+
+
+def down() -> None:
+    """Stop all Apptainer instances."""
+    logger.info("Stopping all Flower instances...")
+    subprocess.run(["apptainer", "instance", "stop", "--all"], check=False)
+    logger.info("Done.")
+
+
+# ── Experiment Execution ──────────────────────────────────────────────────────
+
+
+def run_task(overrides: list[str]) -> None:
+    """Run a single FL experiment via ``flwr run``.
+    
+    Example:
+        run_task(["task=text_classification", "model=distilbert", "dataset=sst2",
+                  "strategy=oort", "num_server_rounds=100"])
+    """
+    # Build the flwr run command with overrides
+    cmd = [
+        "flwr",
+        "run",
+        ".",
+        "--insecure",
+        "--serverappio-api-address",
+        f"127.0.0.1:{SUPERLINK_PORTS['serverappio']}",
+    ]
+
+    # Forward overrides as Flower run-config
+    for ov in overrides:
+        cmd.extend(["--run-config", ov])
+
+    logger.info("Running: %s", " ".join(cmd))
+
+    log_path = f"{LOG_DIR}/flower-task.log"
+    with open(log_path, "w") as log_file:
+        result = subprocess.run(
+            cmd,
+            stdout=log_file,
+            stderr=log_file,
+        )
+
+    if result.returncode == 0:
+        logger.info("Task completed successfully. Logs: %s", log_path)
+    else:
+        logger.error("Task failed (rc=%d). Check %s", result.returncode, log_path)
+
+
+def run_batch(batch_config_path: str) -> None:
+    """Run a batch of experiments sequentially.
+
+    The batch config is a YAML file listing experiments:
+
+    ```yaml
+    experiments:
+      - name: "random_sst2"
+        overrides:
+          - "strategy=random"
+          - "dataset=sst2"
+          - "num_server_rounds=100"
+      - name: "oort_sst2"
+        overrides:
+          - "strategy=oort"
+          - "dataset=sst2"
+          - "num_server_rounds=100"
+    ```
+    """
+    import yaml
+
+    with open(batch_config_path) as f:
+        batch = yaml.safe_load(f)
+
+    experiments = batch.get("experiments", [])
+    total = len(experiments)
+
+    for idx, exp in enumerate(experiments, 1):
+        name = exp.get("name", f"experiment_{idx}")
+        overrides = exp.get("overrides", [])
+        logger.info("=" * 60)
+        logger.info("Batch [%d/%d]: %s", idx, total, name)
+        logger.info("=" * 60)
+
+        # Add wandb run name
+        overrides.append(f"wandb.run_name={name}")
+        run_task(overrides)
+
+        # Brief pause between experiments
+        time.sleep(5)
+
+    logger.info("Batch complete: %d/%d experiments run.", total, total)
+
+
 # ── Device Profile Management ─────────────────────────────────────────────────
+
 
 def generate_profiles(
     num_clients: int,
@@ -123,13 +396,15 @@ def load_profiles(profile_dir: str = PROFILE_DIR) -> list[dict]:
     combined = os.path.join(profile_dir, "all_profiles.json")
     if not os.path.exists(combined):
         logger.error(
-            "No profiles found at %s. Run 'setup.py profiles' first.", combined)
+            "No profiles found at %s. Run 'setup.py profiles' first.", combined
+        )
         return []
     with open(combined) as f:
         return json.load(f)
 
 
 # ── ToxiProxy Setup ───────────────────────────────────────────────────────────
+
 
 def setup_toxiproxy(
     profiles: list[dict],
@@ -160,34 +435,64 @@ def setup_toxiproxy(
         )
 
         # Create proxy
-        proxy_cfg = json.dumps({
-            "name": proxy_name,
-            "listen": f"0.0.0.0:{listen_port}",
-            "upstream": f"{upstream_host}:{upstream_port}",
-        })
+        proxy_cfg = json.dumps(
+            {
+                "name": proxy_name,
+                "listen": f"0.0.0.0:{listen_port}",
+                "upstream": f"{upstream_host}:{upstream_port}",
+            }
+        )
         subprocess.run(
-            ["curl", "-s", "-X", "POST", f"{api}/proxies",
-             "-H", "Content-Type: application/json", "-d", proxy_cfg],
+            [
+                "curl",
+                "-s",
+                "-X",
+                "POST",
+                f"{api}/proxies",
+                "-H",
+                "Content-Type: application/json",
+                "-d",
+                proxy_cfg,
+            ],
             capture_output=True,
         )
 
         # Bandwidth toxic (downstream) — KB/s = kbps / 8
         dl_rate = max(1, int(p["download_kbps"] / 8))
-        _add_toxic(api, proxy_name, f"bw_down_{cid}", "bandwidth",
-                   "downstream", {"rate": dl_rate})
+        _add_toxic(
+            api,
+            proxy_name,
+            f"bw_down_{cid}",
+            "bandwidth",
+            "downstream",
+            {"rate": dl_rate},
+        )
 
         # Bandwidth toxic (upstream)
         ul_rate = max(1, int(p["upload_kbps"] / 8))
-        _add_toxic(api, proxy_name, f"bw_up_{cid}", "bandwidth",
-                   "upstream", {"rate": ul_rate})
+        _add_toxic(
+            api, proxy_name, f"bw_up_{cid}", "bandwidth", "upstream", {"rate": ul_rate}
+        )
 
         # Latency toxic (both directions) — half RTT each way
         half_rtt = max(1, int(p["latency_ms"] / 2))
         half_jitter = max(0, int(p["jitter_ms"] / 2))
-        _add_toxic(api, proxy_name, f"lat_down_{cid}", "latency",
-                   "downstream", {"latency": half_rtt, "jitter": half_jitter})
-        _add_toxic(api, proxy_name, f"lat_up_{cid}", "latency",
-                   "upstream", {"latency": half_rtt, "jitter": half_jitter})
+        _add_toxic(
+            api,
+            proxy_name,
+            f"lat_down_{cid}",
+            "latency",
+            "downstream",
+            {"latency": half_rtt, "jitter": half_jitter},
+        )
+        _add_toxic(
+            api,
+            proxy_name,
+            f"lat_up_{cid}",
+            "latency",
+            "upstream",
+            {"latency": half_rtt, "jitter": half_jitter},
+        )
 
     logger.info(
         "ToxiProxy configured for %d clients (ports %d-%d)",
@@ -198,273 +503,35 @@ def setup_toxiproxy(
 
 
 def _add_toxic(
-    api: str, proxy: str, name: str, toxic_type: str,
-    stream: str, attributes: dict,
+    api: str,
+    proxy: str,
+    name: str,
+    toxic_type: str,
+    stream: str,
+    attributes: dict,
 ) -> None:
-    toxic_cfg = json.dumps({
-        "name": name, "type": toxic_type,
-        "stream": stream, "attributes": attributes,
-    })
+    toxic_cfg = json.dumps(
+        {
+            "name": name,
+            "type": toxic_type,
+            "stream": stream,
+            "attributes": attributes,
+        }
+    )
     subprocess.run(
-        ["curl", "-s", "-X", "POST",
-         f"{api}/proxies/{proxy}/toxics",
-         "-H", "Content-Type: application/json", "-d", toxic_cfg],
+        [
+            "curl",
+            "-s",
+            "-X",
+            "POST",
+            f"{api}/proxies/{proxy}/toxics",
+            "-H",
+            "Content-Type: application/json",
+            "-d",
+            toxic_cfg,
+        ],
         capture_output=True,
     )
-
-
-# ── Apptainer Instance Management ────────────────────────────────────────────
-
-def up(
-    num_clients: int = 20,
-    network_trace: str | None = None,
-    compute_trace: str | None = None,
-    seed: int = 42,
-    use_toxiproxy: bool = True,
-) -> None:
-    """Start superlink, generate profiles, configure ToxiProxy, spawn supernodes."""
-    os.makedirs(LOG_DIR, exist_ok=True)
-
-    if not os.path.exists(SIF_FILE):
-        logger.error(
-            "%s not found. Build with 'apptainer pull' first.", SIF_FILE)
-        return
-
-    # 1. Generate device profiles
-    logger.info("Generating %d device profiles...", num_clients)
-    profiles = generate_profiles(
-        num_clients, network_trace, compute_trace, seed
-    )
-
-    # 2. Start Superlink
-    logger.info("Starting Superlink...")
-    subprocess.run(
-        ["apptainer", "instance", "start", SIF_FILE, "superlink"],
-        check=False,
-    )
-
-    link_log = open(f"{LOG_DIR}/superlink.log", "w")
-    link_cmd = [
-        "apptainer", "exec", "instance://superlink",
-        "flower-superlink", "--insecure", "--isolation", "subprocess",
-        "--serverappio-api-address", f"0.0.0.0:{SUPERLINK_PORTS['serverappio']}",
-        "--fleet-api-address", f"0.0.0.0:{SUPERLINK_PORTS['fleet']}",
-        "--control-api-address", f"0.0.0.0:{SUPERLINK_PORTS['control']}",
-    ]
-
-    proc = subprocess.Popen(
-        link_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        text=True, start_new_session=True,
-    )
-
-    def _filter_log():
-        for line in iter(proc.stdout.readline, ""):
-            if "Fleet.PullMessages" not in line:
-                link_log.write(line)
-                link_log.flush()
-
-    threading.Thread(target=_filter_log, daemon=True).start()
-    time.sleep(5)
-
-    # 3. Configure ToxiProxy (if available)
-    if use_toxiproxy:
-        try:
-            setup_toxiproxy(profiles)
-        except Exception as e:
-            logger.warning(
-                "ToxiProxy setup failed: %s (continuing without)", e)
-
-    # 4. Spawn Supernodes — one per client, each with its profile
-    total = len(profiles)
-    logger.info("Spawning %d supernodes...", total)
-
-    for p in profiles:
-        node_id = p["client_id"]
-        instance_name = f"supernode-{node_id}"
-        port = SUPERNODE_PORT_START + node_id
-
-        subprocess.run(
-            ["apptainer", "instance", "start", SIF_FILE, instance_name],
-            check=False,
-        )
-
-        node_log = open(f"{LOG_DIR}/{instance_name}.log", "w")
-        exec_cmd = [
-            "apptainer", "exec",
-            "--env", f"UFLORA_PROFILE_PATH={PROFILE_DIR}/client_{node_id}.json",
-            f"instance://{instance_name}",
-            "flower-supernode", "--insecure",
-            "--superlink", f"127.0.0.1:{SUPERLINK_PORTS['fleet']}",
-            "--clientappio-api-address", f"0.0.0.0:{port}",
-            "--isolation", "subprocess",
-            "--node-config",
-            f"partition-id={node_id} num-partitions={total}",
-        ]
-
-        subprocess.Popen(
-            exec_cmd, stdout=node_log, stderr=node_log,
-            start_new_session=True,
-        )
-        logger.debug("Started %s on port %d", instance_name, port)
-
-    logger.info("All %d supernodes started.", total)
-    subprocess.run(["apptainer", "instance", "list"], check=False)
-
-
-def down() -> None:
-    """Stop all Apptainer instances."""
-    logger.info("Stopping all Flower instances...")
-    subprocess.run(["apptainer", "instance", "stop", "--all"], check=False)
-    logger.info("Done.")
-
-
-# ── Experiment Execution ──────────────────────────────────────────────────────
-
-def run_task(overrides: list[str]) -> None:
-    """Run a single FL experiment via ``flwr run``.
-
-    Overrides are Hydra-style key=value pairs that get forwarded to
-    the Flower run config.
-
-    Example:
-        run_task(["task=text_classification", "model=distilbert", "dataset=sst2",
-                  "strategy=oort", "num_server_rounds=100"])
-    """
-    # Build the flwr run command with overrides
-    cmd = [
-        "flwr", "run", ".",
-        "--insecure",
-        "--serverappio-api-address",
-        f"127.0.0.1:{SUPERLINK_PORTS['serverappio']}",
-    ]
-
-    # Forward overrides as Flower run-config
-    for ov in overrides:
-        cmd.extend(["--run-config", ov])
-
-    logger.info("Running: %s", " ".join(cmd))
-
-    log_path = f"{LOG_DIR}/flower-task.log"
-    with open(log_path, "w") as log_file:
-        result = subprocess.run(
-            cmd, stdout=log_file, stderr=log_file,
-        )
-
-    if result.returncode == 0:
-        logger.info("Task completed successfully. Logs: %s", log_path)
-    else:
-        logger.error("Task failed (rc=%d). Check %s",
-                     result.returncode, log_path)
-
-
-def run_batch(batch_config_path: str) -> None:
-    """Run a batch of experiments sequentially.
-
-    The batch config is a YAML file listing experiments:
-
-    ```yaml
-    experiments:
-      - name: "random_sst2"
-        overrides:
-          - "strategy=random"
-          - "dataset=sst2"
-          - "num_server_rounds=100"
-      - name: "oort_sst2"
-        overrides:
-          - "strategy=oort"
-          - "dataset=sst2"
-          - "num_server_rounds=100"
-    ```
-    """
-    import yaml
-
-    with open(batch_config_path) as f:
-        batch = yaml.safe_load(f)
-
-    experiments = batch.get("experiments", [])
-    total = len(experiments)
-
-    for idx, exp in enumerate(experiments, 1):
-        name = exp.get("name", f"experiment_{idx}")
-        overrides = exp.get("overrides", [])
-        logger.info("=" * 60)
-        logger.info("Batch [%d/%d]: %s", idx, total, name)
-        logger.info("=" * 60)
-
-        # Add wandb run name
-        overrides.append(f"wandb.run_name={name}")
-        run_task(overrides)
-
-        # Brief pause between experiments
-        time.sleep(5)
-
-    logger.info("Batch complete: %d/%d experiments run.", total, total)
-
-
-# ── CLI ───────────────────────────────────────────────────────────────────────
-
-def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-    )
-
-    parser = argparse.ArgumentParser(
-        description="U-Flora experiment orchestrator",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    sub = parser.add_subparsers(dest="command", required=True)
-
-    # --- up ---
-    p_up = sub.add_parser("up", help="Start superlink + supernodes")
-    p_up.add_argument("-n", "--num-clients", type=int, default=20)
-    p_up.add_argument("--network-trace", type=str, default=None)
-    p_up.add_argument("--compute-trace", type=str, default=None)
-    p_up.add_argument("--seed", type=int, default=42)
-    p_up.add_argument("--no-toxiproxy", action="store_true")
-
-    # --- down ---
-    sub.add_parser("down", help="Stop all instances")
-
-    # --- run ---
-    p_run = sub.add_parser("run", help="Run single experiment")
-    p_run.add_argument("overrides", nargs="*", help="Hydra-style overrides")
-
-    # --- batch ---
-    p_batch = sub.add_parser("batch", help="Run batch experiments")
-    p_batch.add_argument("--batch-config", required=True, type=str)
-
-    # --- profiles ---
-    p_prof = sub.add_parser(
-        "profiles", help="Generate/inspect device profiles")
-    p_prof.add_argument("-n", "--num-clients", type=int, default=100)
-    p_prof.add_argument("--network-trace", type=str, default=None)
-    p_prof.add_argument("--compute-trace", type=str, default=None)
-    p_prof.add_argument("--seed", type=int, default=42)
-    p_prof.add_argument("--show", action="store_true", help="Print summary")
-
-    args = parser.parse_args()
-
-    if args.command == "up":
-        up(
-            num_clients=args.num_clients,
-            network_trace=args.network_trace,
-            compute_trace=args.compute_trace,
-            seed=args.seed,
-            use_toxiproxy=not args.no_toxiproxy,
-        )
-    elif args.command == "down":
-        down()
-    elif args.command == "run":
-        run_task(args.overrides)
-    elif args.command == "batch":
-        run_batch(args.batch_config)
-    elif args.command == "profiles":
-        profiles = generate_profiles(
-            args.num_clients, args.network_trace, args.compute_trace, args.seed
-        )
-        if args.show:
-            _print_profile_summary(profiles)
 
 
 def _print_profile_summary(profiles: list[dict]) -> None:
@@ -485,7 +552,8 @@ def _print_profile_summary(profiles: list[dict]) -> None:
     print(f"  {n} Device Profiles")
     print(f"{'=' * 70}")
     print(
-        f"  {'Metric':<25} {'P10':>10} {'P25':>10} {'P50':>10} {'P75':>10} {'P90':>10}")
+        f"  {'Metric':<25} {'P10':>10} {'P25':>10} {'P50':>10} {'P75':>10} {'P90':>10}"
+    )
     print(f"  {'-' * 25} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10}")
 
     for label, vals in [
@@ -494,8 +562,7 @@ def _print_profile_summary(profiles: list[dict]) -> None:
         ("RTT (ms)", rtt),
     ]:
         row = [f"{percentile(vals, p):.1f}" for p in [10, 25, 50, 75, 90]]
-        print(f"  {label:<25} {'':>3}".rstrip() +
-              "  ".join(f"{v:>10}" for v in row))
+        print(f"  {label:<25} {'':>3}".rstrip() + "  ".join(f"{v:>10}" for v in row))
 
     print(f"\n  Network types: {net_types}")
     print(f"  Heterogeneity (compute): {comp[-1] / max(comp[0], 0.01):.1f}x")
