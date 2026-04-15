@@ -294,7 +294,7 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
 
 
 def _launch_supernode(spec: SupernodeSpec, log_dir: str = LOG_DIR) -> subprocess.Popen:
-    instance_name = f"supernode-{spec.node_id}"
+    instance_name = f"supernode-{spec.node_id:03d}"
     subprocess.run(
         ["apptainer", "instance", "start", SIF_FILE, instance_name],
         check=False,
@@ -573,7 +573,7 @@ def _configure_toxiproxy_for_client(
     """Configure one ToxiProxy proxy with bandwidth and latency toxics."""
     upstream_port = upstream_port or SUPERLINK_PORTS["fleet"]
     cid = profile["client_id"]
-    proxy_name = f"fl_client_{cid}"
+    proxy_name = f"fl_client_{cid:03d}"
 
     requests.delete(f"{api_base}/proxies/{proxy_name}", timeout=5)
 
