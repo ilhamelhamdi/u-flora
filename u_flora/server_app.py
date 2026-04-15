@@ -155,9 +155,9 @@ def _get_evaluate_fn(
 def _initialize_wandb(cfg):
     """Initialize W&B with experiment metadata."""
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    task_name = getattr(cfg, "task", cfg.dataset)
-    strategy_name = getattr(cfg.strategy, "name", "unknown")
-    run_name_suffix = getattr(cfg.wandb, "run_name", "")
+    task_name = cfg.task_name
+    strategy_name = cfg.strategy.name
+    run_name_suffix = cfg.wandb.run_name
     run_name = f"{strategy_name}-{task_name}-{timestamp}"
     if run_name_suffix:
         run_name += f"-{run_name_suffix}"
