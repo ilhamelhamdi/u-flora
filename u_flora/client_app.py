@@ -1,4 +1,4 @@
-"""Flower ClientApp — task-agnostic via TaskAdapter with heterogeneity simulation."""
+"""Flower ClientApp"""
 
 import json
 import logging
@@ -6,7 +6,14 @@ import os
 import time
 import warnings
 
-from flwr.app import ArrayRecord, Context, Message, MetricRecord, RecordDict
+from flwr.app import (
+    ArrayRecord,
+    ConfigRecord,
+    Context,
+    Message,
+    MetricRecord,
+    RecordDict,
+)
 from flwr.clientapp import ClientApp
 from flwr.common.config import unflatten_dict
 from omegaconf import DictConfig
@@ -102,6 +109,50 @@ def train(msg: Message, context: Context):
     metric_record = MetricRecord(metrics)
     content = RecordDict({"arrays": model_record, "metrics": metric_record})
     return Message(content=content, reply_to=msg)
+
+
+@app.query("identify")
+def handle_identify(msg: Message, context: Context) -> Message:
+    """Return this node's partition_id so the server can build its mapping."""
+    partition_id = int(context.node_config["partition-id"])
+    return Message(
+        content=RecordDict({"config": ConfigRecord({"partition_id": partition_id})}),
+        reply_to=msg,
+    )
+
+
+@app.query("resource_request")
+def handle_resource_request(msg: Message, context: Context) -> Message:
+    """Return device capabilities + dataset size (FedCS resource request).
+
+    The server starts blind; this handler is how FedCSWorkflow learns about
+    each candidate client's profile before running greedy selection.
+    """
+    partition_id = int(context.node_config["partition-id"])
+    num_partitions = int(context.node_config["num-partitions"])
+    cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
+
+    # Load dataset to report num_samples
+    dataset_config = cfg.datasets[cfg.dataset_name]
+    train_set, _ = load_data(partition_id, num_partitions, dataset_config)
+    num_samples = len(train_set)
+
+    # Load device profile (ground truth for simulation)
+    profile = _load_device_profile()
+    response = {
+        "partition_id": partition_id,
+        "num_samples": num_samples,
+        "computation_latency_ms": (
+            float(profile["computation_latency_ms"]) if profile else 50.0
+        ),
+        "download_kbps": float(profile["download_kbps"]) if profile else 5000.0,
+        "upload_kbps": float(profile["upload_kbps"]) if profile else 3000.0,
+        "latency_ms": float(profile["latency_ms"]) if profile else 50.0,
+    }
+    return Message(
+        content=RecordDict({"config": ConfigRecord(response)}),
+        reply_to=msg,
+    )
 
 
 def _load_device_profile() -> dict | None:

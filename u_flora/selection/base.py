@@ -87,7 +87,7 @@ class ClientState:
     """
 
     client_id: int
-    profile: DeviceProfile
+    profile: DeviceProfile | None = None  # None = not yet discovered by server
 
     # Data characteristics
     num_samples: int = 0
@@ -120,68 +120,68 @@ class ClientState:
         self.times_selected += 1
         self.explored = True
 
+    def update_from_resource_reply(self, reply_data: dict) -> None:
+        """Populate profile from a FedCS resource-request reply.
 
-class ClientSelector(ABC):
-    """Abstract base class for FL client selection strategies.
+        Called by FedCSWorkflow after receiving a client's resource reply.
+        This is the FedCS-specific mechanism by which the server learns about
+        a client's device capabilities.
 
-    Implementations must provide ``select_clients`` which, given the current
-    round number and the full client list, returns the indices of clients
-    to participate in this round.
+        Args:
+            reply_data: Dict with keys: computation_latency_ms, download_kbps,
+                upload_kbps, latency_ms, num_samples.
+        """
+        self.profile = DeviceProfile(
+            client_id=self.client_id,
+            computation_latency_ms=float(
+                reply_data.get("computation_latency_ms", 50.0)
+            ),
+            download_kbps=float(reply_data.get("download_kbps", 5000.0)),
+            upload_kbps=float(reply_data.get("upload_kbps", 3000.0)),
+            latency_ms=float(reply_data.get("latency_ms", 50.0)),
+            jitter_ms=float(reply_data.get("jitter_ms", 0.0)),
+        )
+        self.num_samples = int(reply_data.get("num_samples", self.num_samples))
 
-    The two-phase design:
-      1. ``select_clients()``: choose who participates (called at round start)
-      2. ``update_feedback()``: receive training results (called at round end)
+
+
+# ---------------------------------------------------------------------------
+# Standalone fairness helpers
+# ---------------------------------------------------------------------------
+
+
+def compute_jain_fairness_index(counts: list[int]) -> float:
+    """Jain's Fairness Index over a participation count distribution.
+
+    JFI = (sum(x))^2 / (N * sum(x^2))
+
+    Returns 1.0 when all counts are equal (perfect fairness) and 1/N in the
+    worst case (one client participates exclusively).  Returns 1.0 if all
+    counts are zero (undefined, treat as perfectly fair).
     """
+    n = len(counts)
+    if n == 0:
+        return 1.0
+    s = sum(counts)
+    if s == 0:
+        return 1.0
+    sq_sum = sum(x * x for x in counts)
+    if sq_sum == 0:
+        return 1.0
+    return (s * s) / (n * sq_sum)
 
-    def __init__(self, num_to_select: int, **kwargs: Any) -> None:
-        """
-        Args:
-            num_to_select: Number of clients to select each round (K).
-        """
-        self.num_to_select = num_to_select
 
-    @abstractmethod
-    def select_clients(
-        self,
-        current_round: int,
-        client_states: dict[int, ClientState],
-    ) -> list[int]:
-        """Select clients for the current training round.
+def compute_gini_coefficient(counts: list[int]) -> float:
+    """Gini coefficient of a participation count distribution.
 
-        Args:
-            current_round: The current FL round number (1-indexed).
-            client_states: Mapping from client_id to their current state.
-
-        Returns:
-            List of selected client_ids.
-        """
-        ...
-
-    def update_feedback(
-        self,
-        current_round: int,
-        feedbacks: dict[int, dict[str, float]],
-        client_states: dict[int, ClientState],
-    ) -> None:
-        """Update internal state from training feedback.
-
-        Default implementation updates ClientState from feedback dicts.
-        Subclasses can override to add algorithm-specific bookkeeping.
-
-        Args:
-            current_round: Round that just completed.
-            feedbacks: Mapping client_id -> {train_loss, duration, ...}.
-            client_states: The client state registry to update.
-        """
-        for client_id, fb in feedbacks.items():
-            if client_id in client_states:
-                client_states[client_id].update_from_feedback(
-                    train_loss=fb.get("train_loss", 0.0),
-                    duration_s=fb.get("duration", 0.0),
-                    current_round=current_round,
-                )
-
-    @property
-    def name(self) -> str:
-        """Human-readable name for logging and experiment tracking."""
-        return self.__class__.__name__
+    Returns 0.0 for perfect equality and 1.0 for maximum inequality.
+    Returns 0.0 if all counts are zero (undefined, treat as equal).
+    """
+    n = len(counts)
+    if n == 0 or sum(counts) == 0:
+        return 0.0
+    sorted_counts = sorted(counts)
+    cum = 0.0
+    for i, x in enumerate(sorted_counts):
+        cum += (2 * (i + 1) - n - 1) * x
+    return cum / (n * sum(sorted_counts))

@@ -1,6 +1,5 @@
-"""Flower ServerApp — task-agnostic with pluggable client selection."""
+"""Flower ServerApp"""
 
-import json
 import logging
 import os
 from datetime import datetime
@@ -8,7 +7,7 @@ from typing import Any
 
 import pandas as pd
 import wandb
-from flwr.app import ArrayRecord, ConfigRecord, Context, MetricRecord
+from flwr.app import ArrayRecord, Context, MetricRecord
 from flwr.common.config import unflatten_dict
 from flwr.serverapp import Grid, ServerApp
 from omegaconf import DictConfig, OmegaConf
@@ -20,9 +19,8 @@ from .tasks import TaskAdapter
 from .tasks.registry import get_task_adapter
 from .dataset import load_data_centralized
 from .utils import replace_keys
-from .strategy import SelectionStrategy
-from .selection.base import ClientState, DeviceProfile, ClientSelector
-from .selection import RandomSelector
+from .selection.base import ClientState
+from .strategies.factory import build_strategy
 
 logger = logging.getLogger(__name__)
 
@@ -55,32 +53,24 @@ def main(grid: Grid, context: Context) -> None:
     # Prepare validation set
     val_set, data_collator = _get_validation_set(cfg, task_adapter)
 
-    # Build client selector and state registry
+    # Build empty client state registry — profiles are discovered at runtime
     num_clients = cfg.num_clients
-    selector = _build_selector(cfg)
     client_states = _build_client_states(num_clients)
+
+    # Build per-strategy class (selection + Flower integration)
+    strategy = build_strategy(cfg, client_states, save_path, use_wandb=True)
 
     logger.info(
         "Strategy: %s, Clients: %d, Rounds: %d",
-        selector.name,
+        getattr(cfg.strategy, "name", "random"),
         num_clients,
         cfg.num_server_rounds,
-    )
-
-    # Define strategy
-    strategy = SelectionStrategy(
-        selector=selector,
-        client_states=client_states,
-        fraction_train=cfg.fraction_train,
-        fraction_evaluate=0.0,
-        use_wandb=True,
     )
 
     # Run federation
     strategy.start(
         grid=grid,
         initial_arrays=arrays,
-        train_config=ConfigRecord({"save_path": save_path}),
         num_rounds=cfg.num_server_rounds,
         evaluate_fn=_get_evaluate_fn(
             cfg, task_adapter, val_set, data_collator, save_path
@@ -180,104 +170,12 @@ def _initialize_wandb(cfg):
     )
 
 
-# -- Selector Factory ----------------------------------------------------------
 
+def _build_client_states(num_clients: int) -> dict[int, ClientState]:
+    """Create an empty ClientState registry.
 
-def _build_selector(cfg: DictConfig) -> ClientSelector:
-    """Instantiate the configured ClientSelector.
-
-    Reads from ``cfg.strategy`` which maps to one of the configs (name: `random`|`fedcs`|`oort`).
-    Note: the selector is only used for training rounds. Evaluation is centralized and runs on the server, so it doesn't use the selector.
+    All profiles start as None — each strategy populates them
+    at runtime through the appropriate discovery mechanism (resource requests
+    for FedCS, participation feedback for Oort, profiling rounds for TiFL).
     """
-    strategy_cfg = cfg.strategy
-    name = str(getattr(strategy_cfg, "name", "random")).lower()
-    num_to_select = int(getattr(strategy_cfg, "num_to_select", 10))
-    seed = int(getattr(strategy_cfg, "seed", 42))
-
-    if name == "random":
-        return RandomSelector(num_to_select=num_to_select, seed=seed)
-    else:
-        logger.warning("Unknown strategy '%s', falling back to Random", name)
-        return RandomSelector(num_to_select=num_to_select, seed=seed)
-
-
-def _build_client_states(
-    num_clients: int,
-    profile_dir: str = "device_profiles",
-) -> dict[int, ClientState]:
-    """Build ClientState registry from generated device profiles.
-
-    Reads from ``device_profiles/all_profiles.json`` if available,
-    otherwise creates default profiles.
-    """
-    states: dict[int, ClientState] = {}
-    profiles_path = os.path.join(profile_dir, "all_profiles.json")
-
-    default_profile = DeviceProfile(
-        client_id=-1,
-        computation_latency_ms=50.0,
-        download_kbps=5000.0,
-        upload_kbps=3000.0,
-        latency_ms=50.0,
-        jitter_ms=5.0,
-    )
-
-    if os.path.exists(profiles_path):
-        with open(profiles_path) as f:
-            profile_dicts = json.load(f)
-        logger.info(
-            "Loaded %d device profiles from %s", len(profile_dicts), profiles_path
-        )
-
-        for pd_dict in profile_dicts[:num_clients]:
-            cid = pd_dict["client_id"]
-            if cid is None:
-                logger.warning("Profile missing client_id, skipping entry: %s", pd_dict)
-                continue
-
-            if any(
-                field not in pd_dict
-                for field in [
-                    "computation_latency_ms",
-                    "download_kbps",
-                    "upload_kbps",
-                    "latency_ms",
-                ]
-            ):
-                logger.warning(
-                    "Profile for client_id %s is missing some fields, using defaults where needed",
-                    cid,
-                )
-
-            profile = DeviceProfile(
-                client_id=cid,
-                computation_latency_ms=pd_dict.get(
-                    "computation_latency_ms", default_profile.computation_latency_ms
-                ),
-                download_kbps=pd_dict.get(
-                    "download_kbps", default_profile.download_kbps
-                ),
-                upload_kbps=pd_dict.get("upload_kbps", default_profile.upload_kbps),
-                latency_ms=pd_dict.get("latency_ms", default_profile.latency_ms),
-                jitter_ms=pd_dict.get("jitter_ms", default_profile.jitter_ms),
-                network_type=pd_dict.get("network_type", default_profile.network_type),
-                device_name=pd_dict.get("device_name", f"device_{cid}"),
-            )
-            states[cid] = ClientState(client_id=cid, profile=profile)
-    else:
-        logger.info(
-            "No device profiles found at %s, using default profiles for %d clients",
-            profiles_path,
-            num_clients,
-        )
-        for cid in range(num_clients):
-            profile = DeviceProfile(
-                client_id=cid,
-                computation_latency_ms=50.0,
-                download_kbps=5000.0,
-                upload_kbps=3000.0,
-                latency_ms=50.0,
-            )
-            states[cid] = ClientState(client_id=cid, profile=profile)
-
-    return states
+    return {cid: ClientState(client_id=cid) for cid in range(num_clients)}
