@@ -155,20 +155,20 @@ def compute_jain_fairness_index(counts: list[int]) -> float:
 
     JFI = (sum(x))^2 / (N * sum(x^2))
 
-    Returns 1.0 when all counts are equal (perfect fairness) and 1/N in the
-    worst case (one client participates exclusively).  Returns 1.0 if all
-    counts are zero (undefined, treat as perfectly fair).
+    Returns 1.0 for perfect fairness (all counts equal) and approaches 0.0 for
+    increasing unfairness. 
+    Returns 1.0 if all counts are zero (undefined, treat as perfectly fair).
     """
     n = len(counts)
     if n == 0:
         return 1.0
-    s = sum(counts)
-    if s == 0:
+    summed = sum(counts)
+    if summed == 0:
         return 1.0
-    sq_sum = sum(x * x for x in counts)
-    if sq_sum == 0:
+    square_summed = sum(x * x for x in counts)
+    if square_summed == 0:
         return 1.0
-    return (s * s) / (n * sq_sum)
+    return (summed * summed) / (n * square_summed)
 
 
 def compute_gini_coefficient(counts: list[int]) -> float:
