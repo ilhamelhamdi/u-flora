@@ -72,8 +72,8 @@ train.training-arguments.lr-scheduler-type = "constant"
 strategy.name = "random"
 strategy.num-to-select = 10
 strategy.seed = 42
-strategy.fraction-train = 0.2
-strategy.fraction-evaluate = 0.0
+# strategy.fraction-train = 0.2
+# strategy.fraction-evaluate = 0.0
 
 # -- Federation ----------------------------------------------------------------
 num-server-rounds = 10
