@@ -48,7 +48,6 @@ import os
 import socket
 import subprocess
 import sys
-import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -271,23 +270,22 @@ def _launch_superlink(log_dir: str = LOG_DIR) -> subprocess.Popen:
         check=False,
     )
 
-    proc = subprocess.Popen(
-        _build_superlink_cmd(),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        start_new_session=True,
+    # Filter Fleet.PullMessages heartbeat noise via a grep subprocess.
+    log_fh = open(Path(log_dir) / "superlink.log", "w")
+    grep_proc = subprocess.Popen(
+        ["grep", "--line-buffered", "-v", "Fleet.PullMessages"],
+        stdin=subprocess.PIPE,
+        stdout=log_fh,
+        stderr=log_fh,
     )
 
-    def _filter_log() -> None:
-        """Filter out heartbeat logs from superlink"""
-        with open(Path(log_dir) / "superlink.log", "w") as fh:
-            for line in iter(proc.stdout.readline, ""):
-                if "Fleet.PullMessages" not in line:
-                    fh.write(line)
-                    fh.flush()
-
-    threading.Thread(target=_filter_log, daemon=True).start()
+    proc = subprocess.Popen(
+        _build_superlink_cmd(),
+        stdout=grep_proc.stdin,
+        stderr=grep_proc.stdin,
+        start_new_session=True,
+    )
+    grep_proc.stdin.close()
     return proc
 
 
