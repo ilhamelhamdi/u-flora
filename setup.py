@@ -275,12 +275,20 @@ def _launch_superlink(log_dir: str = LOG_DIR) -> subprocess.Popen:
     )
 
     log_fh = open(Path(log_dir) / "superlink.log", "w")
-    proc = subprocess.Popen(
-        _build_superlink_cmd(),
+    grep_proc = subprocess.Popen(
+        ["grep", "--line-buffered", "-v", "Fleet.PullMessages"],
+        stdin=subprocess.PIPE,
         stdout=log_fh,
         stderr=log_fh,
+    )
+
+    proc = subprocess.Popen(
+        _build_superlink_cmd(),
+        stdout=grep_proc.stdin,
+        stderr=grep_proc.stdin,
         start_new_session=True,
     )
+    grep_proc.stdin.close()
     return proc
 
 
