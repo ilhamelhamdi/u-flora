@@ -61,6 +61,8 @@ logger = logging.getLogger("u_flora.setup")
 # Paths
 SIF_FILE = "flwr.sif"
 LOG_DIR = "logs"
+LOG_DIR_SUPERNODE = "logs/supernode"
+LOG_DIR_CLIENTAPP = "logs/clientapp"
 PROFILE_DIR = "device_profiles"
 NETWORK_PROFILE_TRACE_FILE = str(
     Path(__file__).parent / "traces" / "network" / "trace.json"
@@ -188,6 +190,8 @@ def up(
 ) -> None:
     """Start superlink, configure ToxiProxy, and spawn supernodes."""
     os.makedirs(LOG_DIR, exist_ok=True)
+    os.makedirs(LOG_DIR_SUPERNODE, exist_ok=True)
+    os.makedirs(LOG_DIR_CLIENTAPP, exist_ok=True)
 
     if not os.path.exists(SIF_FILE):
         logger.error("%s not found. Build with 'apptainer pull' first.", SIF_FILE)
@@ -270,22 +274,13 @@ def _launch_superlink(log_dir: str = LOG_DIR) -> subprocess.Popen:
         check=False,
     )
 
-    # Filter Fleet.PullMessages heartbeat noise via a grep subprocess.
     log_fh = open(Path(log_dir) / "superlink.log", "w")
-    grep_proc = subprocess.Popen(
-        ["grep", "--line-buffered", "-v", "Fleet.PullMessages"],
-        stdin=subprocess.PIPE,
-        stdout=log_fh,
-        stderr=log_fh,
-    )
-
     proc = subprocess.Popen(
         _build_superlink_cmd(),
-        stdout=grep_proc.stdin,
-        stderr=grep_proc.stdin,
+        stdout=log_fh,
+        stderr=log_fh,
         start_new_session=True,
     )
-    grep_proc.stdin.close()
     return proc
 
 
@@ -295,6 +290,8 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
         "exec",
         "--env",
         f"DEVICE_PROFILE_PATH={PROFILE_DIR}/{spec.name}.json",
+        "--env",
+        f"U_FLORA_CLIENT_LOG={LOG_DIR_CLIENTAPP}/{spec.name}.log",
         f"instance://{spec.name}",
         "flower-supernode",
         "--insecure",
@@ -309,7 +306,7 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
     ]
 
 
-def _launch_supernode(spec: SupernodeSpec, log_dir: str = LOG_DIR) -> subprocess.Popen:
+def _launch_supernode(spec: SupernodeSpec, log_dir: str = LOG_DIR_SUPERNODE) -> subprocess.Popen:
     instance_name = spec.name
     subprocess.run(
         ["apptainer", "instance", "start", SIF_FILE, instance_name],

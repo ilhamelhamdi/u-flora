@@ -22,7 +22,7 @@ from .utils import replace_keys, configure_logging
 from .selection.base import ClientState
 from .strategies.factory import build_strategy
 
-configure_logging()
+configure_logging(log_file="logs/server_app.log")
 logger = logging.getLogger(__name__)
 
 app = ServerApp()
