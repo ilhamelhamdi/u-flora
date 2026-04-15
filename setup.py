@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Experiment orchestrator.
 
-Manages the Flower federation lifecycle on HPC (Apptainer) or local (Docker):
+Manages the Flower federation lifecycle on Apptainer:
   - Generates and assigns heterogeneous device profiles to clients
   - Starts superlink + supernodes with profile-aware configuration
   - Runs single or batched experiments
@@ -21,7 +21,7 @@ Architecture:
     └────┬─────┘              │
          │              ┌─────┴──────┐
     ┌────┴────┐         │  ToxiProxy │
-    │SuperNode│◄────────│  :18000+   │
+    │SuperNode│◄────────│  :18000+N  │
     │  :54100 │ (proxy) └────────────┘
     ├─────────┤
     │SuperNode│   Each node has:
@@ -34,15 +34,19 @@ Architecture:
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import logging
 import os
+import socket
 import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
 from typing import Any
+
+import requests
 
 logger = logging.getLogger("u_flora.setup")
 
@@ -62,7 +66,21 @@ TOXIPROXY_API_PORT = 8474
 TOXIPROXY_PROXY_PORT_START = 18000
 
 
-# ── Main CLI ─────────────────────────────────────────────────────────────
+# ── Dataclasses ───────────────────────────────────────────────────────────────
+
+
+@dataclasses.dataclass
+class SupernodeSpec:
+    """Declarative description of one supernode instance."""
+
+    node_id: int
+    profile: dict
+    clientappio_port: int
+    superlink_address: str  # "127.0.0.1:{18000+N}" (via ToxiProxy) or "127.0.0.1:54002"
+    total_nodes: int
+
+
+# ── Main CLI ──────────────────────────────────────────────────────────────────
 
 
 def main() -> None:
@@ -130,6 +148,8 @@ def main() -> None:
 
 # ── Apptainer Instance Management ────────────────────────────────────────────
 
+# ── Up ───────────────────────────────────────────────────────────────────────
+
 
 def up(
     num_clients: int = 20,
@@ -138,26 +158,63 @@ def up(
     seed: int = 42,
     use_toxiproxy: bool = True,
 ) -> None:
-    """Start superlink, generate profiles, configure ToxiProxy, spawn supernodes."""
+    """Start superlink, configure ToxiProxy, and spawn supernodes."""
     os.makedirs(LOG_DIR, exist_ok=True)
 
     if not os.path.exists(SIF_FILE):
         logger.error("%s not found. Build with 'apptainer pull' first.", SIF_FILE)
         return
 
-    # 1. Generate device profiles
+    # Phase 1 — Describe: generate profiles and build specs
     logger.info("Generating %d device profiles...", num_clients)
     profiles = generate_profiles(num_clients, network_trace, compute_trace, seed)
 
-    # 2. Start Superlink
-    logger.info("Starting Superlink...")
-    subprocess.run(
-        ["apptainer", "instance", "start", SIF_FILE, "superlink"],
-        check=False,
-    )
+    def _superlink_addr(node_id: int) -> str:
+        if use_toxiproxy:
+            return f"127.0.0.1:{TOXIPROXY_PROXY_PORT_START + node_id}"
+        return f"127.0.0.1:{SUPERLINK_PORTS['fleet']}"
 
-    superlink_log_file = open(f"{LOG_DIR}/superlink.log", "w")
-    up_superlink_cmd = [
+    specs = [
+        SupernodeSpec(
+            node_id=p["client_id"],
+            profile=p,
+            clientappio_port=SUPERNODE_PORT_START + p["client_id"],
+            superlink_address=_superlink_addr(p["client_id"]),
+            total_nodes=len(profiles),
+        )
+        for p in profiles
+    ]
+
+    # Phase 2 — Start superlink and wait for it to be reachable
+    logger.info("Starting Superlink...")
+    _launch_superlink()
+    logger.info("Waiting for Superlink to be ready...")
+    _wait_for_superlink()
+
+    # Phase 3 — Configure ToxiProxy
+    if use_toxiproxy:
+        try:
+            _configure_all_toxiproxy(profiles)
+        except Exception as e:
+            logger.error(
+                "ToxiProxy configuration failed: %s — aborting to avoid running "
+                "experiments without network simulation. Pass --no-toxiproxy to "
+                "explicitly opt out.",
+                e,
+            )
+            return
+
+    # Phase 4 — Launch supernodes
+    logger.info("Spawning %d supernodes...", len(specs))
+    for spec in specs:
+        _launch_supernode(spec)
+
+    logger.info("All %d supernodes started.", len(specs))
+    subprocess.run(["apptainer", "instance", "list"], check=False)
+
+
+def _build_superlink_cmd() -> list[str]:
+    return [
         "apptainer",
         "exec",
         "instance://superlink",
@@ -173,94 +230,144 @@ def up(
         f"0.0.0.0:{SUPERLINK_PORTS['control']}",
     ]
 
+
+def _launch_superlink(log_dir: str = LOG_DIR) -> subprocess.Popen:
+    subprocess.run(
+        ["apptainer", "instance", "start", SIF_FILE, "superlink"],
+        check=False,
+    )
+
     proc = subprocess.Popen(
-        up_superlink_cmd,
+        _build_superlink_cmd(),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         start_new_session=True,
     )
 
-    def _filter_log():
-        """Filter Superlink logs to exclude heartbeat messages."""
-        for line in iter(proc.stdout.readline, ""):
-            if "Fleet.PullMessages" not in line:
-                superlink_log_file.write(line)
-                superlink_log_file.flush()
+    def _filter_log() -> None:
+        """Filter out heartbeat logs from superlink"""
+        with open(Path(log_dir) / "superlink.log", "w") as fh:
+            for line in iter(proc.stdout.readline, ""):
+                if "Fleet.PullMessages" not in line:
+                    fh.write(line)
+                    fh.flush()
 
     threading.Thread(target=_filter_log, daemon=True).start()
-    time.sleep(3)
+    return proc
 
-    # 3. Configure ToxiProxy (if available)
-    if use_toxiproxy:
+
+def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
+    return [
+        "apptainer",
+        "exec",
+        "--env",
+        f"DEVICE_PROFILE_PATH={PROFILE_DIR}/client_{spec.node_id}.json",
+        f"instance://supernode-{spec.node_id}",
+        "flower-supernode",
+        "--insecure",
+        "--superlink",
+        spec.superlink_address,
+        "--clientappio-api-address",
+        f"0.0.0.0:{spec.clientappio_port}",
+        "--isolation",
+        "subprocess",
+        "--node-config",
+        f"partition-id={spec.node_id} num-partitions={spec.total_nodes}",
+    ]
+
+
+def _launch_supernode(spec: SupernodeSpec, log_dir: str = LOG_DIR) -> subprocess.Popen:
+    instance_name = f"supernode-{spec.node_id}"
+    subprocess.run(
+        ["apptainer", "instance", "start", SIF_FILE, instance_name],
+        check=False,
+    )
+
+    log_path = Path(log_dir) / f"{instance_name}.log"
+    log_fh = open(log_path, "w")  # noqa: SIM115 — owned by subprocess until down()
+    proc = subprocess.Popen(
+        _build_supernode_cmd(spec),
+        stdout=log_fh,
+        stderr=log_fh,
+        start_new_session=True,
+    )
+    logger.debug(
+        "Started %s on port %d via %s",
+        instance_name,
+        spec.clientappio_port,
+        spec.superlink_address,
+    )
+    return proc
+
+
+def _wait_for_superlink(
+    host: str = "127.0.0.1",
+    port: int | None = None,
+    timeout_s: int = 30,
+    poll_interval_s: float = 0.5,
+) -> None:
+    """Poll until the superlink fleet port is reachable or raise on timeout."""
+    port = port or SUPERLINK_PORTS["fleet"]
+    deadline = time.monotonic() + timeout_s
+    while True:
         try:
-            setup_toxiproxy(profiles)
-        except Exception as e:
-            logger.warning("ToxiProxy setup failed: %s (continuing without)", e)
+            with socket.create_connection((host, port), timeout=1):
+                return
+        except OSError:
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    f"Superlink did not become reachable at {host}:{port} "
+                    f"within {timeout_s}s"
+                )
+            time.sleep(poll_interval_s)
 
-    # 4. Spawn Supernodes — one per client, each with its profile
-    total = len(profiles)
-    logger.info("Spawning %d supernodes...", total)
 
-    for p in profiles:
-        node_id = p["client_id"]
-        instance_name = f"supernode-{node_id}"
-        port = SUPERNODE_PORT_START + node_id
-
-        subprocess.run(
-            ["apptainer", "instance", "start", SIF_FILE, instance_name],
-            check=False,
-        )
-
-        supernode_log = open(f"{LOG_DIR}/{instance_name}.log", "w")
-        supernode_exec_cmd = [
-            "apptainer",
-            "exec",
-            "--env",
-            f"DEVICE_PROFILE_PATH={PROFILE_DIR}/client_{node_id}.json",
-            f"instance://{instance_name}",
-            "flower-supernode",
-            "--insecure",
-            "--superlink",
-            f"127.0.0.1:{SUPERLINK_PORTS['fleet']}",
-            "--clientappio-api-address",
-            f"0.0.0.0:{port}",
-            "--isolation",
-            "subprocess",
-            "--node-config",
-            f"partition-id={node_id} num-partitions={total}",
-        ]
-
-        subprocess.Popen(
-            supernode_exec_cmd,
-            stdout=supernode_log,
-            stderr=supernode_log,
-            start_new_session=True,
-        )
-        logger.debug("Started %s on port %d", instance_name, port)
-
-    logger.info("All %d supernodes started.", total)
-    subprocess.run(["apptainer", "instance", "list"], check=False)
+# ── Down ───────────────────────────────────────────────────────────────────────
 
 
 def down() -> None:
-    """Stop all Apptainer instances."""
+    """Stop all Apptainer instances and remove ToxiProxy proxies."""
     logger.info("Stopping all Flower instances...")
     subprocess.run(["apptainer", "instance", "stop", "--all"], check=False)
+    _teardown_toxiproxy()
     logger.info("Done.")
+
+
+def _teardown_toxiproxy() -> None:
+    """Delete all fl_client_* proxies from ToxiProxy (best-effort)."""
+    api_base = f"http://localhost:{TOXIPROXY_API_PORT}"
+    try:
+        resp = requests.get(f"{api_base}/proxies", timeout=3)
+        resp.raise_for_status()
+    except Exception:
+        logger.debug("ToxiProxy not reachable during teardown — skipping.")
+        return
+
+    proxies = resp.json()
+    fl_proxies = [name for name in proxies if name.startswith("fl_client_")]
+
+    if not fl_proxies:
+        return
+
+    for name in fl_proxies:
+        try:
+            requests.delete(f"{api_base}/proxies/{name}", timeout=5)
+        except Exception as e:
+            logger.warning("Failed to delete ToxiProxy proxy %s: %s", name, e)
+
+    logger.info("Removed %d ToxiProxy proxies.", len(fl_proxies))
 
 
 # ── Experiment Execution ──────────────────────────────────────────────────────
 
-
 def run_task(overrides: list[str]) -> None:
     """Run a single FL experiment via ``flwr run``.
-    
+
     Example:
         run_task(["task=text_classification", "model=distilbert", "dataset=sst2",
                   "strategy=oort", "num_server_rounds=100"])
     """
-    # Build the flwr run command with overrides
     cmd = [
         "flwr",
         "run",
@@ -270,7 +377,6 @@ def run_task(overrides: list[str]) -> None:
         f"127.0.0.1:{SUPERLINK_PORTS['serverappio']}",
     ]
 
-    # Forward overrides as Flower run-config
     for ov in overrides:
         cmd.extend(["--run-config", ov])
 
@@ -278,11 +384,7 @@ def run_task(overrides: list[str]) -> None:
 
     log_path = f"{LOG_DIR}/flower-task.log"
     with open(log_path, "w") as log_file:
-        result = subprocess.run(
-            cmd,
-            stdout=log_file,
-            stderr=log_file,
-        )
+        result = subprocess.run(cmd, stdout=log_file, stderr=log_file)
 
     if result.returncode == 0:
         logger.info("Task completed successfully. Logs: %s", log_path)
@@ -324,11 +426,9 @@ def run_batch(batch_config_path: str) -> None:
         logger.info("Batch [%d/%d]: %s", idx, total, name)
         logger.info("=" * 60)
 
-        # Add wandb run name
         overrides.append(f"wandb.run_name={name}")
         run_task(overrides)
 
-        # Brief pause between experiments
         time.sleep(5)
 
     logger.info("Batch complete: %d/%d experiments run.", total, total)
@@ -349,7 +449,6 @@ def generate_profiles(
     Each profile is saved as a JSON file for reproducibility and inspection.
     Returns the list of profile dicts.
     """
-    # Import here to avoid requiring u_flora package for basic setup operations
     sys.path.insert(0, str(Path(__file__).parent))
     from u_flora.selection.profile_generator import generate_device_profiles
 
@@ -376,13 +475,11 @@ def generate_profiles(
         }
         profile_dicts.append(d)
 
-    # Save combined file
     combined_path = os.path.join(output_dir, "all_profiles.json")
     with open(combined_path, "w") as f:
         json.dump(profile_dicts, f, indent=2)
     logger.info("Saved %d profiles to %s", len(profile_dicts), combined_path)
 
-    # Also save per-client files for supernodes to read
     for d in profile_dicts:
         path = os.path.join(output_dir, f"client_{d['client_id']}.json")
         with open(path, "w") as f:
@@ -406,132 +503,126 @@ def load_profiles(profile_dir: str = PROFILE_DIR) -> list[dict]:
 # ── ToxiProxy Setup ───────────────────────────────────────────────────────────
 
 
-def setup_toxiproxy(
+def _configure_all_toxiproxy(
     profiles: list[dict],
     upstream_host: str = "127.0.0.1",
     upstream_port: int | None = None,
 ) -> None:
-    """Configure ToxiProxy proxies for network heterogeneity.
+    """Configure ToxiProxy proxies for all clients.
 
-    Creates one proxy per client with bandwidth and latency toxics
-    derived from the client's network profile.
-
-    Assumes toxiproxy-server is already running on localhost:8474.
+    Raises RuntimeError if ToxiProxy is unreachable, or if any client
+    configuration fails.
     """
-    if upstream_port is None:
-        upstream_port = SUPERLINK_PORTS["fleet"]
+    api_base = f"http://localhost:{TOXIPROXY_API_PORT}"
 
-    api = f"http://localhost:{TOXIPROXY_API_PORT}"
+    try:
+        requests.get(f"{api_base}/proxies", timeout=3)
+    except requests.ConnectionError as e:
+        raise RuntimeError(
+            f"ToxiProxy not reachable at {api_base}. "
+            "Ensure toxiproxy-server is running, or pass --no-toxiproxy."
+        ) from e
 
+    failures: list[str] = []
     for p in profiles:
-        cid = p["client_id"]
-        proxy_name = f"fl_client_{cid}"
-        listen_port = TOXIPROXY_PROXY_PORT_START + cid
+        proxy_port = TOXIPROXY_PROXY_PORT_START + p["client_id"]
+        try:
+            _configure_toxiproxy_for_client(
+                api_base, p, proxy_port, upstream_host, upstream_port
+            )
+        except Exception as e:
+            failures.append(f"client_{p['client_id']}: {e}")
 
-        # Delete existing proxy (ignore errors)
-        subprocess.run(
-            ["curl", "-s", "-X", "DELETE", f"{api}/proxies/{proxy_name}"],
-            capture_output=True,
-        )
-
-        # Create proxy
-        proxy_cfg = json.dumps(
-            {
-                "name": proxy_name,
-                "listen": f"0.0.0.0:{listen_port}",
-                "upstream": f"{upstream_host}:{upstream_port}",
-            }
-        )
-        subprocess.run(
-            [
-                "curl",
-                "-s",
-                "-X",
-                "POST",
-                f"{api}/proxies",
-                "-H",
-                "Content-Type: application/json",
-                "-d",
-                proxy_cfg,
-            ],
-            capture_output=True,
-        )
-
-        # Bandwidth toxic (downstream) — KB/s = kbps / 8
-        dl_rate = max(1, int(p["download_kbps"] / 8))
-        _add_toxic(
-            api,
-            proxy_name,
-            f"bw_down_{cid}",
-            "bandwidth",
-            "downstream",
-            {"rate": dl_rate},
-        )
-
-        # Bandwidth toxic (upstream)
-        ul_rate = max(1, int(p["upload_kbps"] / 8))
-        _add_toxic(
-            api, proxy_name, f"bw_up_{cid}", "bandwidth", "upstream", {"rate": ul_rate}
-        )
-
-        # Latency toxic (both directions) — half RTT each way
-        half_rtt = max(1, int(p["latency_ms"] / 2))
-        half_jitter = max(0, int(p["jitter_ms"] / 2))
-        _add_toxic(
-            api,
-            proxy_name,
-            f"lat_down_{cid}",
-            "latency",
-            "downstream",
-            {"latency": half_rtt, "jitter": half_jitter},
-        )
-        _add_toxic(
-            api,
-            proxy_name,
-            f"lat_up_{cid}",
-            "latency",
-            "upstream",
-            {"latency": half_rtt, "jitter": half_jitter},
+    if failures:
+        raise RuntimeError(
+            f"ToxiProxy configuration failed for {len(failures)} client(s):\n"
+            + "\n".join(failures)
         )
 
     logger.info(
-        "ToxiProxy configured for %d clients (ports %d-%d)",
+        "ToxiProxy configured for %d clients (ports %d–%d)",
         len(profiles),
         TOXIPROXY_PROXY_PORT_START,
         TOXIPROXY_PROXY_PORT_START + len(profiles) - 1,
     )
 
 
-def _add_toxic(
-    api: str,
-    proxy: str,
-    name: str,
-    toxic_type: str,
-    stream: str,
-    attributes: dict,
+def _configure_toxiproxy_for_client(
+    api_base: str,
+    profile: dict,
+    proxy_port: int,
+    upstream_host: str = "127.0.0.1",
+    upstream_port: int | None = None,
 ) -> None:
-    toxic_cfg = json.dumps(
-        {
-            "name": name,
-            "type": toxic_type,
-            "stream": stream,
-            "attributes": attributes,
-        }
+    """Configure one ToxiProxy proxy with bandwidth and latency toxics."""
+    upstream_port = upstream_port or SUPERLINK_PORTS["fleet"]
+    cid = profile["client_id"]
+    proxy_name = f"fl_client_{cid}"
+
+    requests.delete(f"{api_base}/proxies/{proxy_name}", timeout=5)
+
+    resp = requests.post(
+        f"{api_base}/proxies",
+        json={
+            "name": proxy_name,
+            "listen": f"0.0.0.0:{proxy_port}",
+            "upstream": f"{upstream_host}:{upstream_port}",
+        },
+        timeout=5,
     )
-    subprocess.run(
-        [
-            "curl",
-            "-s",
-            "-X",
-            "POST",
-            f"{api}/proxies/{proxy}/toxics",
-            "-H",
-            "Content-Type: application/json",
-            "-d",
-            toxic_cfg,
-        ],
-        capture_output=True,
-    )
+    resp.raise_for_status()
+
+    toxics = [
+        # Bandwidth (downstream) — KB/s = kbps / 8
+        (
+            f"bw_down_{cid}",
+            "bandwidth",
+            "downstream",
+            {"rate": max(1, int(profile["download_kbps"] / 8))},
+        ),
+        # Bandwidth (upstream)
+        (
+            f"bw_up_{cid}",
+            "bandwidth",
+            "upstream",
+            {"rate": max(1, int(profile["upload_kbps"] / 8))},
+        ),
+        # Latency — half RTT each way
+        (
+            f"lat_down_{cid}",
+            "latency",
+            "downstream",
+            {
+                "latency": max(1, int(profile["latency_ms"] / 2)),
+                "jitter": max(0, int(profile["jitter_ms"] / 2)),
+            },
+        ),
+        (
+            f"lat_up_{cid}",
+            "latency",
+            "upstream",
+            {
+                "latency": max(1, int(profile["latency_ms"] / 2)),
+                "jitter": max(0, int(profile["jitter_ms"] / 2)),
+            },
+        ),
+    ]
+
+    for name, toxic_type, stream, attributes in toxics:
+        resp = requests.post(
+            f"{api_base}/proxies/{proxy_name}/toxics",
+            json={
+                "name": name,
+                "type": toxic_type,
+                "stream": stream,
+                "attributes": attributes,
+            },
+            timeout=5,
+        )
+        resp.raise_for_status()
+
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
 
 
 def _print_profile_summary(profiles: list[dict]) -> None:
@@ -540,12 +631,12 @@ def _print_profile_summary(profiles: list[dict]) -> None:
     comp = sorted(p["computation_latency_ms"] for p in profiles)
     dl = sorted(p["download_kbps"] for p in profiles)
     rtt = sorted(p["latency_ms"] for p in profiles)
-    net_types = {}
+    net_types: dict[str, int] = {}
     for p in profiles:
         nt = p["network_type"]
         net_types[nt] = net_types.get(nt, 0) + 1
 
-    def percentile(vals, pct):
+    def percentile(vals: list, pct: int) -> float:
         return vals[min(int(len(vals) * pct / 100), len(vals) - 1)]
 
     print(f"\n{'=' * 70}")

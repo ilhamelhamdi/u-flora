@@ -21,6 +21,7 @@ dependencies = [
     "evaluate>=0.4.6",
     "scikit-learn>=1.8.0",
     "wandb>=0.25.0",
+    "requests>=2.32.0",
 ]
 
 [tool.hatch.build.targets.wheel]
