@@ -28,7 +28,7 @@ Architecture:
          │                  │
     ┌────┴────┐             │
     │SuperNode│<────────────┘
-    │  :54100 │ (proxy) 
+    │  :54100 │ (proxy)
     ├─────────┤
     │SuperNode│   Each node has:
     │  :54101 │   - Device profile (compute + network)
@@ -57,22 +57,31 @@ import requests
 
 logger = logging.getLogger("u_flora.setup")
 
-# ── Paths & Ports ─────────────────────────────────────────────────────────────
+# ── CONSTANTS ─────────────────────────────────────────────────────────────
 
+# Paths
 SIF_FILE = "flwr.sif"
 LOG_DIR = "logs"
 PROFILE_DIR = "device_profiles"
-NETWORK_PROFILE_TRACE_FILE = str(Path(__file__).parent / "traces" / "network" / "trace.json")
-COMPUTE_PROFILE_TRACE_FILE = str(Path(__file__).parent / "traces" / "computation" / "client_device_capacity.json")
+NETWORK_PROFILE_TRACE_FILE = str(
+    Path(__file__).parent / "traces" / "network" / "trace.json"
+)
+COMPUTE_PROFILE_TRACE_FILE = str(
+    Path(__file__).parent / "traces" / "computation" / "client_device_capacity.json"
+)
 
-TOXIPROXY_API_PORT = 8474 # Default ToxiProxy API port
+# Superlink flower
+SUPERLINK_CONNECTION_NAME = "local-deployment"
+
+# Ports
 SUPERLINK_PORTS = {
     "serverappio": 15001,
     "fleet": 15002,
     "control": 15003,
-}
+}  # If you change superlink ports, also update the flwr federation configs. Check `flwr config list`
 SUPERNODE_PORT_START = 15100
 TOXIPROXY_PROXY_PORT_START = 16100
+TOXIPROXY_API_PORT = 8474  # Default ToxiProxy API port
 
 # Note:
 # Check the availability of these ports before running, or adjust as needed to avoid conflicts
@@ -86,6 +95,7 @@ TOXIPROXY_PROXY_PORT_START = 16100
 @dataclasses.dataclass
 class SupernodeSpec:
     """Declarative description of one supernode instance."""
+
     name: str
     node_id: int
     profile: dict
@@ -93,8 +103,10 @@ class SupernodeSpec:
     superlink_address: str  # "127.0.0.1:{18000+N}" (via ToxiProxy) or "127.0.0.1:54002"
     total_nodes: int
 
+
 def get_node_name(node_id: int) -> str:
     return f"supernode-{node_id:03d}"
+
 
 # ── Main CLI ──────────────────────────────────────────────────────────────────
 
@@ -130,7 +142,6 @@ def main() -> None:
     p_batch = sub.add_parser("batch", help="Run batch experiments")
     p_batch.add_argument("--batch-config", required=True, type=str)
 
-   
     # --- profiles ---
     p_prof = sub.add_parser("profiles", help="Generate/inspect device profiles")
     p_prof.add_argument("-n", "--num-clients", type=int, default=100)
@@ -384,6 +395,7 @@ def _teardown_toxiproxy() -> None:
 
 # ── Experiment Execution ──────────────────────────────────────────────────────
 
+
 def run_task(overrides: list[str]) -> None:
     """Run a single FL experiment via ``flwr run``.
 
@@ -395,9 +407,8 @@ def run_task(overrides: list[str]) -> None:
         "flwr",
         "run",
         ".",
-        "--insecure",
-        "--serverappio-api-address",
-        f"127.0.0.1:{SUPERLINK_PORTS['serverappio']}",
+        SUPERLINK_CONNECTION_NAME,
+        "--stream"
     ]
 
     for ov in overrides:
