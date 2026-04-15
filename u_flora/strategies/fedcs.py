@@ -102,11 +102,11 @@ class FedCSStrategy(BaseStrategy):
                 continue
             cfg = reply.content[self.configrecord_key]
             self.client_states[pid].update_from_resource_reply({
-                "computation_latency_ms": float(cfg.get("computation_latency_ms", 50.0)),
-                "download_kbps":          float(cfg.get("download_kbps", 5000.0)),
-                "upload_kbps":            float(cfg.get("upload_kbps", 3000.0)),
-                "latency_ms":             float(cfg.get("latency_ms", 50.0)),
-                "num_samples":            int(cfg.get("num_samples", 0)),
+                "computation_latency_ms": float(cfg.get("computation_latency_ms")),
+                "download_kbps":          float(cfg.get("download_kbps")),
+                "upload_kbps":            float(cfg.get("upload_kbps")),
+                "latency_ms":             float(cfg.get("latency_ms")),
+                "num_samples":            int(cfg.get("num_samples")),
             })
             responded_pids.append(pid)
 
