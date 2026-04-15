@@ -18,10 +18,11 @@ from datasets import Dataset
 from .tasks import TaskAdapter
 from .tasks.registry import get_task_adapter
 from .dataset import load_data_centralized
-from .utils import replace_keys
+from .utils import replace_keys, configure_logging
 from .selection.base import ClientState
 from .strategies.factory import build_strategy
 
+configure_logging()
 logger = logging.getLogger(__name__)
 
 app = ServerApp()

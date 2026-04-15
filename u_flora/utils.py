@@ -2,7 +2,22 @@
 
 from __future__ import annotations
 
+import logging
 import math
+
+_LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+
+
+def configure_logging(level: str = "INFO") -> None:
+    pkg_logger = logging.getLogger("u_flora")
+    if pkg_logger.handlers:
+        return  # already configured in this process
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(_LOG_FORMAT))
+    pkg_logger.addHandler(handler)
+    pkg_logger.setLevel(getattr(logging, level.upper(), logging.INFO))
+    pkg_logger.propagate = False  # don't double-emit if root is later configured
 
 
 def replace_keys(

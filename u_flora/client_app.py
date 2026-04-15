@@ -22,12 +22,13 @@ from transformers import TrainingArguments, Trainer
 
 from .tasks.registry import get_task_adapter
 from .dataset import load_data
-from .utils import replace_keys, cosine_annealing
+from .utils import replace_keys, cosine_annealing, configure_logging
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
 warnings.filterwarnings("ignore", category=UserWarning)
 
+configure_logging()
 logger = logging.getLogger(__name__)
 
 app = ClientApp()
