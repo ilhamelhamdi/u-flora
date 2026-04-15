@@ -15,14 +15,20 @@ Commands:
     python setup.py profiles --show         # Inspect generated profiles
 
 Architecture:
-    ┌──────────┐         ┌──────────┐
-    │ SuperLink│◄────────│  setup.py│
-    │ :54001-3 │         └──────────┘
-    └────┬─────┘              │
-         │              ┌─────┴──────┐
-    ┌────┴────┐         │  ToxiProxy │
-    │SuperNode│◄────────│  :18000+N  │
-    │  :54100 │ (proxy) └────────────┘
+    ┌──────────┐
+    │ SuperLink│<───────────┐
+    │ :54001-3 │            │
+    └────┬─────┘            │
+         │                  │
+   ┌─────┴──────┐           │
+   │  ToxiProxy │           │
+   │  :18000+N  │           │ (no proxy)
+   └────────────┘           │
+         │ (via ToxiProxy)  │
+         │                  │
+    ┌────┴────┐             │
+    │SuperNode│<────────────┘
+    │  :54100 │ (proxy) 
     ├─────────┤
     │SuperNode│   Each node has:
     │  :54101 │   - Device profile (compute + network)
