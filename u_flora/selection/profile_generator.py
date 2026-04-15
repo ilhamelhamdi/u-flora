@@ -29,19 +29,6 @@ from .base import DeviceProfile
 
 def _load_network_profiles(trace_path: str | Path | None) -> List[Dict[str, Any]]:
     """Load network profiles directly as objects and sort by capability."""
-    if not trace_path:
-        # Fallback pseudo-profiles
-        return [
-            {
-                "download_kbps": bw,
-                "upload_kbps": bw * 0.5,
-                "latency_ms": 10000 / bw,
-                "jitter_ms":  2000 / bw,
-                "network_type": "WIFI" if bw > 5000 else "LTE"
-            }
-            for bw in [100, 200, 500, 1000, 2000, 5000, 10000, 50000]
-        ]
-
     with open(trace_path) as f:
         data = json.load(f)
 
@@ -67,10 +54,6 @@ def _load_compute_profiles(trace_path: str | Path | None, sample_size: int | Non
         Sorted list of computation_latency_ms values (fastest/best to slowest/worst).
                  i.e., smallest latency to largest latency.
     """
-    if not trace_path:
-        # Fallback distribution
-        return [10, 15, 20, 25, 30, 40, 50, 70, 100, 150, 200, 300, 500, 800]
-
     with open(trace_path) as f:
         data = json.load(f)
 
