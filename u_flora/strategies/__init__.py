@@ -17,14 +17,12 @@ Usage
 """
 
 from .base import BaseStrategy
-from .factory import build_strategy
 from .random import RandomStrategy
 from .fedcs import FedCSStrategy
 
 
 __all__ = [
     "BaseStrategy",
-    "build_strategy",
     "RandomStrategy",
     "FedCSStrategy",
 ]
