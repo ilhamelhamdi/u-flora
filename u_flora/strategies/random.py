@@ -14,7 +14,6 @@ from flwr.common import ArrayRecord, Message
 from flwr.server import Grid
 
 from .base import BaseStrategy
-from ..selection.base import ClientState
 
 
 class RandomStrategy(BaseStrategy):

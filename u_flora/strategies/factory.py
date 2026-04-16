@@ -2,7 +2,7 @@ import logging
 from omegaconf import DictConfig
 
 from . import BaseStrategy, RandomStrategy, FedCSStrategy
-from ..selection.base import ClientState
+from ..client_profile.typing import ClientState
 
 logger = logging.getLogger(__name__)
 

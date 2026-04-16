@@ -25,11 +25,8 @@ from flwr.common import (
 from flwr.server import Grid
 from flwr.serverapp.strategy import Result, Strategy, strategy_utils
 
-from ..selection.base import (
-    ClientState,
-    compute_gini_coefficient,
-    compute_jain_fairness_index,
-)
+from ..client_profile.typing import ClientState
+from ..utils.metrics import compute_gini_coefficient, compute_jain_fairness_index
 
 logger = logging.getLogger(__name__)
 

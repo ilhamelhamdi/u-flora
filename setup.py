@@ -484,9 +484,9 @@ def generate_profiles(
     Returns the list of profile dicts.
     """
     sys.path.insert(0, str(Path(__file__).parent))
-    from u_flora.selection.profile_generator import generate_device_profiles
+    from u_flora.client_profile.profile_generator import generate_device_profiles
 
-    profiles = generate_device_profiles(
+    profiles, fedscale_t_min_ms = generate_device_profiles(
         num_profiles=num_clients,
         network_trace_path=network_trace,
         compute_trace_path=compute_trace,
@@ -513,6 +513,15 @@ def generate_profiles(
     with open(combined_path, "w") as f:
         json.dump(profile_dicts, f, indent=2)
     logger.info("Saved %d profiles to %s", len(profile_dicts), combined_path)
+
+    metadata_path = os.path.join(output_dir, "metadata.json")
+    with open(metadata_path, "w") as f:
+        json.dump({"fedscale_t_min_ms": fedscale_t_min_ms}, f, indent=2)
+    logger.info(
+        "Saved profile metadata (fedscale_t_min_ms=%.4f) to %s",
+        fedscale_t_min_ms,
+        metadata_path,
+    )
 
     for d in profile_dicts:
         path = os.path.join(output_dir, f"{get_node_name(d['client_id'])}.json")

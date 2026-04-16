@@ -28,7 +28,7 @@ from flwr.common import ArrayRecord, Message, MetricRecord
 from flwr.server import Grid
 
 from .base import BaseStrategy
-from ..selection.base import ClientState
+from ..client_profile.typing import ClientState
 
 logger = logging.getLogger(__name__)
 

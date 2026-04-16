@@ -117,7 +117,11 @@ def train(msg: Message, context: Context):
     profile = _load_device_profile()
     local_epochs = training_arguments.num_train_epochs
     total_duration = _inject_compute_delay(
-        profile, len(train_set), int(local_epochs), actual_train_time
+        profile,
+        len(train_set),
+        int(local_epochs),
+        actual_train_time,
+        task_name=task_name,
     )
     if total_duration > actual_train_time:
         logger.debug(
@@ -195,11 +199,30 @@ def _load_device_profile() -> dict | None:
         logger.warning("DEVICE_PROFILE_PATH not set — compute delay simulation disabled")
         return None
     if not os.path.exists(profile_path):
-        logger.warning("Device profile not found at %s — compute delay simulation disabled", profile_path)
+        logger.warning(
+            "Device profile not found at %s — compute delay simulation disabled",
+            profile_path,
+        )
         return None
-    logger.debug("Loaded device profile from %s", profile_path)
     with open(profile_path) as f:
-        return json.load(f)
+        profile = json.load(f)
+    logger.debug("Loaded device profile from %s", profile_path)
+
+    return profile
+
+def _load_metadata() -> dict:
+    profile_path = os.environ.get("DEVICE_PROFILE_PATH")
+    metadata_path = os.path.join(os.path.dirname(profile_path), "metadata.json")
+    if os.path.exists(metadata_path):
+        with open(metadata_path) as f:
+            metadata = json.load(f)
+    else:
+        logger.warning(
+            "Profile metadata not found at %s — compute delay calibration disabled",
+            metadata_path,
+        )
+        return dict()
+    return metadata
 
 
 def _inject_compute_delay(
@@ -207,36 +230,54 @@ def _inject_compute_delay(
     num_samples: int,
     local_epochs: int,
     actual_train_time_s: float,
+    task_name: str,
 ) -> float:
     """Sleep to simulate heterogeneous compute capability.
 
-    The device profile's ``computation_latency_ms`` represents per-sample
-    training time on the simulated device. The total simulated time is:
-        ```
-        simulated = computation_latency_ms x num_samples x local_epochs / 1000
-        ```
-
-    Sleep for (simulated - actual_compute_time) seconds if positive.
-
-    Returns the total duration including the injected delay.
+    Returns the total duration (actual_train_time_s + any injected delay).
     """
+    from configs.compute_baseline import T_ACTUAL_MS_PER_SAMPLE
+
     if profile is None:
         return actual_train_time_s
-
-    comp_ms = profile.get("computation_latency_ms", 0)
-    if comp_ms <= 0:
+    
+    fedscale_t_min_ms = _load_metadata().get("fedscale_t_min_ms", 0)
+    raw_comp_ms = profile.get("computation_latency_ms", 0)
+    if raw_comp_ms <= 0 or fedscale_t_min_ms <= 0:
         return actual_train_time_s
 
-    simulated_train_s = comp_ms * num_samples * local_epochs / 1000.0
-    extra_delay = max(0.0, simulated_train_s - actual_train_time_s)
-
-    if extra_delay > 0:
-        logger.debug(
-            "Injecting %.2fs compute delay (simulated=%.2fs, actual=%.2fs)",
-            extra_delay,
-            simulated_train_s,
-            actual_train_time_s,
+    t_actual_ms = T_ACTUAL_MS_PER_SAMPLE.get(task_name)
+    if t_actual_ms is None or t_actual_ms <= 0:
+        logger.warning(
+            "No baseline for task '%s'. Skipping compute delay injection.", task_name
         )
-        time.sleep(extra_delay)
+        return actual_train_time_s
 
+    slowdown_factor = raw_comp_ms / fedscale_t_min_ms
+    simulated_ms_per_sample = t_actual_ms * slowdown_factor
+    simulated_train_s = simulated_ms_per_sample * num_samples * local_epochs / 1000.0
+
+    extra_delay = simulated_train_s - actual_train_time_s
+
+    if extra_delay <= 0:
+        logger.debug(
+            "Actual GPU time (%.2fs) already exceeds simulated time (%.2fs) "
+            "for task '%s', client slowdown=%.2fx. No delay injected.",
+            actual_train_time_s,
+            simulated_train_s,
+            task_name,
+            slowdown_factor,
+        )
+        return actual_train_time_s
+
+    logger.debug(
+        "Injecting %.2fs compute delay (simulated=%.2fs, actual=%.2fs, "
+        "slowdown=%.2fx, task=%s)",
+        extra_delay,
+        simulated_train_s,
+        actual_train_time_s,
+        slowdown_factor,
+        task_name,
+    )
+    time.sleep(extra_delay)
     return actual_train_time_s + extra_delay

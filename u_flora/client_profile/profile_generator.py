@@ -10,21 +10,19 @@ be correlated (faster network mapped to faster compute), while the rest
 are assigned randomly to increase variance and simulate real-world mismatches.
 
 Usage:
-    profiles = generate_device_profiles(
+    profiles, fedscale_t_min_ms = generate_device_profiles(
         num_profiles=100,
         network_trace_path="mobiperf.json",
         compute_trace_path="oort_client_device_capacity.json",
     )
 """
 
-from __future__ import annotations
-
 import json
 import random
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
-from .base import DeviceProfile
+from .typing import DeviceProfile
 
 
 def _load_network_profiles(trace_path: str | Path | None) -> List[Dict[str, Any]]:
@@ -33,45 +31,43 @@ def _load_network_profiles(trace_path: str | Path | None) -> List[Dict[str, Any]
         data = json.load(f)
 
     profiles = []
-    for client_id, record in data.items():
-        profiles.append({
-            "download_kbps": float(record.get("download_kbps", 0)),
-            "upload_kbps": float(record.get("upload_kbps", 0)),
-            "latency_ms": float(record.get("latency_ms", 0)),
-            "jitter_ms": float(record.get("jitter_ms", 0)),
-            "network_type": record.get("network_type", "unknown")
-        })
+    for _, record in data.items():
+        profiles.append(
+            {
+                "download_kbps": float(record.get("download_kbps", 0)),
+                "upload_kbps": float(record.get("upload_kbps", 0)),
+                "latency_ms": float(record.get("latency_ms", 0)),
+                "jitter_ms": float(record.get("jitter_ms", 0)),
+                "network_type": record.get("network_type", "unknown"),
+            }
+        )
 
     # Sort primarily by download bandwidth to estimate capability level (worst to best)
     profiles.sort(key=lambda p: p["download_kbps"])
     return profiles
 
 
-def _load_compute_profiles(trace_path: str | Path | None, sample_size: int | None = None, rng: random.Random | None = None) -> List[float]:
+def _load_compute_profiles(trace_path: str | Path | None) -> List[float]:
     """Extract computation latency values from Oort's client_device_capacity.
 
     Returns:
-        Sorted list of computation_latency_ms values (fastest/best to slowest/worst).
-                 i.e., smallest latency to largest latency.
+        (sorted_latencies, global_t_min_ms) where:
+          - sorted_latencies: sampled list, ascending.
+          - global_t_min_ms: minimum over the FULL trace.
     """
     with open(trace_path) as f:
         data = json.load(f)
 
-    # Convert to list to sample efficiently
+    # Build full latency list to anchor the global minimum
     items = list(data.values())
-    if sample_size and sample_size < len(items):
-        if not rng:
-            rng = random.Random(42)
-        items = rng.sample(items, sample_size)
-
-    latencies = []
+    latencies: List[float] = []
     for caps in items:
         comp = caps.get("computation")
         if comp is not None and float(comp) > 0:
             latencies.append(float(comp))
 
-    # Sort ascending: lowest latency (best compute) -> highest latency (worst compute)
-    return sorted(latencies)
+    latencies.sort()
+    return latencies
 
 
 def generate_device_profiles(
@@ -80,7 +76,7 @@ def generate_device_profiles(
     compute_trace_path: str | Path | None = None,
     seed: int = 42,
     correlated_ratio: float = 0.7,
-) -> list[DeviceProfile]:
+) -> Tuple[List[DeviceProfile], float]:
     """Generate N device profiles by sampling from trace distributions.
 
     Args:
@@ -92,15 +88,18 @@ def generate_device_profiles(
             to correlate networking capability with compute capability.
 
     Returns:
-        List of DeviceProfile instances.
+        (profiles, fedscale_t_min_ms) where:
+          - profiles: list of DeviceProfile instances.
+          - fedscale_t_min_ms: global minimum computation latency from the full
+            FedScale trace (pre-sampling). Used as the normalization anchor in
+            runtime compute delay calibration. See _inject_compute_delay().
     """
     rng = random.Random(seed)
 
     net_profiles = _load_network_profiles(network_trace_path)
-    compute_latencies = _load_compute_profiles(
-        compute_trace_path, sample_size=num_profiles, rng=rng)
+    compute_latencies = _load_compute_profiles(compute_trace_path)
 
-    profiles: list[DeviceProfile] = []
+    profiles: List[DeviceProfile] = []
 
     for i in range(num_profiles):
         is_correlated = rng.random() < correlated_ratio
@@ -141,4 +140,6 @@ def generate_device_profiles(
             )
         )
 
-    return profiles
+    fedscale_t_min_ms = min(compute_latencies)
+
+    return profiles, fedscale_t_min_ms

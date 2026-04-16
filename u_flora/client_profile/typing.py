@@ -1,23 +1,4 @@
-"""Base abstractions for client selection strategy in federated learning.
-
-This module defines the Strategy pattern interface for client selection,
-along with the data models that all selectors operate on.
-
-Design decisions:
-  - DeviceProfile is immutable and represents the *static* hardware/network
-    characteristics of a client (from trace data).
-  - ClientState is mutable and tracks *dynamic* per-round feedback such as
-    training loss, round duration, and participation history.
-  - ClientSelector is the abstract base that all selection algorithms implement.
-    It receives the full client list and returns the selected subset each round.
-"""
-
-from __future__ import annotations
-
-import math
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 
 @dataclass
@@ -26,31 +7,26 @@ class DeviceProfile:
 
     Combines network profile and compute capability into a single device descriptor.
 
-    The ``computation_latency_ms`` field represents the time (in ms) to process
-    one training sample on this device. This is the Oort convention: the value
-    is model-agnostic "per-sample latency" that can be scaled by the number of
-    samples and local epochs to estimate total training time.
+    The ``computation_latency_ms`` field stores the raw FedScale/Oort trace value (ms/sample). It must NOT be used as an absolute training time.
 
     The network fields (download/upload bandwidth, latency, jitter) are used to
-    estimate communication time for model updates. The ``estimate_round_duration()``
-    method combines compute and communication to predict total round duration.
+    estimate communication time for model updates. They reflect the raw MobiPerf trace values and used as Toxiproxy parameters for simulating network conditions.
     """
 
     client_id: int
 
-    # Compute capability (from Oort / AI Benchmark trace)
-    computation_latency_ms: float  # ms per sample
+    # Compute capability (from Oort/FedScale trace — RAW VALUE, for relative distribution only)
+    computation_latency_ms: float  # raw FedScale ms/sample
 
     # Network capability (from MobiPerf trace)
     download_kbps: float
     upload_kbps: float
-    latency_ms: float   # RTT
+    latency_ms: float  # RTT
     jitter_ms: float = 0.0
 
     # Metadata
     network_type: str = "unknown"  # WIFI, LTE, MOBILE, etc.
     device_name: str = "unknown"
-
 
     def estimate_round_duration(
         self,
@@ -68,9 +44,7 @@ class DeviceProfile:
         Returns:
             Estimated wall-clock time in seconds.
         """
-        train_time_s = (
-            self.computation_latency_ms * num_samples * local_epochs / 1000.0
-        )
+        train_time_s = self.computation_latency_ms * num_samples * local_epochs / 1000.0
         # Download model + upload update
         comm_time_s = (
             model_size_kb / max(1, self.download_kbps)
@@ -142,46 +116,3 @@ class ClientState:
             jitter_ms=float(reply_data.get("jitter_ms", 0.0)),
         )
         self.num_samples = int(reply_data.get("num_samples", self.num_samples))
-
-
-
-# ---------------------------------------------------------------------------
-# Standalone fairness helpers
-# ---------------------------------------------------------------------------
-
-
-def compute_jain_fairness_index(counts: list[int]) -> float:
-    """Jain's Fairness Index over a participation count distribution.
-
-    JFI = (sum(x))^2 / (N * sum(x^2))
-
-    Returns 1.0 for perfect fairness (all counts equal) and approaches 0.0 for
-    increasing unfairness. 
-    Returns 1.0 if all counts are zero (undefined, treat as perfectly fair).
-    """
-    n = len(counts)
-    if n == 0:
-        return 1.0
-    summed = sum(counts)
-    if summed == 0:
-        return 1.0
-    square_summed = sum(x * x for x in counts)
-    if square_summed == 0:
-        return 1.0
-    return (summed * summed) / (n * square_summed)
-
-
-def compute_gini_coefficient(counts: list[int]) -> float:
-    """Gini coefficient of a participation count distribution.
-
-    Returns 0.0 for perfect equality and 1.0 for maximum inequality.
-    Returns 0.0 if all counts are zero (undefined, treat as equal).
-    """
-    n = len(counts)
-    if n == 0 or sum(counts) == 0:
-        return 0.0
-    sorted_counts = sorted(counts)
-    cum = 0.0
-    for i, x in enumerate(sorted_counts):
-        cum += (2 * (i + 1) - n - 1) * x
-    return cum / (n * sum(sorted_counts))

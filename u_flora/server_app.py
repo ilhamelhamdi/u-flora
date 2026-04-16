@@ -19,7 +19,7 @@ from .tasks import TaskAdapter
 from .tasks.registry import get_task_adapter
 from .dataset import load_data_centralized
 from .utils import replace_keys, configure_logging
-from .selection.base import ClientState
+from .client_profile.typing import ClientState
 from .strategies.factory import build_strategy
 
 configure_logging(
