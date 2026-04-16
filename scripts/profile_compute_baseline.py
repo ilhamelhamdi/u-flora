@@ -46,10 +46,10 @@ MODEL_NAME = "answerdotai/ModernBERT-base"
 
 # LoRA config
 LORA_CONFIG = LoraConfig(
-    r=16,
-    lora_alpha=32,
+    r=8,
+    lora_alpha=16,
     lora_dropout=0.05,
-    target_modules=["Wqkv", "Wi", "Wo", "out_proj"],
+    target_modules=["Wqkv", "attn.Wo"],
     bias="none",
     task_type="SEQ_CLS",
 )

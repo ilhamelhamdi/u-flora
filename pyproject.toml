@@ -44,11 +44,11 @@ task_name = "text_classification"
 dataset_name = "sst2"
 
 # -- Model ---------------------------------------------------------------------
-model.name = "distilbert-base-uncased"
+model.name = "answerdotai/ModernBERT-base"
 model.lora.peft-lora-r = 8
 model.lora.peft-lora-alpha = 16
-model.lora.peft-lora-dropout = 0.075
-model.lora.peft-target-modules = "q_lin,v_lin"
+model.lora.peft-lora-dropout = 0.05
+model.lora.peft-target-modules = "Wqkv,attn.Wo"
 
 # -- Training ------------------------------------------------------------------
 train.save-every-round = 5
