@@ -7,7 +7,7 @@ class DeviceProfile:
 
     Combines network profile and compute capability into a single device descriptor.
 
-    The ``computation_latency_ms`` field stores the raw FedScale/Oort trace value (ms/sample). It must NOT be used as an absolute training time.
+    The ``computation_latency_ms`` field stores the raw AI Benchmark trace value (ms/sample). It must NOT be used as an absolute training time.
 
     The network fields (download/upload bandwidth, latency, jitter) are used to
     estimate communication time for model updates. They reflect the raw MobiPerf trace values and used as Toxiproxy parameters for simulating network conditions.
@@ -15,8 +15,8 @@ class DeviceProfile:
 
     client_id: int
 
-    # Compute capability (from Oort/FedScale trace — RAW VALUE, for relative distribution only)
-    computation_latency_ms: float  # raw FedScale ms/sample
+    # Compute capability (from AI Benchmark trace — RAW VALUE, for relative distribution only)
+    computation_latency_ms: float  # raw AI Benchmark ms/sample
 
     # Network capability (from MobiPerf trace)
     download_kbps: float

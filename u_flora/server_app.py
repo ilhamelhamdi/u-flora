@@ -107,7 +107,7 @@ def main(grid: Grid, context: Context) -> None:
 
 def _get_validation_set(cfg, adapter):
     """Load validation set using the task adapter."""
-    dataset_name = cfg.dataset_name
+    dataset_name = cfg.dataset.name
     dataset_config = cfg.datasets[dataset_name]
 
     raw_val = load_data_centralized(dataset_config)

@@ -39,9 +39,11 @@ clientapp = "u_flora.client_app:app"
 # Controls which TaskAdapter is used. One of: text_classification, causal_lm
 task_name = "text_classification"
 
-# -- Dataset selector ----------------------------------------------------------
-# Key into [tool.flwr.app.config.datasets.*] below
-dataset_name = "sst2"
+# -- Dataset selector & partitioning -------------------------------------------
+dataset.name = "sst2" # Key into [tool.flwr.app.config.datasets.*] below
+dataset.partition.strategy = "dirichlet" # "dirichlet" or "iid"
+dataset.partition.dirichlet.alpha = 0.5
+dataset.partition.dirichlet.seed = 42
 
 # -- Model ---------------------------------------------------------------------
 model.name = "answerdotai/ModernBERT-base"

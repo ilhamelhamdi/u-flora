@@ -68,7 +68,7 @@ NETWORK_PROFILE_TRACE_FILE = str(
     Path(__file__).parent / "traces" / "network" / "trace.json"
 )
 COMPUTE_PROFILE_TRACE_FILE = str(
-    Path(__file__).parent / "traces" / "computation" / "client_device_capacity.json"
+    Path(__file__).parent / "traces" / "computation" / "trace.json"
 )
 
 # Superlink flower
@@ -239,12 +239,17 @@ def up(
 
     # Phase 4 — Launch supernodes in parallel
     logger.info("Spawning %d supernodes...", len(specs))
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(specs)) as pool:
-        futures = {pool.submit(_launch_supernode, spec): spec for spec in specs}
-        for future in concurrent.futures.as_completed(futures):
-            spec = futures[future]
-            if exc := future.exception():
-                logger.error("Failed to start supernode-%d: %s", spec.node_id, exc)
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(specs)) as pool:
+            futures = {pool.submit(_launch_supernode, spec): spec for spec in specs}
+            for future in concurrent.futures.as_completed(futures):
+                spec = futures[future]
+                if exc := future.exception():
+                    logger.error("Failed to start supernode-%d: %s", spec.node_id, exc)
+    except Exception as e:
+        logger.error("Error during supernode launch: %s. Initiating teardown.", e)
+        down()
+        sys.exit(1)
 
     logger.info("All %d supernodes started.", len(specs))
     subprocess.run(["apptainer", "instance", "list"], check=False)
@@ -296,10 +301,7 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
     return [
         "apptainer",
         "exec",
-        "--env",
-        f"DEVICE_PROFILE_PATH={PROFILE_DIR}/{spec.name}.json",
-        "--env",
-        f"U_FLORA_CLIENT_LOG={LOG_DIR_CLIENTAPP}/{spec.name}.log",
+        "--nv",
         f"instance://{spec.name}",
         "flower-supernode",
         "--insecure",
@@ -310,7 +312,12 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
         "--isolation",
         "subprocess",
         "--node-config",
-        f"partition-id={spec.node_id} num-partitions={spec.total_nodes}",
+        (
+            f"partition-id={spec.node_id}"
+            f" num-partitions={spec.total_nodes}"
+            f" device-profile-path={PROFILE_DIR}/{spec.name}.json"
+            f" client-log-path={LOG_DIR_CLIENTAPP}/{spec.name}.log"
+        ),
     ]
 
 
@@ -486,7 +493,7 @@ def generate_profiles(
     sys.path.insert(0, str(Path(__file__).parent))
     from u_flora.client_profile.profile_generator import generate_device_profiles
 
-    profiles, fedscale_t_min_ms = generate_device_profiles(
+    profiles, t_min_ms = generate_device_profiles(
         num_profiles=num_clients,
         network_trace_path=network_trace,
         compute_trace_path=compute_trace,
@@ -516,10 +523,10 @@ def generate_profiles(
 
     metadata_path = os.path.join(output_dir, "metadata.json")
     with open(metadata_path, "w") as f:
-        json.dump({"fedscale_t_min_ms": fedscale_t_min_ms}, f, indent=2)
+        json.dump({"t_min_ms": t_min_ms}, f, indent=2)
     logger.info(
-        "Saved profile metadata (fedscale_t_min_ms=%.4f) to %s",
-        fedscale_t_min_ms,
+        "Saved profile metadata (t_min_ms=%.4f) to %s",
+        t_min_ms,
         metadata_path,
     )
 

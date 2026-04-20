@@ -2,7 +2,7 @@
 
 Combines two trace sources:
   1. Network traces (MobiPerf): bandwidth, latency, jitter
-  2. Compute traces (Oort/FedScale): per-sample computation latency
+  2. Compute traces (AI Benchmark): per-sample computation latency
 
 This approach preserves the network characteristics as a single profile
 unit, rather than destructing them. A portion of the combination will
@@ -10,10 +10,10 @@ be correlated (faster network mapped to faster compute), while the rest
 are assigned randomly to increase variance and simulate real-world mismatches.
 
 Usage:
-    profiles, fedscale_t_min_ms = generate_device_profiles(
+    profiles, t_min_ms = generate_device_profiles(
         num_profiles=100,
-        network_trace_path="mobiperf.json",
-        compute_trace_path="oort_client_device_capacity.json",
+        network_trace_path="../traces/network/trace.json",
+        compute_trace_path="../traces/computation/trace.json",
     )
 """
 
@@ -48,23 +48,22 @@ def _load_network_profiles(trace_path: str | Path | None) -> List[Dict[str, Any]
 
 
 def _load_compute_profiles(trace_path: str | Path | None) -> List[float]:
-    """Extract computation latency values from Oort's client_device_capacity.
+    """Extract per-sample computation latency values from the AI-Benchmark trace.
+
+    The trace is a JSON array where each record has a ``compute_latency_ms`` field
+    representing GPT-2 CPU-F inference time in milliseconds per sample.
 
     Returns:
-        (sorted_latencies, global_t_min_ms) where:
-          - sorted_latencies: sampled list, ascending.
-          - global_t_min_ms: minimum over the FULL trace.
+        Sorted list of latency values (ascending, positives only).
     """
     with open(trace_path) as f:
         data = json.load(f)
 
-    # Build full latency list to anchor the global minimum
-    items = list(data.values())
     latencies: List[float] = []
-    for caps in items:
-        comp = caps.get("computation")
-        if comp is not None and float(comp) > 0:
-            latencies.append(float(comp))
+    for record in data:
+        val = record.get("compute_latency_ms")
+        if val is not None and float(val) > 0:
+            latencies.append(float(val))
 
     latencies.sort()
     return latencies
@@ -88,10 +87,10 @@ def generate_device_profiles(
             to correlate networking capability with compute capability.
 
     Returns:
-        (profiles, fedscale_t_min_ms) where:
+        (profiles, t_min_ms) where:
           - profiles: list of DeviceProfile instances.
-          - fedscale_t_min_ms: global minimum computation latency from the full
-            FedScale trace (pre-sampling). Used as the normalization anchor in
+          - t_min_ms: global minimum computation latency from the full
+            AI Benchmark trace (pre-sampling). Used as the normalization anchor in
             runtime compute delay calibration. See _inject_compute_delay().
     """
     rng = random.Random(seed)
@@ -140,6 +139,6 @@ def generate_device_profiles(
             )
         )
 
-    fedscale_t_min_ms = min(compute_latencies)
+    t_min_ms = min(compute_latencies)
 
-    return profiles, fedscale_t_min_ms
+    return profiles, t_min_ms

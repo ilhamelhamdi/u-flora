@@ -19,26 +19,26 @@ _FDS_CACHE: FederatedDataset | None = None
 _FDS_KEY: str | None = None
 
 
-def _get_partitioner(num_partitions: int, strategy: str = "iid", alpha: float = 0.5):
+def _get_partitioner(num_partitions: int, partition_config: DictConfig):
     """Create a partitioner based on the strategy name.
 
     Args:
         num_partitions: Number of FL client partitions.
-        strategy: One of "iid" or "dirichlet".
-        alpha: Dirichlet concentration parameter (lower = more non-IID).
+        partition_config: Config with partitioning parameters: ``strategy``, ``dirichlet.alpha``, ``dirichlet.seed``.
     """
+    strategy = partition_config.strategy
     if strategy == "dirichlet":
         try:
             from flwr_datasets.partitioner import DirichletPartitioner
+
             return DirichletPartitioner(
                 num_partitions=num_partitions,
                 partition_by="label",
-                alpha=alpha,
+                alpha=partition_config.dirichlet.alpha,
+                seed=partition_config.dirichlet.seed,
             )
         except ImportError:
-            logger.warning(
-                "DirichletPartitioner not available, falling back to IID"
-            )
+            logger.warning("DirichletPartitioner not available, falling back to IID")
     return IidPartitioner(num_partitions=num_partitions)
 
 
@@ -46,8 +46,7 @@ def load_data(
     partition_id: int,
     num_partitions: int,
     dataset_config: DictConfig,
-    partition_strategy: str = "iid",
-    dirichlet_alpha: float = 0.5,
+    partition_config: DictConfig,
 ):
     """Load a client's data partition.
 
@@ -55,8 +54,7 @@ def load_data(
         partition_id: This client's partition index.
         num_partitions: Total number of partitions.
         dataset_config: Config with ``name``, ``subset`` fields.
-        partition_strategy: "iid" or "dirichlet".
-        dirichlet_alpha: Dirichlet concentration (if using dirichlet).
+        partition_config: Config with partitioning parameters: ``strategy``, ``dirichlet.alpha``, ``dirichlet.seed``.
 
     Returns:
         (train_set, val_set) tuple of HuggingFace datasets.
@@ -65,12 +63,12 @@ def load_data(
 
     # Build a cache key to detect config changes
     subset = getattr(dataset_config, "subset", None)
-    cache_key = f"{dataset_config.name}:{subset}:{num_partitions}:{partition_strategy}"
+    cache_key = (
+        f"{dataset_config.name}:{subset}:{num_partitions}:{partition_config.strategy}"
+    )
 
     if _FDS_CACHE is None or _FDS_KEY != cache_key:
-        train_partitioner = _get_partitioner(
-            num_partitions, partition_strategy, dirichlet_alpha
-        )
+        train_partitioner = _get_partitioner(num_partitions, partition_config)
         val_partitioner = IidPartitioner(num_partitions=num_partitions)
 
         _FDS_CACHE = FederatedDataset(
@@ -84,7 +82,10 @@ def load_data(
         _FDS_KEY = cache_key
         logger.info(
             "Initialized FederatedDataset: %s/%s, %d partitions (%s)",
-            dataset_config.name, subset, num_partitions, partition_strategy,
+            dataset_config.name,
+            subset,
+            num_partitions,
+            partition_config.strategy,
         )
 
     train_set = _FDS_CACHE.load_partition(partition_id, "train")

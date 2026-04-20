@@ -28,11 +28,22 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
 warnings.filterwarnings("ignore", category=UserWarning)
 
-configure_logging(
-    level=os.environ.get("U_FLORA_LOG_LEVEL", "INFO"),
-    log_file=os.environ.get("U_FLORA_CLIENT_LOG"),
-)
+configure_logging(level=os.environ.get("U_FLORA_LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
+
+_file_logging_configured = False
+
+
+def _ensure_file_logging(log_path: str) -> None:
+    global _file_logging_configured
+    if _file_logging_configured or not log_path:
+        return
+    _LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    os.makedirs(os.path.dirname(log_path) or ".", exist_ok=True)
+    handler = logging.FileHandler(log_path)
+    handler.setFormatter(logging.Formatter(_LOG_FORMAT))
+    logging.getLogger("u_flora").addHandler(handler)
+    _file_logging_configured = True
 
 app = ClientApp()
 
@@ -43,6 +54,7 @@ def train(msg: Message, context: Context):
     # -- Parse config --------------------------------------------------
     partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
+    _ensure_file_logging(context.node_config.get("client-log-path", ""))
     cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
 
     num_rounds = cfg.num_server_rounds
@@ -53,7 +65,7 @@ def train(msg: Message, context: Context):
 
     # Resolve task & dataset
     task_name = cfg.task_name
-    dataset_name = cfg.dataset_name
+    dataset_name = cfg.dataset.name
     dataset_config = cfg.datasets[dataset_name]
 
     # -- Task adapter --------------------------------------------------
@@ -114,7 +126,7 @@ def train(msg: Message, context: Context):
     )
 
     # -- Inject compute heterogeneity delay ----------------------------
-    profile = _load_device_profile()
+    profile = _load_device_profile(context.node_config)
     local_epochs = training_arguments.num_train_epochs
     total_duration = _inject_compute_delay(
         profile,
@@ -122,6 +134,7 @@ def train(msg: Message, context: Context):
         int(local_epochs),
         actual_train_time,
         task_name=task_name,
+        node_config=context.node_config,
     )
     if total_duration > actual_train_time:
         logger.debug(
@@ -176,7 +189,7 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
     num_samples = len(train_set)
 
     # Load device profile (ground truth for simulation)
-    profile = _load_device_profile()
+    profile = _load_device_profile(context.node_config)
     response = {
         "partition_id": partition_id,
         "num_samples": num_samples,
@@ -193,10 +206,10 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
     )
 
 
-def _load_device_profile() -> dict | None:
-    profile_path = os.environ.get("DEVICE_PROFILE_PATH")
+def _load_device_profile(node_config: dict) -> dict | None:
+    profile_path = node_config.get("device-profile-path")
     if not profile_path:
-        logger.warning("DEVICE_PROFILE_PATH not set — compute delay simulation disabled")
+        logger.warning("device-profile-path not set in node-config — compute delay simulation disabled")
         return None
     if not os.path.exists(profile_path):
         logger.warning(
@@ -207,22 +220,20 @@ def _load_device_profile() -> dict | None:
     with open(profile_path) as f:
         profile = json.load(f)
     logger.debug("Loaded device profile from %s", profile_path)
-
     return profile
 
-def _load_metadata() -> dict:
-    profile_path = os.environ.get("DEVICE_PROFILE_PATH")
+
+def _load_metadata(node_config: dict) -> dict:
+    profile_path = node_config.get("device-profile-path", "")
     metadata_path = os.path.join(os.path.dirname(profile_path), "metadata.json")
     if os.path.exists(metadata_path):
         with open(metadata_path) as f:
-            metadata = json.load(f)
-    else:
-        logger.warning(
-            "Profile metadata not found at %s — compute delay calibration disabled",
-            metadata_path,
-        )
-        return dict()
-    return metadata
+            return json.load(f)
+    logger.warning(
+        "Profile metadata not found at %s — compute delay calibration disabled",
+        metadata_path,
+    )
+    return {}
 
 
 def _inject_compute_delay(
@@ -231,6 +242,7 @@ def _inject_compute_delay(
     local_epochs: int,
     actual_train_time_s: float,
     task_name: str,
+    node_config: dict | None = None,
 ) -> float:
     """Sleep to simulate heterogeneous compute capability.
 
@@ -240,10 +252,10 @@ def _inject_compute_delay(
 
     if profile is None:
         return actual_train_time_s
-    
-    fedscale_t_min_ms = _load_metadata().get("fedscale_t_min_ms", 0)
+
+    t_min_ms = _load_metadata(node_config or {}).get("t_min_ms", 0)
     raw_comp_ms = profile.get("computation_latency_ms", 0)
-    if raw_comp_ms <= 0 or fedscale_t_min_ms <= 0:
+    if raw_comp_ms <= 0 or t_min_ms <= 0:
         return actual_train_time_s
 
     t_actual_ms = T_ACTUAL_MS_PER_SAMPLE.get(task_name)
@@ -253,7 +265,7 @@ def _inject_compute_delay(
         )
         return actual_train_time_s
 
-    slowdown_factor = raw_comp_ms / fedscale_t_min_ms
+    slowdown_factor = raw_comp_ms / t_min_ms
     simulated_ms_per_sample = t_actual_ms * slowdown_factor
     simulated_train_s = simulated_ms_per_sample * num_samples * local_epochs / 1000.0
 
