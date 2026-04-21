@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Experiment orchestrator.
 
-Manages the Flower federation lifecycle on Apptainer:
+Manages the Flower federation lifecycle:
   - Generates and assigns heterogeneous device profiles to clients
   - Starts superlink + supernodes with profile-aware configuration
   - Runs single or batched experiments
@@ -17,21 +17,21 @@ Commands:
 Architecture:
     ┌──────────┐
     │ SuperLink│<───────────┐
-    │ :54001-3 │            │
+    │ :15001-3 │            │
     └────┬─────┘            │
          │                  │
    ┌─────┴──────┐           │
-   │  ToxiProxy │           │
-   │  :18000+N  │           │ (no proxy)
+   │  ToxiProxy │           │ (no proxy)
+   │  :16100+N  │           │
    └────────────┘           │
          │ (via ToxiProxy)  │
          │                  │
     ┌────┴────┐             │
     │SuperNode│<────────────┘
-    │  :54100 │ (proxy)
+    │  :15100 │ (proxy)
     ├─────────┤
     │SuperNode│   Each node has:
-    │  :54101 │   - Device profile (compute + network)
+    │  :15101 │   - Device profile (compute + network)
     ├─────────┤   - Injected compute delay
     │  ...    │   - ToxiProxy traffic shaping
     └─────────┘
@@ -45,21 +45,20 @@ import dataclasses
 import json
 import logging
 import os
+import signal
 import socket
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any
 
 import requests
 
 logger = logging.getLogger("u_flora.setup")
 
-# ── CONSTANTS ─────────────────────────────────────────────────────────────
+# ── CONSTANTS ──────────────────────────────────────────────────────────────────
 
 # Paths
-SIF_FILE = "flwr.sif"
 LOG_DIR = "logs"
 LOG_DIR_SUPERNODE = "logs/supernode"
 LOG_DIR_CLIENTAPP = "logs/clientapp"
@@ -85,10 +84,14 @@ TOXIPROXY_PROXY_PORT_START = 16100
 TOXIPROXY_API_PORT = 8474  # Default ToxiProxy API port
 
 # Note:
-# Check the availability of these ports before running, or adjust as needed to avoid conflicts
+# Check the availability of these ports before running, or adjust as needed to avoid conflicts.
 # Command to check:
-# `ss -tlnp | awk 'NR>1 {print $4}' | grep -oP '(?<=:)\d+' | awk -v lo=15000 -v hi=15200 '$1>=lo && $1<=hi' | sort -n`
-# Change `lo` and `hi` to check different ranges.
+# `ss -tlnp | awk 'NR>1 {print $4}' | grep -oP '(?<=:)\d+' | awk -v lo=15000 -v hi=16200 '$1>=lo && $1<=hi' | sort -n`
+
+# ── Process Registry ───────────────────────────────────────────────────────────
+
+PID_FILE = ".pids.json" # File to store PIDs of launched processes for cleanup
+_launched_procs: list[subprocess.Popen] = []  # Track launched processes within this script's execution
 
 # ── Dataclasses ───────────────────────────────────────────────────────────────
 
@@ -101,7 +104,7 @@ class SupernodeSpec:
     node_id: int
     profile: dict
     clientappio_port: int
-    superlink_address: str  # "127.0.0.1:{18000+N}" (via ToxiProxy) or "127.0.0.1:54002"
+    superlink_address: str  # "127.0.0.1:{16100+N}" (via ToxiProxy) or "127.0.0.1:15002"
     total_nodes: int
 
 
@@ -176,7 +179,6 @@ def main() -> None:
             _print_profile_summary(profiles)
 
 
-# ── Apptainer Instance Management ────────────────────────────────────────────
 
 # ── Up ───────────────────────────────────────────────────────────────────────
 
@@ -192,10 +194,6 @@ def up(
     os.makedirs(LOG_DIR, exist_ok=True)
     os.makedirs(LOG_DIR_SUPERNODE, exist_ok=True)
     os.makedirs(LOG_DIR_CLIENTAPP, exist_ok=True)
-
-    if not os.path.exists(SIF_FILE):
-        logger.error("%s not found. Build with 'apptainer pull' first.", SIF_FILE)
-        return
 
     # Phase 1 — Describe: generate profiles and build specs
     logger.info("Generating %d device profiles...", num_clients)
@@ -252,34 +250,30 @@ def up(
         sys.exit(1)
 
     logger.info("All %d supernodes started.", len(specs))
-    subprocess.run(["apptainer", "instance", "list"], check=False)
+    logger.info("Active processes: %d", len(_launched_procs))
+    logger.info("Saving PIDs of launched processes for cleanup...")
+    _save_pids(_launched_procs)
+    logger.info("Setup complete. You can now run experiments with 'python setup.py run ...'.")
+
+
+# ── Superlink ──────────────────────────────────────────────────────────────────
 
 
 def _build_superlink_cmd() -> list[str]:
     return [
-        "apptainer",
-        "exec",
-        "instance://superlink",
         "flower-superlink",
         "--insecure",
-        "--isolation",
-        "subprocess",
-        "--serverappio-api-address",
-        f"0.0.0.0:{SUPERLINK_PORTS['serverappio']}",
-        "--fleet-api-address",
-        f"0.0.0.0:{SUPERLINK_PORTS['fleet']}",
-        "--control-api-address",
-        f"0.0.0.0:{SUPERLINK_PORTS['control']}",
+        "--isolation", "subprocess",
+        "--serverappio-api-address", f"0.0.0.0:{SUPERLINK_PORTS['serverappio']}",
+        "--fleet-api-address",       f"0.0.0.0:{SUPERLINK_PORTS['fleet']}",
+        "--control-api-address",     f"0.0.0.0:{SUPERLINK_PORTS['control']}",
     ]
 
 
 def _launch_superlink(log_dir: str = LOG_DIR) -> subprocess.Popen:
-    subprocess.run(
-        ["apptainer", "instance", "start", SIF_FILE, "superlink"],
-        check=False,
-    )
-
     log_fh = open(Path(log_dir) / "superlink.log", "w")
+
+    # Filter out high-frequency Fleet.PullMessages noise via a grep co-process.
     grep_proc = subprocess.Popen(
         ["grep", "--line-buffered", "-v", "Fleet.PullMessages"],
         stdin=subprocess.PIPE,
@@ -294,15 +288,16 @@ def _launch_superlink(log_dir: str = LOG_DIR) -> subprocess.Popen:
         start_new_session=True,
     )
     grep_proc.stdin.close()
+
+    _launched_procs.append(proc)
     return proc
+
+
+# ── Supernode ──────────────────────────────────────────────────────────────────
 
 
 def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
     return [
-        "apptainer",
-        "exec",
-        "--nv",
-        f"instance://{spec.name}",
         "flower-supernode",
         "--insecure",
         "--superlink",
@@ -322,27 +317,28 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
 
 
 def _launch_supernode(spec: SupernodeSpec, log_dir: str = LOG_DIR_SUPERNODE) -> subprocess.Popen:
-    instance_name = spec.name
-    subprocess.run(
-        ["apptainer", "instance", "start", SIF_FILE, instance_name],
-        check=False,
-    )
 
-    log_path = Path(log_dir) / f"{instance_name}.log"
-    log_fh = open(log_path, "w")  # noqa: SIM115 — owned by subprocess until down()
+    log_path = Path(log_dir) / f"{spec.name}.log"
+    log_fh = open(log_path, "w")
+
     proc = subprocess.Popen(
         _build_supernode_cmd(spec),
         stdout=log_fh,
         stderr=log_fh,
         start_new_session=True,
     )
+
+    _launched_procs.append(proc)
     logger.debug(
         "Started %s on port %d via %s",
-        instance_name,
+        spec.name,
         spec.clientappio_port,
         spec.superlink_address,
     )
     return proc
+
+
+# ── Superlink Health Check ─────────────────────────────────────────────────────
 
 
 def _wait_for_superlink(
@@ -371,9 +367,23 @@ def _wait_for_superlink(
 
 
 def down() -> None:
-    """Stop all Apptainer instances and remove ToxiProxy proxies."""
-    logger.info("Stopping all Flower instances...")
-    subprocess.run(["apptainer", "instance", "stop", "--all"], check=False)
+    logger.info("Stopping all Flower processes...")
+
+    for pgid in _load_pids():
+        try:
+            os.killpg(pgid, signal.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+    time.sleep(2)
+
+    for pgid in _load_pids():
+        try:
+            os.killpg(pgid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+    _delete_pid_file()
     _teardown_toxiproxy()
     logger.info("Done.")
 
@@ -410,7 +420,7 @@ def run_task(overrides: list[str]) -> None:
     """Run a single FL experiment via ``flwr run``.
 
     Example:
-        run_task(["task=text_classification", "model=distilbert", "dataset=sst2",
+        run_task(["task=text_classification", "model=modernbert", "dataset=sst2",
                   "strategy=oort", "num_server_rounds=100"])
     """
     cmd = ["flwr", "run", ".", SUPERLINK_CONNECTION_NAME, "--stream"]
@@ -463,11 +473,7 @@ def run_batch(batch_config_path: str) -> None:
     for idx, exp in enumerate(experiments, 1):
         name = exp.get("name", f"experiment_{idx}")
         overrides = exp.get("overrides", [])
-        logger.info("=" * 60)
-        logger.info("Batch [%d/%d]: %s", idx, total, name)
-        logger.info("=" * 60)
-
-        overrides.append(f"wandb.run_name={name}")
+        logger.info("Experiment %d/%d: %s", i + 1, len(experiments), overrides)
         run_task(overrides)
 
         time.sleep(5)
@@ -670,6 +676,26 @@ def _configure_toxiproxy_for_client(
             timeout=5,
         )
         resp.raise_for_status()
+
+# ── Process Management ─────────────────────────────────────────────────────────
+
+def _save_pids(procs: list[subprocess.Popen]) -> None:
+    pids = [os.getpgid(p.pid) for p in procs]
+    with open(PID_FILE, "w") as f:
+        json.dump(pids, f)
+    logger.info("Saved %d PIDs to %s", len(pids), PID_FILE)
+
+def _load_pids() -> list[int]:
+    if not os.path.exists(PID_FILE):
+        logger.warning("No PID file found at %s — nothing to kill.", PID_FILE)
+        return []
+    with open(PID_FILE) as f:
+        return json.load(f)
+
+def _delete_pid_file() -> None:
+    if os.path.exists(PID_FILE):
+        os.remove(PID_FILE)
+
 
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
