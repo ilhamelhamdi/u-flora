@@ -1,9 +1,9 @@
 {
   "t_min_ms": 12.0,
   "sampling": {
-    "beta": 1.0,
+    "beta": 0.0,
     "seed": 42,
-    "num_clients": 100,
+    "num_clients": 50,
     "num_samples": 200,
     "local_epochs": 1,
     "model_size_kb": 3174.0,

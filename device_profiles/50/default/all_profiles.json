@@ -1,0 +1,502 @@
+{
+  "supernode-000": {
+    "computation_latency_ms": 329.8524561706424,
+    "download_kbps": 788.4248276823688,
+    "upload_kbps": 1072.5900223391923,
+    "latency_ms": 105.33778146538498,
+    "jitter_ms": 37.29356800153041,
+    "network_type": "Wifi",
+    "source_pool_index": 786,
+    "client_id": 0
+  },
+  "supernode-001": {
+    "computation_latency_ms": 166.58518731277266,
+    "download_kbps": 4433.576708117324,
+    "upload_kbps": 3944.8936652933558,
+    "latency_ms": 41.60185242267174,
+    "jitter_ms": 7.269048227580378,
+    "network_type": "Wifi",
+    "source_pool_index": 8613,
+    "client_id": 1
+  },
+  "supernode-002": {
+    "computation_latency_ms": 397.41709832294487,
+    "download_kbps": 319.886476163412,
+    "upload_kbps": 399.7988864791957,
+    "latency_ms": 208.95625987152437,
+    "jitter_ms": 90.17522805619681,
+    "network_type": "Wifi",
+    "source_pool_index": 1342,
+    "client_id": 2
+  },
+  "supernode-003": {
+    "computation_latency_ms": 271.5251545629053,
+    "download_kbps": 1489.8911175543114,
+    "upload_kbps": 1253.2114164628576,
+    "latency_ms": 88.04138991023642,
+    "jitter_ms": 19.54665418958213,
+    "network_type": "WIFI",
+    "source_pool_index": 6859,
+    "client_id": 3
+  },
+  "supernode-004": {
+    "computation_latency_ms": 68.39003654387079,
+    "download_kbps": 1728.289544578943,
+    "upload_kbps": 1582.6857104649755,
+    "latency_ms": 67.65028719355809,
+    "jitter_ms": 14.511899597883971,
+    "network_type": "MOBILE",
+    "source_pool_index": 2986,
+    "client_id": 4
+  },
+  "supernode-005": {
+    "computation_latency_ms": 636.9734966049477,
+    "download_kbps": 76.69424213511198,
+    "upload_kbps": 218.3627883125399,
+    "latency_ms": 816.1653463317505,
+    "jitter_ms": 434.33283021379066,
+    "network_type": "Wifi",
+    "source_pool_index": 4856,
+    "client_id": 5
+  },
+  "supernode-006": {
+    "computation_latency_ms": 301.89283616246024,
+    "download_kbps": 482.10381878949556,
+    "upload_kbps": 888.8376582378309,
+    "latency_ms": 141.94732545332062,
+    "jitter_ms": 51.66093750667362,
+    "network_type": "WIFI",
+    "source_pool_index": 1133,
+    "client_id": 6
+  },
+  "supernode-007": {
+    "computation_latency_ms": 318.7482479917315,
+    "download_kbps": 445.2369292170298,
+    "upload_kbps": 657.0299249109843,
+    "latency_ms": 204.03160110469796,
+    "jitter_ms": 63.70210349509478,
+    "network_type": "WIFI",
+    "source_pool_index": 5429,
+    "client_id": 7
+  },
+  "supernode-008": {
+    "computation_latency_ms": 95.69220581501781,
+    "download_kbps": 16711.472202740173,
+    "upload_kbps": 9152.297648270092,
+    "latency_ms": 25.043740614085277,
+    "jitter_ms": 2.0592127976558814,
+    "network_type": "Wifi",
+    "source_pool_index": 7700,
+    "client_id": 8
+  },
+  "supernode-009": {
+    "computation_latency_ms": 171.3973579298136,
+    "download_kbps": 4890.29411307672,
+    "upload_kbps": 4299.284958748917,
+    "latency_ms": 47.41691348394831,
+    "jitter_ms": 7.142386213485298,
+    "network_type": "LTE",
+    "source_pool_index": 3250,
+    "client_id": 9
+  },
+  "supernode-010": {
+    "computation_latency_ms": 150.60740835411426,
+    "download_kbps": 7769.982460730119,
+    "upload_kbps": 5845.762933307693,
+    "latency_ms": 34.84193464175057,
+    "jitter_ms": 4.153606489841589,
+    "network_type": "WIFI",
+    "source_pool_index": 9401,
+    "client_id": 10
+  },
+  "supernode-011": {
+    "computation_latency_ms": 495.2570497556803,
+    "download_kbps": 167.0148719803719,
+    "upload_kbps": 297.4442420036457,
+    "latency_ms": 437.1577180854171,
+    "jitter_ms": 260.5876748294871,
+    "network_type": "MOBILE",
+    "source_pool_index": 7889,
+    "client_id": 11
+  },
+  "supernode-012": {
+    "computation_latency_ms": 259.221817175555,
+    "download_kbps": 10855.033276771623,
+    "upload_kbps": 9715.738524908144,
+    "latency_ms": 38.691888822883655,
+    "jitter_ms": 3.2265551187888515,
+    "network_type": "Wifi",
+    "source_pool_index": 8240,
+    "client_id": 12
+  },
+  "supernode-013": {
+    "computation_latency_ms": 428.3393473603598,
+    "download_kbps": 29486.8801637858,
+    "upload_kbps": 15736.406860661256,
+    "latency_ms": 20.48129338831979,
+    "jitter_ms": 1.6693158302725435,
+    "network_type": "Wifi",
+    "source_pool_index": 2575,
+    "client_id": 13
+  },
+  "supernode-014": {
+    "computation_latency_ms": 169.23700720736468,
+    "download_kbps": 5842.604054876391,
+    "upload_kbps": 3881.9155461781043,
+    "latency_ms": 45.810175404215656,
+    "jitter_ms": 5.902254006306424,
+    "network_type": "MOBILE",
+    "source_pool_index": 5862,
+    "client_id": 14
+  },
+  "supernode-015": {
+    "computation_latency_ms": 117.22971115328495,
+    "download_kbps": 7768.159466870238,
+    "upload_kbps": 5756.769217385297,
+    "latency_ms": 44.33086757715166,
+    "jitter_ms": 4.279431668340935,
+    "network_type": "WIFI",
+    "source_pool_index": 1584,
+    "client_id": 15
+  },
+  "supernode-016": {
+    "computation_latency_ms": 199.2920487260377,
+    "download_kbps": 1835.0718632270123,
+    "upload_kbps": 1739.4094167761673,
+    "latency_ms": 72.06792779754288,
+    "jitter_ms": 11.02715797554751,
+    "network_type": "WIFI",
+    "source_pool_index": 488,
+    "client_id": 16
+  },
+  "supernode-017": {
+    "computation_latency_ms": 75.62004154761527,
+    "download_kbps": 15956.835193539206,
+    "upload_kbps": 11646.724817889344,
+    "latency_ms": 20.544127253107117,
+    "jitter_ms": 2.4083888503756596,
+    "network_type": "Wifi",
+    "source_pool_index": 9931,
+    "client_id": 17
+  },
+  "supernode-018": {
+    "computation_latency_ms": 433.3199638827834,
+    "download_kbps": 20623.271429680553,
+    "upload_kbps": 10745.919658653886,
+    "latency_ms": 18.2331150283998,
+    "jitter_ms": 1.763490874045209,
+    "network_type": "MOBILE",
+    "source_pool_index": 1305,
+    "client_id": 18
+  },
+  "supernode-019": {
+    "computation_latency_ms": 122.41925727853359,
+    "download_kbps": 185.35935343741733,
+    "upload_kbps": 354.2698845718266,
+    "latency_ms": 593.7725337045028,
+    "jitter_ms": 311.6792180659611,
+    "network_type": "WIFI",
+    "source_pool_index": 9806,
+    "client_id": 19
+  },
+  "supernode-020": {
+    "computation_latency_ms": 318.6604298653347,
+    "download_kbps": 958.3459843071261,
+    "upload_kbps": 1124.7111763800617,
+    "latency_ms": 91.21961498588226,
+    "jitter_ms": 26.681143510291104,
+    "network_type": "MOBILE",
+    "source_pool_index": 4774,
+    "client_id": 20
+  },
+  "supernode-021": {
+    "computation_latency_ms": 148.8766076292597,
+    "download_kbps": 12520.89663514798,
+    "upload_kbps": 10759.167234737022,
+    "latency_ms": 25.144012210446846,
+    "jitter_ms": 2.4270023014297166,
+    "network_type": "Wifi",
+    "source_pool_index": 6121,
+    "client_id": 21
+  },
+  "supernode-022": {
+    "computation_latency_ms": 651.4723235153599,
+    "download_kbps": 98.09964665267687,
+    "upload_kbps": 287.5203664289388,
+    "latency_ms": 751.8317985586784,
+    "jitter_ms": 414.56755458267577,
+    "network_type": "WIFI",
+    "source_pool_index": 4771,
+    "client_id": 22
+  },
+  "supernode-023": {
+    "computation_latency_ms": 448.0431381736162,
+    "download_kbps": 251.81402932629305,
+    "upload_kbps": 407.29315626278157,
+    "latency_ms": 308.10408512608626,
+    "jitter_ms": 189.8006698136835,
+    "network_type": "Wifi",
+    "source_pool_index": 9936,
+    "client_id": 23
+  },
+  "supernode-024": {
+    "computation_latency_ms": 342.1853224471083,
+    "download_kbps": 1147.4268939166282,
+    "upload_kbps": 1078.914197066499,
+    "latency_ms": 100.16911920838514,
+    "jitter_ms": 22.995167896240034,
+    "network_type": "WIFI",
+    "source_pool_index": 3823,
+    "client_id": 24
+  },
+  "supernode-025": {
+    "computation_latency_ms": 111.01213572593737,
+    "download_kbps": 12416.994652195126,
+    "upload_kbps": 7783.107507244509,
+    "latency_ms": 31.080470537131973,
+    "jitter_ms": 3.976048198818478,
+    "network_type": "WIFI",
+    "source_pool_index": 6496,
+    "client_id": 25
+  },
+  "supernode-026": {
+    "computation_latency_ms": 173.53510677693336,
+    "download_kbps": 3525.643680293862,
+    "upload_kbps": 2766.706809057882,
+    "latency_ms": 51.30113358052032,
+    "jitter_ms": 8.304138226768995,
+    "network_type": "WIFI",
+    "source_pool_index": 8045,
+    "client_id": 26
+  },
+  "supernode-027": {
+    "computation_latency_ms": 65.52107385682174,
+    "download_kbps": 8705.367248812987,
+    "upload_kbps": 6128.307997719754,
+    "latency_ms": 41.85598555765462,
+    "jitter_ms": 4.832505159354121,
+    "network_type": "MOBILE",
+    "source_pool_index": 6269,
+    "client_id": 27
+  },
+  "supernode-028": {
+    "computation_latency_ms": 102.29371706053752,
+    "download_kbps": 9246.379874103612,
+    "upload_kbps": 9226.681069402199,
+    "latency_ms": 32.37255539413653,
+    "jitter_ms": 3.261930594986301,
+    "network_type": "Wifi",
+    "source_pool_index": 7431,
+    "client_id": 28
+  },
+  "supernode-029": {
+    "computation_latency_ms": 259.8869096484602,
+    "download_kbps": 1125.932611772185,
+    "upload_kbps": 1455.0630172600597,
+    "latency_ms": 98.05619815168164,
+    "jitter_ms": 23.82403957125816,
+    "network_type": "MOBILE",
+    "source_pool_index": 2454,
+    "client_id": 29
+  },
+  "supernode-030": {
+    "computation_latency_ms": 333.678328821825,
+    "download_kbps": 30118.367802658515,
+    "upload_kbps": 24923.42913933584,
+    "latency_ms": 18.192677821289358,
+    "jitter_ms": 1.1640344226186663,
+    "network_type": "HSPAP",
+    "source_pool_index": 2270,
+    "client_id": 30
+  },
+  "supernode-031": {
+    "computation_latency_ms": 559.532382207667,
+    "download_kbps": 77.67722259405387,
+    "upload_kbps": 206.50026608486561,
+    "latency_ms": 914.5489028584683,
+    "jitter_ms": 627.1412738485132,
+    "network_type": "WIFI",
+    "source_pool_index": 9740,
+    "client_id": 31
+  },
+  "supernode-032": {
+    "computation_latency_ms": 140.7105014865069,
+    "download_kbps": 9154.052571641454,
+    "upload_kbps": 6409.568735834217,
+    "latency_ms": 34.67175344645259,
+    "jitter_ms": 4.4003391009124755,
+    "network_type": "WIFI",
+    "source_pool_index": 6384,
+    "client_id": 32
+  },
+  "supernode-033": {
+    "computation_latency_ms": 149.45468252769405,
+    "download_kbps": 6554.486252571948,
+    "upload_kbps": 4706.771471740588,
+    "latency_ms": 45.63831793079363,
+    "jitter_ms": 6.501351836872031,
+    "network_type": "MOBILE",
+    "source_pool_index": 2549,
+    "client_id": 33
+  },
+  "supernode-034": {
+    "computation_latency_ms": 175.93671754135343,
+    "download_kbps": 3965.570409923585,
+    "upload_kbps": 3227.878187681308,
+    "latency_ms": 51.58443106547235,
+    "jitter_ms": 9.497704797211986,
+    "network_type": "MOBILE",
+    "source_pool_index": 1954,
+    "client_id": 34
+  },
+  "supernode-035": {
+    "computation_latency_ms": 72.82612539869926,
+    "download_kbps": 752.4230131084361,
+    "upload_kbps": 832.3207944930144,
+    "latency_ms": 115.27253516396992,
+    "jitter_ms": 43.3464712137489,
+    "network_type": "Wifi",
+    "source_pool_index": 5528,
+    "client_id": 35
+  },
+  "supernode-036": {
+    "computation_latency_ms": 96.33961653839322,
+    "download_kbps": 13717.245349891436,
+    "upload_kbps": 10690.06250166016,
+    "latency_ms": 22.32253965327458,
+    "jitter_ms": 2.7518294841784723,
+    "network_type": "WIFI",
+    "source_pool_index": 6540,
+    "client_id": 36
+  },
+  "supernode-037": {
+    "computation_latency_ms": 175.88883557817385,
+    "download_kbps": 2965.8158688030785,
+    "upload_kbps": 2712.47031610684,
+    "latency_ms": 55.90160224241048,
+    "jitter_ms": 7.817577510878,
+    "network_type": "WIFI",
+    "source_pool_index": 6447,
+    "client_id": 37
+  },
+  "supernode-038": {
+    "computation_latency_ms": 98.21810392348848,
+    "download_kbps": 1167.9782848519737,
+    "upload_kbps": 1587.316264297934,
+    "latency_ms": 83.64099643979425,
+    "jitter_ms": 19.056389435644714,
+    "network_type": "WIFI",
+    "source_pool_index": 2578,
+    "client_id": 38
+  },
+  "supernode-039": {
+    "computation_latency_ms": 229.08798285428173,
+    "download_kbps": 563.5739159038967,
+    "upload_kbps": 795.9024564988695,
+    "latency_ms": 124.66433896583787,
+    "jitter_ms": 65.03334090313017,
+    "network_type": "MOBILE",
+    "source_pool_index": 2245,
+    "client_id": 39
+  },
+  "supernode-040": {
+    "computation_latency_ms": 164.87359407440653,
+    "download_kbps": 3944.120733556915,
+    "upload_kbps": 3363.5039581599576,
+    "latency_ms": 47.7108965409454,
+    "jitter_ms": 8.942584637118449,
+    "network_type": "LTE",
+    "source_pool_index": 7846,
+    "client_id": 40
+  },
+  "supernode-041": {
+    "computation_latency_ms": 373.52352229834946,
+    "download_kbps": 344.3398029604904,
+    "upload_kbps": 685.0226982291946,
+    "latency_ms": 206.33906329273432,
+    "jitter_ms": 83.42057273549597,
+    "network_type": "MOBILE",
+    "source_pool_index": 6263,
+    "client_id": 41
+  },
+  "supernode-042": {
+    "computation_latency_ms": 276.4894520558021,
+    "download_kbps": 1468.793636877238,
+    "upload_kbps": 1685.3036113839596,
+    "latency_ms": 90.17855957792717,
+    "jitter_ms": 14.97131843196109,
+    "network_type": "MOBILE",
+    "source_pool_index": 2300,
+    "client_id": 42
+  },
+  "supernode-043": {
+    "computation_latency_ms": 137.0879169601741,
+    "download_kbps": 9361.383531385085,
+    "upload_kbps": 5771.489708565325,
+    "latency_ms": 44.46938194817495,
+    "jitter_ms": 4.3461983004861615,
+    "network_type": "Wifi",
+    "source_pool_index": 2521,
+    "client_id": 43
+  },
+  "supernode-044": {
+    "computation_latency_ms": 438.91855808621386,
+    "download_kbps": 10191.535289815125,
+    "upload_kbps": 7502.2685510453575,
+    "latency_ms": 30.038817335479965,
+    "jitter_ms": 4.11249836510518,
+    "network_type": "Wifi",
+    "source_pool_index": 6569,
+    "client_id": 44
+  },
+  "supernode-045": {
+    "computation_latency_ms": 334.6525999633778,
+    "download_kbps": 471.8785616084272,
+    "upload_kbps": 454.9833912394545,
+    "latency_ms": 164.1657828635998,
+    "jitter_ms": 94.20911049199115,
+    "network_type": "WIFI",
+    "source_pool_index": 7309,
+    "client_id": 45
+  },
+  "supernode-046": {
+    "computation_latency_ms": 128.63189991647243,
+    "download_kbps": 1026.3446454615637,
+    "upload_kbps": 1068.9068896076005,
+    "latency_ms": 88.37336430077461,
+    "jitter_ms": 29.65351909742209,
+    "network_type": "MOBILE",
+    "source_pool_index": 212,
+    "client_id": 46
+  },
+  "supernode-047": {
+    "computation_latency_ms": 130.5415910983834,
+    "download_kbps": 6284.456203430423,
+    "upload_kbps": 4963.84398388395,
+    "latency_ms": 52.809026029029475,
+    "jitter_ms": 5.701094919927374,
+    "network_type": "Wifi",
+    "source_pool_index": 9489,
+    "client_id": 47
+  },
+  "supernode-048": {
+    "computation_latency_ms": 244.88560409449974,
+    "download_kbps": 800.9769405237065,
+    "upload_kbps": 806.9943421968,
+    "latency_ms": 108.16873586327408,
+    "jitter_ms": 38.23051002605339,
+    "network_type": "Wifi",
+    "source_pool_index": 3016,
+    "client_id": 48
+  },
+  "supernode-049": {
+    "computation_latency_ms": 92.49124063139962,
+    "download_kbps": 3752.7579744165578,
+    "upload_kbps": 3405.017695598405,
+    "latency_ms": 46.44683961604335,
+    "jitter_ms": 8.281947757028611,
+    "network_type": "MOBILE",
+    "source_pool_index": 4019,
+    "client_id": 49
+  }
+}
