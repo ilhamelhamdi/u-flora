@@ -12,7 +12,7 @@ Commands:
     python setup.py run   task=text_classification model=distilbert dataset=sst2
     python setup.py batch --batch-config experiments.yaml
     python setup.py down                    # Cleanup
-    python setup.py profiles --namespace=moderate --show  # Generate/inspect profiles
+    python setup.py profiles --namespace=moderate --beta=2.0 --show  # Sample scenario profiles
 
 Architecture:
     ┌──────────┐
@@ -52,6 +52,7 @@ import sys
 import time
 from pathlib import Path
 
+import numpy as np
 import requests
 
 logger = logging.getLogger("u_flora.setup")
@@ -64,6 +65,7 @@ LOG_DIR_SUPERNODE = "logs/supernode"
 LOG_DIR_CLIENTAPP = "logs/clientapp"
 PROFILE_DIR = "device_profiles"
 DEFAULT_PROFILE_NAMESPACE = "default"
+COMBINED_PROFILE_POOL_FILE = str(Path(__file__).parent / "traces" / "combined.json")
 NETWORK_PROFILE_TRACE_FILE = str(
     Path(__file__).parent / "traces" / "network" / "trace.json"
 )
@@ -89,6 +91,9 @@ TOXIPROXY_API_PORT = 8474  # Default ToxiProxy API port
 # Command to check:
 # `ss -tlnp | awk 'NR>1 {print $4}' | grep -oP '(?<=:)\d+' | awk -v lo=15000 -v hi=16200 '$1>=lo && $1<=hi' | sort -n`
 
+AVG_NUM_SAMPLES = 200
+ESTIMATED_MODEL_SIZE_KB = 3174.0  # ModernBERT; r=8; target_modules=["Wqkv", "attn.Wo"]
+
 # ── Process Registry ───────────────────────────────────────────────────────────
 
 PID_FILE = ".pids.json" # File to store PIDs of launched processes for cleanup
@@ -104,6 +109,7 @@ class SupernodeSpec:
     name: str
     node_id: int
     profile: dict
+    profile_key: str
     profile_path: str
     clientappio_port: int
     superlink_address: str  # "127.0.0.1:{16100+N}" (via ToxiProxy) or "127.0.0.1:15002"
@@ -153,10 +159,22 @@ def main() -> None:
     p_batch.add_argument("--batch-config", required=True, type=str)
 
     # --- profiles ---
-    p_prof = sub.add_parser("profiles", help="Generate/inspect device profiles")
+    p_prof = sub.add_parser(
+        "profiles",
+        aliases=["scenario-profiles"],
+        help="Sample scenario profiles from traces/combined.json",
+    )
     p_prof.add_argument("-n", "--num-clients", type=int, default=100)
-    p_prof.add_argument("--network-trace", type=str, default=NETWORK_PROFILE_TRACE_FILE)
-    p_prof.add_argument("--compute-trace", type=str, default=COMPUTE_PROFILE_TRACE_FILE)
+    p_prof.add_argument("--combined-path", type=str, default=COMBINED_PROFILE_POOL_FILE)
+    p_prof.add_argument(
+        "--beta",
+        type=float,
+        default=0.0,
+        help="Composition skew: 0=balanced, >0=fast-dominant, <0=straggler-dominant",
+    )
+    p_prof.add_argument("--num-samples", type=int, default=AVG_NUM_SAMPLES)
+    p_prof.add_argument("--local-epochs", type=int, default=1)
+    p_prof.add_argument("--model-size-kb", type=float, default=ESTIMATED_MODEL_SIZE_KB)
     p_prof.add_argument("--seed", type=int, default=42)
     p_prof.add_argument("--namespace", type=str, default=DEFAULT_PROFILE_NAMESPACE)
     p_prof.add_argument("--show", action="store_true", help="Print summary")
@@ -175,12 +193,15 @@ def main() -> None:
         run_task(args.overrides)
     elif args.command == "batch":
         run_batch(args.batch_config)
-    elif args.command == "profiles":
+    elif args.command in {"profiles", "scenario-profiles"}:
         profiles = generate_profiles(
-            args.num_clients,
-            args.network_trace,
-            args.compute_trace,
-            args.seed,
+            num_clients=args.num_clients,
+            combined_path=args.combined_path,
+            beta=args.beta,
+            num_samples=args.num_samples,
+            local_epochs=args.local_epochs,
+            model_size_kb=args.model_size_kb,
+            seed=args.seed,
             output_dir=get_profile_namespace_dir(args.namespace),
         )
         if args.show:
@@ -219,7 +240,8 @@ def up(
             name=get_node_name(p["client_id"]),
             node_id=p["client_id"],
             profile=p,
-            profile_path=os.path.join(namespace_dir, f"{get_node_name(p['client_id'])}.json"),
+            profile_key=get_node_name(p["client_id"]),
+            profile_path=os.path.join(namespace_dir, "all_profiles.json"),
             clientappio_port=SUPERNODE_PORT_START + p["client_id"],
             superlink_address=_superlink_addr(p["client_id"]),
             total_nodes=len(profiles),
@@ -322,6 +344,7 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
             f"partition-id={spec.node_id}"
             f" num-partitions={spec.total_nodes}"
             f" device-profile-path={spec.profile_path}"
+            f" device-profile-key={spec.profile_key}"
             f" client-log-path={LOG_DIR_CLIENTAPP}/{spec.name}.log"
         ),
     ]
@@ -484,7 +507,7 @@ def run_batch(batch_config_path: str) -> None:
     for idx, exp in enumerate(experiments, 1):
         name = exp.get("name", f"experiment_{idx}")
         overrides = exp.get("overrides", [])
-        logger.info("Experiment %d/%d: %s", i + 1, len(experiments), overrides)
+        logger.info("Experiment %d/%d: %s", idx, len(experiments), overrides)
         run_task(overrides)
 
         time.sleep(5)
@@ -495,62 +518,194 @@ def run_batch(batch_config_path: str) -> None:
 # ── Device Profile Management ─────────────────────────────────────────────────
 
 
+def _estimate_round_duration_from_profile(
+    profile: dict,
+    num_samples: int,
+    local_epochs: int,
+    model_size_kb: float,
+) -> float:
+    train_time_s = (
+        float(profile["computation_latency_ms"]) * num_samples * local_epochs / 1000.0
+    )
+    comm_time_s = (
+        model_size_kb / max(1.0, float(profile["download_kbps"]))
+        + model_size_kb / max(1.0, float(profile["upload_kbps"]))
+        + float(profile["latency_ms"]) / 1000.0
+    )
+    return train_time_s + comm_time_s
+
+
+def sample_by_composition(
+    profiles: list[dict],
+    n_clients: int,
+    beta: float = 0.0,
+    num_samples: int = AVG_NUM_SAMPLES,
+    local_epochs: int = 1,
+    model_size_kb: float = ESTIMATED_MODEL_SIZE_KB,
+    seed: int = 42,
+) -> list[dict]:
+    """Sample n_clients profiles with composition controlled by beta.
+
+    beta=0  -> balanced (uniform by rank)
+    beta>0  -> fast-dominant
+    beta<0  -> straggler-dominant
+    """
+    if not profiles:
+        raise ValueError("Profile pool is empty; cannot sample scenario profiles.")
+
+    rng = np.random.default_rng(seed)
+
+    durations = np.array(
+        [
+            _estimate_round_duration_from_profile(
+                p,
+                num_samples=num_samples,
+                local_epochs=local_epochs,
+                model_size_kb=model_size_kb,
+            )
+            for p in profiles
+        ],
+        dtype=float,
+    )
+    ranked_idx = np.argsort(durations)
+    pool_size = len(profiles)
+
+    ranks = np.arange(1, pool_size + 1, dtype=float)
+    weights = ((pool_size - ranks + 1.0) / pool_size) ** beta
+    weights = weights / weights.sum()
+
+    chosen_idx = rng.choice(pool_size, size=n_clients, replace=True, p=weights)
+
+    selected_profiles: list[dict] = []
+    for new_client_id, ranked_choice_idx in enumerate(chosen_idx):
+        original = profiles[int(ranked_idx[int(ranked_choice_idx)])]
+        sampled = dict(original)
+        sampled["source_pool_index"] = int(ranked_idx[int(ranked_choice_idx)])
+        sampled["client_id"] = new_client_id
+        if not sampled.get("device_name"):
+            sampled.pop("device_name", None)
+        selected_profiles.append(sampled)
+
+    return selected_profiles
+
+
+def _load_combined_profile_pool(combined_path: str) -> tuple[list[dict], float]:
+    if not os.path.exists(combined_path):
+        raise FileNotFoundError(
+            f"Combined profile pool not found: {combined_path}. "
+            "Generate it first using traces/combine.ipynb."
+        )
+
+    with open(combined_path) as f:
+        data = json.load(f)
+
+    if isinstance(data, dict):
+        pool = data.get("profiles", [])
+        metadata = data.get("metadata", {})
+        t_min_ms = float(metadata.get("t_min_ms", 0))
+    elif isinstance(data, list):
+        pool = data
+        t_min_ms = 0.0
+    else:
+        raise ValueError(
+            f"Invalid format for combined pool at {combined_path}. "
+            "Expected list[dict] or {'profiles': [...], 'metadata': {...}}."
+        )
+
+    if not pool:
+        raise ValueError(
+            f"Combined profile pool at {combined_path} is empty. "
+            "Regenerate it using traces/combine.ipynb."
+        )
+
+    required_keys = {
+        "computation_latency_ms",
+        "download_kbps",
+        "upload_kbps",
+        "latency_ms",
+    }
+    normalized_pool: list[dict] = []
+    for idx, raw in enumerate(pool):
+        missing = required_keys.difference(raw.keys())
+        if missing:
+            raise ValueError(
+                f"Profile index {idx} in {combined_path} is missing keys: {sorted(missing)}"
+            )
+
+        normalized = {
+            "computation_latency_ms": float(raw["computation_latency_ms"]),
+            "download_kbps": float(raw["download_kbps"]),
+            "upload_kbps": float(raw["upload_kbps"]),
+            "latency_ms": float(raw["latency_ms"]),
+            "jitter_ms": float(raw.get("jitter_ms", 0.0)),
+            "network_type": raw.get("network_type", "unknown"),
+        }
+        if raw.get("device_name"):
+            normalized["device_name"] = raw["device_name"]
+        normalized_pool.append(normalized)
+
+    if t_min_ms <= 0:
+        t_min_ms = min(p["computation_latency_ms"] for p in normalized_pool)
+
+    return normalized_pool, t_min_ms
+
+
 def generate_profiles(
     num_clients: int,
-    network_trace: str | None = None,
-    compute_trace: str | None = None,
+    combined_path: str = COMBINED_PROFILE_POOL_FILE,
+    beta: float = 0.0,
+    num_samples: int = AVG_NUM_SAMPLES,
+    local_epochs: int = 1,
+    model_size_kb: float = ESTIMATED_MODEL_SIZE_KB,
     seed: int = 42,
     output_dir: str = PROFILE_DIR,
 ) -> list[dict]:
-    """Generate and persist device profiles from trace data.
+    """Sample and persist scenario-specific device profiles from combined pool."""
+    pool, t_min_ms = _load_combined_profile_pool(combined_path)
 
-    Each profile is saved as a JSON file for reproducibility and inspection.
-    Returns the list of profile dicts.
-    """
-    sys.path.insert(0, str(Path(__file__).parent))
-    from u_flora.client_profile.profile_generator import generate_device_profiles
-
-    profiles, t_min_ms = generate_device_profiles(
-        num_profiles=num_clients,
-        network_trace_path=network_trace,
-        compute_trace_path=compute_trace,
+    profile_dicts = sample_by_composition(
+        profiles=pool,
+        n_clients=num_clients,
+        beta=beta,
+        num_samples=num_samples,
+        local_epochs=local_epochs,
+        model_size_kb=model_size_kb,
         seed=seed,
     )
 
     os.makedirs(output_dir, exist_ok=True)
 
-    profile_dicts = []
-    for p in profiles:
-        d = {
-            "client_id": p.client_id,
-            "computation_latency_ms": p.computation_latency_ms,
-            "download_kbps": p.download_kbps,
-            "upload_kbps": p.upload_kbps,
-            "latency_ms": p.latency_ms,
-            "jitter_ms": p.jitter_ms,
-            "network_type": p.network_type,
-            "device_name": p.device_name,
-        }
-        profile_dicts.append(d)
+    profiles_by_node = {
+        get_node_name(profile["client_id"]): profile for profile in profile_dicts
+    }
 
-    combined_path = os.path.join(output_dir, "all_profiles.json")
-    with open(combined_path, "w") as f:
-        json.dump(profile_dicts, f, indent=2)
-    logger.info("Saved %d profiles to %s", len(profile_dicts), combined_path)
+    all_profiles_path = os.path.join(output_dir, "all_profiles.json")
+    with open(all_profiles_path, "w") as f:
+        json.dump(profiles_by_node, f, indent=2)
+    logger.info("Saved %d profiles to %s", len(profile_dicts), all_profiles_path)
 
     metadata_path = os.path.join(output_dir, "metadata.json")
+    metadata = {
+        "t_min_ms": t_min_ms,
+        "sampling": {
+            "beta": beta,
+            "seed": seed,
+            "num_clients": num_clients,
+            "num_samples": num_samples,
+            "local_epochs": local_epochs,
+            "model_size_kb": model_size_kb,
+            "pool_path": combined_path,
+            "pool_size": len(pool),
+        },
+    }
     with open(metadata_path, "w") as f:
-        json.dump({"t_min_ms": t_min_ms}, f, indent=2)
+        json.dump(metadata, f, indent=2)
     logger.info(
-        "Saved profile metadata (t_min_ms=%.4f) to %s",
+        "Saved profile metadata (t_min_ms=%.4f, beta=%.2f) to %s",
         t_min_ms,
+        beta,
         metadata_path,
     )
-
-    for d in profile_dicts:
-        path = os.path.join(output_dir, f"{get_node_name(d['client_id'])}.json")
-        with open(path, "w") as f:
-            json.dump(d, f, indent=2)
 
     return profile_dicts
 
@@ -573,16 +728,7 @@ def load_profiles(profile_dir: str = PROFILE_DIR) -> list[dict]:
     with open(combined) as f:
         profiles = json.load(f)
 
-    for p in profiles:
-        profile_path = os.path.join(profile_dir, f"{get_node_name(p['client_id'])}.json")
-        if not os.path.exists(profile_path):
-            raise FileNotFoundError(
-                f"Missing profile file: {profile_path}. "
-                "Regenerate profiles for this namespace."
-            )
-
-    return profiles
-
+    return profiles.values()
 
 # ── ToxiProxy Setup ───────────────────────────────────────────────────────────
 
