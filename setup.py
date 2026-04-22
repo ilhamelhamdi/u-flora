@@ -8,11 +8,11 @@ Manages the Flower federation lifecycle:
   - Manages ToxiProxy for network heterogeneity
 
 Commands:
-    python setup.py up                      # Start infrastructure
+    python setup.py up --namespace=default  # Start infrastructure
     python setup.py run   task=text_classification model=distilbert dataset=sst2
     python setup.py batch --batch-config experiments.yaml
     python setup.py down                    # Cleanup
-    python setup.py profiles --show         # Inspect generated profiles
+    python setup.py profiles --namespace=moderate --show  # Generate/inspect profiles
 
 Architecture:
     ┌──────────┐
@@ -63,6 +63,7 @@ LOG_DIR = "logs"
 LOG_DIR_SUPERNODE = "logs/supernode"
 LOG_DIR_CLIENTAPP = "logs/clientapp"
 PROFILE_DIR = "device_profiles"
+DEFAULT_PROFILE_NAMESPACE = "default"
 NETWORK_PROFILE_TRACE_FILE = str(
     Path(__file__).parent / "traces" / "network" / "trace.json"
 )
@@ -103,6 +104,7 @@ class SupernodeSpec:
     name: str
     node_id: int
     profile: dict
+    profile_path: str
     clientappio_port: int
     superlink_address: str  # "127.0.0.1:{16100+N}" (via ToxiProxy) or "127.0.0.1:15002"
     total_nodes: int
@@ -110,6 +112,13 @@ class SupernodeSpec:
 
 def get_node_name(node_id: int) -> str:
     return f"supernode-{node_id:03d}"
+
+
+def get_profile_namespace_dir(namespace: str) -> str:
+    namespace_clean = (namespace or DEFAULT_PROFILE_NAMESPACE).strip()
+    if not namespace_clean:
+        namespace_clean = DEFAULT_PROFILE_NAMESPACE
+    return os.path.join(PROFILE_DIR, namespace_clean)
 
 
 # ── Main CLI ──────────────────────────────────────────────────────────────────
@@ -129,10 +138,7 @@ def main() -> None:
 
     # --- up ---
     p_up = sub.add_parser("up", help="Start superlink + supernodes")
-    p_up.add_argument("-n", "--num-clients", type=int, default=20)
-    p_up.add_argument("--network-trace", type=str, default=NETWORK_PROFILE_TRACE_FILE)
-    p_up.add_argument("--compute-trace", type=str, default=COMPUTE_PROFILE_TRACE_FILE)
-    p_up.add_argument("--seed", type=int, default=42)
+    p_up.add_argument("--namespace", type=str, default=DEFAULT_PROFILE_NAMESPACE)
     p_up.add_argument("--no-toxiproxy", action="store_true")
 
     # --- down ---
@@ -152,6 +158,7 @@ def main() -> None:
     p_prof.add_argument("--network-trace", type=str, default=NETWORK_PROFILE_TRACE_FILE)
     p_prof.add_argument("--compute-trace", type=str, default=COMPUTE_PROFILE_TRACE_FILE)
     p_prof.add_argument("--seed", type=int, default=42)
+    p_prof.add_argument("--namespace", type=str, default=DEFAULT_PROFILE_NAMESPACE)
     p_prof.add_argument("--show", action="store_true", help="Print summary")
 
     args = parser.parse_args()
@@ -159,10 +166,7 @@ def main() -> None:
     if args.command == "up":
         logger.debug("Parsed args: %s", args)
         up(
-            num_clients=args.num_clients,
-            network_trace=args.network_trace,
-            compute_trace=args.compute_trace,
-            seed=args.seed,
+            profile_namespace=args.namespace,
             use_toxiproxy=not args.no_toxiproxy,
         )
     elif args.command == "down":
@@ -173,7 +177,11 @@ def main() -> None:
         run_batch(args.batch_config)
     elif args.command == "profiles":
         profiles = generate_profiles(
-            args.num_clients, args.network_trace, args.compute_trace, args.seed
+            args.num_clients,
+            args.network_trace,
+            args.compute_trace,
+            args.seed,
+            output_dir=get_profile_namespace_dir(args.namespace),
         )
         if args.show:
             _print_profile_summary(profiles)
@@ -184,10 +192,7 @@ def main() -> None:
 
 
 def up(
-    num_clients: int = 20,
-    network_trace: str | None = None,
-    compute_trace: str | None = None,
-    seed: int = 42,
+    profile_namespace: str = DEFAULT_PROFILE_NAMESPACE,
     use_toxiproxy: bool = True,
 ) -> None:
     """Start superlink, configure ToxiProxy, and spawn supernodes."""
@@ -195,9 +200,14 @@ def up(
     os.makedirs(LOG_DIR_SUPERNODE, exist_ok=True)
     os.makedirs(LOG_DIR_CLIENTAPP, exist_ok=True)
 
-    # Phase 1 — Describe: generate profiles and build specs
-    logger.info("Generating %d device profiles...", num_clients)
-    profiles = generate_profiles(num_clients, network_trace, compute_trace, seed)
+    # Phase 1 — Describe: load pre-generated profiles and build specs
+    namespace_dir = get_profile_namespace_dir(profile_namespace)
+    logger.info(
+        "Loading pre-generated device profiles from namespace '%s' (%s)...",
+        profile_namespace,
+        namespace_dir,
+    )
+    profiles = load_profiles(namespace_dir)
 
     def _superlink_addr(node_id: int) -> str:
         if use_toxiproxy:
@@ -209,6 +219,7 @@ def up(
             name=get_node_name(p["client_id"]),
             node_id=p["client_id"],
             profile=p,
+            profile_path=os.path.join(namespace_dir, f"{get_node_name(p['client_id'])}.json"),
             clientappio_port=SUPERNODE_PORT_START + p["client_id"],
             superlink_address=_superlink_addr(p["client_id"]),
             total_nodes=len(profiles),
@@ -310,7 +321,7 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
         (
             f"partition-id={spec.node_id}"
             f" num-partitions={spec.total_nodes}"
-            f" device-profile-path={PROFILE_DIR}/{spec.name}.json"
+            f" device-profile-path={spec.profile_path}"
             f" client-log-path={LOG_DIR_CLIENTAPP}/{spec.name}.log"
         ),
     ]
@@ -546,14 +557,31 @@ def generate_profiles(
 
 def load_profiles(profile_dir: str = PROFILE_DIR) -> list[dict]:
     """Load previously generated profiles."""
+    if not os.path.isdir(profile_dir):
+        raise FileNotFoundError(
+            f"Profile namespace directory not found: {profile_dir}. "
+            "Generate it first with 'python setup.py profiles --namespace=<name>'."
+        )
+
     combined = os.path.join(profile_dir, "all_profiles.json")
     if not os.path.exists(combined):
-        logger.error(
-            "No profiles found at %s. Run 'setup.py profiles' first.", combined
+        raise FileNotFoundError(
+            f"No profiles found at {combined}. "
+            "Generate them first with 'python setup.py profiles --namespace=<name>'."
         )
-        return []
+
     with open(combined) as f:
-        return json.load(f)
+        profiles = json.load(f)
+
+    for p in profiles:
+        profile_path = os.path.join(profile_dir, f"{get_node_name(p['client_id'])}.json")
+        if not os.path.exists(profile_path):
+            raise FileNotFoundError(
+                f"Missing profile file: {profile_path}. "
+                "Regenerate profiles for this namespace."
+            )
+
+    return profiles
 
 
 # ── ToxiProxy Setup ───────────────────────────────────────────────────────────
