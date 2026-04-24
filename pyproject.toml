@@ -97,13 +97,48 @@ wandb.run-name = ""
 name = "glue"
 subset = "sst2"
 text_fields = "sentence"
+label_field = "label"
+num_labels = 2
+train_split = "train"
+val_split = "validation"
+num_clients = 100
 
 [tool.flwr.app.config.datasets.qnli]
 name = "glue"
 subset = "qnli"
 text_fields = "question,sentence"
+label_field = "label"
+num_labels = 2
+train_split = "train"
+val_split = "validation"
+num_clients = 100
 
 [tool.flwr.app.config.datasets.qqp]
 name = "glue"
 subset = "qqp"
 text_fields = "question1,question2"
+label_field = "label"
+num_labels = 2
+train_split = "train"
+val_split = "validation"
+num_clients = 100
+
+[tool.flwr.app.config.datasets.boolq]
+name = "super_glue"
+subset = "boolq"
+text_fields = "passage,question"
+label_field = "label"
+num_labels = 2
+train_split = "train"
+val_split = "validation"
+num_clients = 50
+
+[tool.flwr.app.config.datasets.mnli]
+name = "glue"
+subset = "mnli"
+text_fields = "premise,hypothesis"
+label_field = "label"
+num_labels = 3
+train_split = "train"
+val_split = "validation_matched"
+num_clients = 100

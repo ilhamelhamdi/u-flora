@@ -1,7 +1,7 @@
 import logging
 from omegaconf import DictConfig
 
-from . import BaseStrategy, RandomStrategy, FedCSStrategy
+from . import BaseStrategy, RandomStrategy, FedCSStrategy, TiFLStrategy, OortStrategy
 from ..client_profile.typing import ClientState
 
 logger = logging.getLogger(__name__)
@@ -11,42 +11,64 @@ def build_strategy(
     client_states: dict[int, ClientState],
     save_path: str,
     use_wandb: bool = True,
+    metric_name: str = "accuracy",
+    is_higher_better: bool = True,
 ) -> BaseStrategy:
     """Instantiate the strategy-specific class.
 
-    Reads from ``cfg.strategy`` (name: ``random`` | ``fedcs``).
+    Reads from ``cfg.strategy`` (name: ``random`` | ``fedcs`` | ``tifl`` | ``oort``).
     """
     strategy_cfg = cfg.strategy
-    name = str(getattr(strategy_cfg, "name", "random")).lower()
-    num_to_select = int(getattr(strategy_cfg, "num_to_select", 10))
-    seed = int(getattr(strategy_cfg, "seed", 42))
+    name = str(strategy_cfg.get("name", "random")).lower()
+    num_to_select = strategy_cfg.num_to_select
+    seed = strategy_cfg.get("seed", 42)
+    local_epochs = cfg.train.training_arguments.num_train_epochs
 
     common = dict(
         client_states=client_states,
         save_path=save_path,
         use_wandb=use_wandb,
+        metric_name=metric_name,
+        is_higher_better=is_higher_better,
     )
 
     if name == "random":
         return RandomStrategy(num_to_select=num_to_select, seed=seed, **common)
 
     if name == "fedcs":
-        local_epochs = int(
-            getattr(
-                getattr(cfg.train, "training_arguments", None),
-                "num_train_epochs",
-                1,
-            )
-        )
         return FedCSStrategy(
-            num_to_select=num_to_select,
-            round_deadline_s=float(getattr(strategy_cfg, "round_deadline_s", 300.0)),
-            model_size_kb=float(getattr(strategy_cfg, "model_size_kb", 1000.0)),
+            round_deadline_s=strategy_cfg.round_deadline_s,
+            model_size_kb=strategy_cfg.model_size_kb,
             local_epochs=local_epochs,
-            c_fraction=float(getattr(strategy_cfg, "c_fraction", 0.5)),
-            exploration_fraction=float(
-                getattr(strategy_cfg, "exploration_fraction", 0.1)
-            ),
+            c_fraction=strategy_cfg.c_fraction,
+            seed=seed,
+            **common,
+        )
+
+    if name == "tifl":
+        return TiFLStrategy(
+            num_to_select=num_to_select,
+            num_tiers=strategy_cfg.num_tiers,
+            sync_rounds=strategy_cfg.sync_rounds,
+            prob_update_interval=strategy_cfg.prob_update_interval,
+            round_deadline_s=strategy_cfg.round_deadline_s,
+            model_size_kb=strategy_cfg.model_size_kb,
+            local_epochs=local_epochs,
+            seed=seed,
+            **common,
+        )
+
+    if name == "oort":
+        return OortStrategy(
+            num_to_select=num_to_select,
+            epsilon=strategy_cfg.epsilon,
+            alpha=strategy_cfg.alpha,
+            pacer_window=strategy_cfg.pacer_window,
+            pacer_delta=strategy_cfg.pacer_delta,
+            initial_t=strategy_cfg.initial_t,
+            cutoff_c=strategy_cfg.cutoff_c,
+            max_participation_rounds=strategy_cfg.max_participation_rounds,
+            utility_clip_percentile=strategy_cfg.utility_clip_percentile,
             seed=seed,
             **common,
         )

@@ -62,6 +62,15 @@ class TaskAdapter(ABC):
         ...
 
     # ---- Evaluation ----------------------------------------------------------
+    @abstractmethod
+    def get_metric_name(self) -> str:
+        """Return the name of the main evaluation metric for this task."""
+        ...
+
+    @abstractmethod
+    def is_higher_metric_better(self) -> bool:
+        """Return whether higher metric values are better (e.g. accuracy vs perplexity)."""
+        ...
 
     @abstractmethod
     def compute_metrics(self, eval_pred: Any) -> dict[str, float]:

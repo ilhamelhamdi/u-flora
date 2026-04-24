@@ -63,8 +63,12 @@ def load_data(
 
     # Build a cache key to detect config changes
     subset = getattr(dataset_config, "subset", None)
+    val_split = getattr(dataset_config, "val_split", "validation")
+    alpha = getattr(getattr(partition_config, "dirichlet", {}), "alpha", "")
+    seed = getattr(getattr(partition_config, "dirichlet", {}), "seed", "")
     cache_key = (
-        f"{dataset_config.name}:{subset}:{num_partitions}:{partition_config.strategy}"
+        f"{dataset_config.name}:{subset}:{num_partitions}:"
+        f"{partition_config.strategy}:{val_split}:{alpha}:{seed}"
     )
 
     if _FDS_CACHE is None or _FDS_KEY != cache_key:
@@ -76,7 +80,7 @@ def load_data(
             subset=subset,
             partitioners={
                 "train": train_partitioner,
-                "validation": val_partitioner,
+                val_split: val_partitioner,
             },
         )
         _FDS_KEY = cache_key
@@ -89,11 +93,11 @@ def load_data(
         )
 
     train_set = _FDS_CACHE.load_partition(partition_id, "train")
-    val_set = _FDS_CACHE.load_partition(partition_id, "validation")
+    val_set = _FDS_CACHE.load_partition(partition_id, val_split)
     return train_set, val_set
 
 
-def load_data_centralized(dataset_config: DictConfig, split: str = "validation"):
+def load_data_centralized(dataset_config: DictConfig, split: str | None = None):
     """Load the full (non-partitioned) dataset for centralized evaluation.
 
     Used by server_app.py for global evaluation.
@@ -101,4 +105,5 @@ def load_data_centralized(dataset_config: DictConfig, split: str = "validation")
     from datasets import load_dataset
 
     subset = getattr(dataset_config, "subset", None)
-    return load_dataset(dataset_config.name, subset, split=split)
+    resolved_split = split or getattr(dataset_config, "val_split", "validation")
+    return load_dataset(dataset_config.name, subset, split=resolved_split)

@@ -67,11 +67,11 @@ class ClientState:
     num_samples: int = 0
 
     # Statistical utility tracking (from training feedback)
-    last_train_loss: float = float("inf")
+    last_train_loss: float | None = None
     cumulative_loss: float = 0.0
 
     # System performance tracking
-    last_duration_s: float = 0.0
+    last_duration_s: float | None = None
 
     # Participation history
     last_selected_round: int = 0

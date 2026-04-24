@@ -19,10 +19,14 @@ Usage
 from .base import BaseStrategy
 from .random import RandomStrategy
 from .fedcs import FedCSStrategy
+from .tifl import TiFLStrategy
+from .oort import OortStrategy
 
 
 __all__ = [
     "BaseStrategy",
     "RandomStrategy",
     "FedCSStrategy",
+    "TiFLStrategy",
+    "OortStrategy",
 ]

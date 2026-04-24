@@ -46,7 +46,7 @@ def main(grid: Grid, context: Context) -> None:
     logger.info(
         "Experiment — task=%s  dataset=%s  model=%s  strategy=%s  rounds=%d  clients=%d",
         cfg.task_name,
-        cfg.dataset_name,
+        cfg.dataset.name,
         cfg.model.name,
         getattr(cfg.strategy, "name", "random"),
         cfg.num_server_rounds,
@@ -61,6 +61,11 @@ def main(grid: Grid, context: Context) -> None:
     task_name = cfg.task_name
     task_adapter = get_task_adapter(task_name)
     logger.debug("Task adapter: %s", task_name)
+
+    dataset_name = cfg.dataset.name
+    dataset_config = cfg.datasets[dataset_name]
+    if "num_labels" in dataset_config:
+        cfg.model.num_labels = int(dataset_config.num_labels)
 
     # Get initial model weights
     logger.info("Initializing model: %s", cfg.model.name)
@@ -79,7 +84,14 @@ def main(grid: Grid, context: Context) -> None:
     logger.debug("Client state registry: %d clients", num_clients)
 
     # Build per-strategy class (selection + Flower integration)
-    strategy = build_strategy(cfg, client_states, save_path, use_wandb=True)
+    strategy = build_strategy(
+        cfg,
+        client_states,
+        save_path,
+        use_wandb=True,
+        metric_name=task_adapter.get_metric_name(),
+        is_higher_better=task_adapter.is_higher_metric_better(),
+    )
     logger.info(
         "Strategy: %s  clients: %d  rounds: %d",
         getattr(cfg.strategy, "name", "random"),
@@ -99,7 +111,7 @@ def main(grid: Grid, context: Context) -> None:
 
     logger.info("Federation complete. Finalizing W&B run...")
     wandb_run.finish()
-    logger.info("Done. Results saved to: %s", save_path)
+    logger.info("Done")
 
 
 # -- Evaluation ----------------------------------------------------------------
@@ -157,30 +169,7 @@ def _get_evaluate_fn(
         )
         metrics = trainer.evaluate()
 
-        # Build readable result line for the log
-        metric_parts = [f"loss={metrics['eval_loss']:.4f}"]
-        if "eval_accuracy" in metrics:
-            metric_parts.append(f"acc={metrics['eval_accuracy']:.4f}")
-        if "eval_perplexity" in metrics:
-            metric_parts.append(f"ppl={metrics['eval_perplexity']:.2f}")
-        logger.info("[Eval %s] %s", label, "  ".join(metric_parts))
-
-        # Log to W&B
-        # TODO: can use task adapter to avoid hardcoding metric keys here
-        # TODO: move W&B logging to strategy(?)
-        log_dict = {"server_round": server_round, "eval_loss": metrics["eval_loss"]}
-        if "eval_accuracy" in metrics:
-            log_dict["eval_accuracy"] = metrics["eval_accuracy"]
-        if "eval_perplexity" in metrics:
-            log_dict["eval_perplexity"] = metrics["eval_perplexity"]
-        wandb.log(log_dict)
-
-        # Save to CSV
-        res = {"round": [server_round]}
-        res.update({k: [v] for k, v in metrics.items() if isinstance(v, (int, float))})
-        df = pd.DataFrame(res)
-        csv_path = f"{save_path}/results.csv"
-        df.to_csv(csv_path, mode="a", index=False, header=not os.path.exists(csv_path))
+        logger.info(f"[Eval {label}] Result: {metrics}")
 
         return MetricRecord(metrics)
 
@@ -203,7 +192,6 @@ def _initialize_wandb(cfg):
         config=OmegaConf.to_container(cfg, resolve=True),
         name=run_name,
     )
-
 
 
 def _build_client_states(num_clients: int) -> dict[int, ClientState]:

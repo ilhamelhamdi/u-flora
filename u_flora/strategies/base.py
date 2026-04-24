@@ -51,11 +51,17 @@ class BaseStrategy(Strategy):
         client_states: dict[int, ClientState],
         save_path: str = "",
         use_wandb: bool = True,
+        metric_name: str = "accuracy",  # accuracy, f1, perplexity
+        is_higher_better: bool = True,
+        evaluate_during_training: bool = False,
         **kwargs: Any,
     ) -> None:
         self.client_states = client_states
         self.save_path = save_path
         self.use_wandb = use_wandb
+        self.metric_name = metric_name
+        self.is_higher_better = is_higher_better
+        self.evaluate_during_training = evaluate_during_training
 
         # Built at start() by querying all nodes
         self._pid_to_nid: dict[int, int] = {}  # partition_id → node_id
@@ -64,9 +70,9 @@ class BaseStrategy(Strategy):
         # Cumulative wall-clock time (sum of per-round max durations)
         self._cumulative_wall_clock: float = 0.0
 
-        # Best centralised evaluation accuracy seen so far
-        self._best_accuracy: float = 0.0
-        self._best_accuracy_round: int = 0
+        # Best centralised evaluation metric seen so far
+        self._best_metric: float = float("-inf") if is_higher_better else float("inf")
+        self._best_metric_round: int = -1
 
         # How many times each partition_id has been selected (for fairness metrics)
         self._participation_counts: dict[int, int] = defaultdict(int)
@@ -79,8 +85,7 @@ class BaseStrategy(Strategy):
                     "train_loss",
                     "duration",
                     "compute_time",
-                    "upload_time",
-                    "download_time",
+                    "communication_time",
                     "num_samples",
                     "selected_by",
                 ],
@@ -95,7 +100,7 @@ class BaseStrategy(Strategy):
         self,
         grid: Grid,
         initial_arrays: ArrayRecord,
-        num_rounds: int = 3,
+        num_rounds: int,
         timeout: float = 3600.0,
         train_config: ConfigRecord | None = None,
         evaluate_config: ConfigRecord | None = None,
@@ -122,23 +127,23 @@ class BaseStrategy(Strategy):
 
         # Step 1: node_id <-> partition_id mapping
         logger.info("Discovering nodes...")
-        self.build_node_mapping(grid)
+        self._build_node_mapping(grid)
+        logger.info("Discovered %d nodes", len(self._pid_to_nid))
 
         # Step 2: Pre-training phase for initial client profiling. Default: no-op.
         arrays = initial_arrays
         logger.info("Pre-training phase...")
-        pretrain_arrays = self.configure_pretrain(grid, arrays, timeout)
-        if pretrain_arrays is not None:
-            arrays = pretrain_arrays
-            logger.info("Pre-training phase complete")
-        else:
-            logger.debug("Pre-training phase: no-op")
+        self.configure_pretrain(grid, arrays, timeout)
 
         # Step 3: Centralized evaluation before training
         if evaluate_fn:
+            logger.info("Running initial evaluation before training...")
             res = evaluate_fn(0, arrays)
-            if res is not None:
+            if res is None:
+                logger.info("Initial evaluation returned None, skipping.")
+            else:
                 result.evaluate_metrics_serverapp[0] = res
+                logger.info("Initial evaluation metrics: %s", res)
 
         # Step 4: Main training loop
         logger.info("Starting federated training (%d rounds)...", num_rounds)
@@ -147,25 +152,23 @@ class BaseStrategy(Strategy):
             logger.info("[ROUND %d/%d]", current_round, num_rounds)
 
             # configure_train: selection + build messages
-            selected_pids, messages = self.configure_train(
-                current_round, arrays, grid, timeout
-            )
-            if not messages:
-                logger.warning(
-                    "Round %d: no messages produced, skipping", current_round
-                )
-                continue
+            selected_pids, messages = self.configure_train(current_round, arrays, grid)
 
             logger.info(
                 "[ROUND %d/%d] Selected %d clients, sending train messages...",
-                current_round, num_rounds, len(selected_pids),
+                current_round,
+                num_rounds,
+                len(selected_pids),
             )
 
             # Send messages and collect replies
             replies = grid.send_and_receive(messages, timeout=timeout)
             logger.info(
                 "[ROUND %d/%d] Received %d/%d replies",
-                current_round, num_rounds, len(replies), len(messages),
+                current_round,
+                num_rounds,
+                len(replies),
+                len(messages),
             )
 
             # aggregate_train: FedAvg + metrics logging
@@ -177,12 +180,19 @@ class BaseStrategy(Strategy):
             if train_metrics is not None:
                 result.train_metrics_clientapp[current_round] = train_metrics
 
+            self.configure_post_training_round(current_round, replies, selected_pids)
+
+            # Log metrics
+            self.log_metrics(
+                current_round, replies, selected_pids, self._strategy_name()
+            )
+
             # Centralized evaluation
             if evaluate_fn:
                 res = evaluate_fn(current_round, arrays)
                 if res is not None:
                     result.evaluate_metrics_serverapp[current_round] = res
-                    self._update_best_accuracy(current_round, res)
+                    self._update_best_metric(current_round, res)
 
         result.arrays = arrays
         logger.info("")
@@ -195,33 +205,6 @@ class BaseStrategy(Strategy):
         return result
 
     # ------------------------------------------------------------------
-    # Node mapping
-    # ------------------------------------------------------------------
-
-    def build_node_mapping(self, grid: Grid) -> None:
-        """Identify all nodes and build bidirectional partition_id <-> node_id map."""
-        all_node_ids = list(grid.get_node_ids())
-        record = RecordDict({self.configrecord_key: ConfigRecord()})
-        message_type = f"{MessageType.QUERY}.identify"
-        messages = self._construct_messages(record, all_node_ids, message_type)
-        replies = grid.send_and_receive(messages)
-
-        for reply in replies:
-            if reply.has_error():
-                logger.warning("Node %s failed to identify", reply.metadata.src_node_id)
-                continue
-            nid = reply.metadata.src_node_id
-            pid = int(reply.content[self.configrecord_key]["partition_id"])
-            self._pid_to_nid[pid] = nid
-            self._nid_to_pid[nid] = pid
-
-        logger.info(
-            "Node mapping built: %d/%d nodes identified",
-            len(self._pid_to_nid),
-            len(all_node_ids),
-        )
-
-    # ------------------------------------------------------------------
     # Strategy hooks — override in subclasses
     # ------------------------------------------------------------------
 
@@ -230,8 +213,12 @@ class BaseStrategy(Strategy):
         grid: Grid,
         arrays: ArrayRecord,
         timeout: float,
-    ) -> ArrayRecord | None:
-        """Pre-training phase (e.g. TiFL profiling). Default: no-op."""
+    ) -> None:
+        """
+        Extension point for optional pre-training phase before main federated rounds.
+        By default, this is a no-op that returns None.
+        Override in subclasses to implement custom pre-training logic, such as initial client profiling or warm-up rounds.
+        """
         return None
 
     @abstractmethod
@@ -254,20 +241,23 @@ class BaseStrategy(Strategy):
         self,
         round_num: int,
         replies: list[Message],
-        selected_pids: list[int],
-        extra_metrics: dict[str, float] | None = None,
     ) -> tuple[ArrayRecord | None, MetricRecord | None]:
-        """FedAvg aggregation over training replies + comprehensive metrics logging.
+        """FedAvg aggregation over training replies.
 
-        Args:
-            round_num: Current round number.
-            replies: Raw reply messages from clients.
-            selected_pids: Partition IDs that were asked to train this round.
-            extra_metrics: Strategy-specific floats added to W&B log
-                           (e.g. ``{"strategy/pacer_T": 120.0}``).
+        Parameters
+        ----------
+        server_round : int
+            The current round of federated learning, starting from 1.
+        replies : Iterable[Message]
+            Iterable of reply messages received from client nodes after training.
+            Each message contains ArrayRecords and MetricRecords that get aggregated.
 
-        Returns:
-            (aggregated_arrays, aggregated_metric_record)
+        Returns
+        -------
+        tuple[Optional[ArrayRecord], Optional[MetricRecord]]
+            A tuple containing:
+            - ArrayRecord: Aggregated ArrayRecord, or None if aggregation failed
+            - MetricRecord: Aggregated MetricRecord, or None if aggregation failed
         """
         valid_replies, _ = self._check_and_log_replies(replies, is_train=True)
 
@@ -292,19 +282,28 @@ class BaseStrategy(Strategy):
 
         to_return = agg_arrays, agg_metrics
 
-        # === Additional step: update client states and log metrics ===
+        return to_return
 
+    def configure_post_training_round(
+        self,
+        round_num: int,
+        replies: list[Message],
+        selected_pids: list[int],
+    ):
         # Extract per-client feedback and update client states
-        feedbacks = self.extract_feedback(valid_replies)
+        feedbacks = self.extract_feedback(replies)
         self._update_client_states(round_num, feedbacks, selected_pids)
 
-        # Log metrics
-        strategy_name = self._strategy_name()
-        self._log_round_metrics(
-            round_num, feedbacks, selected_pids, strategy_name, extra_metrics
-        )
-
-        return to_return
+    def log_metrics(
+        self,
+        round_num: int,
+        replies: list[Message],
+        selected_pids: list[int],
+        extra_metrics: dict[str, float] | None = None,
+    ) -> None:
+        """Extension point for strategy-specific metrics logging."""
+        feedbacks = self.extract_feedback(replies)
+        self._log_base_metrics(round_num, feedbacks, selected_pids, extra_metrics)
 
     # ------------------------------------------------------------------
     # Feedback extraction
@@ -317,7 +316,7 @@ class BaseStrategy(Strategy):
 
         Returns:
             Mapping from partition_id → {train_loss, duration, compute_time,
-            upload_time, download_time, num_samples}.
+            communication_time, num_samples}.
         """
         feedbacks: dict[int, dict[str, float]] = {}
         for msg in valid_replies:
@@ -326,14 +325,21 @@ class BaseStrategy(Strategy):
                 if "metrics" in msg.content
                 else msg.content[self.weighted_by_key]
             )
-            pid = int(m["node_id"])  # client reports its partition_id as "node_id"
+            pid = int(m["partition_id"])
             feedbacks[pid] = {
                 "train_loss": float(m.get("train_loss", 0.0)),
-                "duration": float(m.get("duration", 0.0)),
-                "compute_time": float(m.get("actual_train_time", 0.0)),
-                "upload_time": 0.0,  # not yet tracked separately by client
-                "download_time": 0.0,  # not yet tracked separately by client
+                "duration": float(
+                    m.get("duration", 0.0)
+                ),  # TODO: should be tracked by server from send time to receive time, but currently reported by client_app.py
+                "compute_time": float(
+                    m.get("training_time", 0.0)
+                ),  # Represent the compute time to train the model
+                "communication_time": 0.0,  # TODO: should be inferred from duration - compute_time, but currently not reported by client_app.py
                 "num_samples": float(m.get("num-examples", 0)),
+                # TODO: should be only specific to TiFL, consider moving out of base class
+                "val_accuracy": float(m.get("val_accuracy", 0.0)),
+                "val_loss": float(m.get("val_loss", 0.0)),
+                "val_num_examples": float(m.get("val_num_examples", 0.0)),
             }
         return feedbacks
 
@@ -349,6 +355,33 @@ class BaseStrategy(Strategy):
 
     def summary(self):
         pass
+
+    # ------------------------------------------------------------------
+    # Node mapping
+    # ------------------------------------------------------------------
+
+    def _build_node_mapping(self, grid: Grid) -> None:
+        """Identify all nodes and build bidirectional partition_id <-> node_id map."""
+        all_node_ids = list(grid.get_node_ids())
+        record = RecordDict({self.configrecord_key: ConfigRecord()})
+        message_type = f"{MessageType.QUERY}.identify"
+        messages = self._construct_messages(record, all_node_ids, message_type)
+        replies = grid.send_and_receive(messages)
+
+        for reply in replies:
+            if reply.has_error():
+                logger.warning("Node %s failed to identify", reply.metadata.src_node_id)
+                continue
+            nid = reply.metadata.src_node_id
+            pid = int(reply.content[self.configrecord_key]["partition_id"])
+            self._pid_to_nid[pid] = nid
+            self._nid_to_pid[nid] = pid
+
+        logger.info(
+            "Node mapping built: %d/%d nodes identified",
+            len(self._pid_to_nid),
+            len(all_node_ids),
+        )
 
     # ------------------------------------------------------------------
     # Message helpers (copied from FedAvg)
@@ -414,7 +447,10 @@ class BaseStrategy(Strategy):
         arrays: ArrayRecord,
         server_round: int,
     ) -> list[Message]:
-        """Build train messages for the given partition IDs."""
+        """
+        Build train messages for the given partition IDs.
+        It will map partition IDs to Flower internal node IDs and construct messages with the given ArrayRecord and server round.
+        """
         record = RecordDict(
             {
                 self.arrayrecord_key: arrays,
@@ -422,6 +458,7 @@ class BaseStrategy(Strategy):
                     {
                         "server-round": server_round,
                         "save_path": self.save_path,
+                        "evaluate_during_training": self.evaluate_during_training,
                     }
                 ),
             }
@@ -456,24 +493,28 @@ class BaseStrategy(Strategy):
     ) -> None:
         """Update ClientState from training feedback and participation counts."""
         for pid, fb in feedbacks.items():
-            if pid in self.client_states:
-                self.client_states[pid].update_from_feedback(
-                    train_loss=fb.get("train_loss", 0.0),
-                    duration_s=fb.get("duration", 0.0),
-                    current_round=round_num,
-                )
-                self._participation_counts[pid] += 1
+            if pid not in self.client_states:
+                continue
+            self.client_states[pid].update_from_feedback(
+                train_loss=fb.get("train_loss", 0.0),
+                duration_s=fb.get("duration", 0.0),
+                current_round=round_num,
+            )
+            self._participation_counts[pid] += 1
 
-    def _update_best_accuracy(self, round_num: int, metrics: MetricRecord) -> None:
-        """Track best centralised accuracy seen so far."""
-        acc = metrics.get("eval_accuracy") or metrics.get("eval_perplexity")
-        if acc is not None:
-            # For accuracy higher is better; for perplexity lower is better.
-            # Store as-is and let _log_summary decide.
-            val = float(acc)
-            if val > self._best_accuracy:
-                self._best_accuracy = val
-                self._best_accuracy_round = round_num
+    def _update_best_metric(self, round_num: int, metrics: MetricRecord) -> None:
+        """Track best centralised metric seen so far."""
+        metric = metrics.get(f"eval_{self.metric_name}")
+        if metric is not None:
+            # Determine if the current metric is better based on whether higher is better
+            is_better = (
+                metric > self._best_metric
+                if self.is_higher_better
+                else metric < self._best_metric
+            )
+            if is_better:
+                self._best_metric = metric
+                self._best_metric_round = round_num
 
     def _strategy_name(self) -> str:
         """Human-readable name for W&B logging. Override in subclasses."""
@@ -483,12 +524,11 @@ class BaseStrategy(Strategy):
     # Metrics logging
     # ------------------------------------------------------------------
 
-    def _log_round_metrics(
+    def _log_base_metrics(
         self,
         round_num: int,
         feedbacks: dict[int, dict[str, float]],
         selected_pids: list[int],
-        strategy_name: str,
         extra_metrics: dict[str, float] | None = None,
     ) -> None:
         """Log per-round and per-client metrics to W&B."""
@@ -517,10 +557,9 @@ class BaseStrategy(Strategy):
                     fb["train_loss"],
                     fb["duration"],
                     fb["compute_time"],
-                    fb["upload_time"],
-                    fb["download_time"],
+                    fb["communication_time"],
                     int(fb["num_samples"]),
-                    strategy_name,
+                    self._strategy_name(),
                 )
 
             log_dict: dict[str, float] = {
@@ -529,9 +568,10 @@ class BaseStrategy(Strategy):
                 "round/cumulative_wall_clock": self._cumulative_wall_clock,
                 "round/duration_mean": dur_mean,
                 "round/duration_std": dur_std,
-                "round/num_selected": len(selected_pids),
-                "round/num_completed": len(feedbacks),
+                "round/num_client_selected": len(selected_pids),
+                "round/num_client_completed": len(feedbacks),
                 "fairness/jain_index": jfi,
+                "fairness/gini_coefficient": gini,
                 "fairness/participation_std": p_std,
                 "fairness/participation_min": float(min(all_counts)),
                 "fairness/participation_max": float(max(all_counts)),
@@ -540,9 +580,7 @@ class BaseStrategy(Strategy):
                 log_dict.update(extra_metrics)
 
             wandb.log(log_dict, commit=False)
-            wandb.log(
-                {"client/raw_training_history": self._history_table}, commit=False
-            )
+            wandb.log({"client/raw_training_history": self._history_table})
 
         logger.info(
             "Round %d — wall_clock=%.1fs cumul=%.1fs dur_mean=%.1f±%.1f "
@@ -565,30 +603,30 @@ class BaseStrategy(Strategy):
 
         # Retrieve last eval metrics if available
         last_round_with_eval = max(result.evaluate_metrics_serverapp, default=None)
-        final_accuracy: float | None = None
+        final_metric: float | None = None
         if last_round_with_eval is not None:
             m = result.evaluate_metrics_serverapp[last_round_with_eval]
-            final_accuracy = float(
-                m.get("eval_accuracy", m.get("eval_perplexity", 0.0))
-            )
+            final_metric = float(m.get(f"eval_{self.metric_name}", 0.0))
 
         if self.use_wandb:
             summary: dict[str, float] = {
                 "summary/total_wall_clock": self._cumulative_wall_clock,
+                "summary/total_rounds": num_rounds,
+                "summary/best_metric_round": float(self._best_metric_round),
+                "summary/best_metric": self._best_metric,
+                "summary/final_metric": (
+                    final_metric if final_metric is not None else float("nan")
+                ),
                 "summary/final_jain_index": jfi,
                 "summary/participation_gini": gini,
-                "summary/best_accuracy_round": float(self._best_accuracy_round),
-                "summary/best_accuracy": self._best_accuracy,
             }
-            if final_accuracy is not None:
-                summary["summary/final_accuracy"] = final_accuracy
             wandb.log(summary)
 
         logger.info(
-            "Summary — total_wall_clock=%.1fs JFI=%.3f Gini=%.3f best_acc=%.4f (round %d)",
+            "Summary — total_wall_clock=%.1fs JFI=%.3f Gini=%.3f best_metric=%.4f (round %d)",
             self._cumulative_wall_clock,
             jfi,
             gini,
-            self._best_accuracy,
-            self._best_accuracy_round,
+            self._best_metric,
+            self._best_metric_round,
         )

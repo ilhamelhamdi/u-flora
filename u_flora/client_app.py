@@ -45,6 +45,7 @@ def _ensure_file_logging(log_path: str) -> None:
     logging.getLogger("u_flora").addHandler(handler)
     _file_logging_configured = True
 
+
 app = ClientApp()
 
 
@@ -59,6 +60,7 @@ def train(msg: Message, context: Context):
 
     num_rounds = cfg.num_server_rounds
     server_round = msg.content["config"]["server-round"]
+    evaluate_during_training = msg.content["config"].get("evaluate_during_training", False)
 
     # Shorthand prefix for all log lines from this client this round
     tag = f"[C{partition_id:03d} | R{server_round}/{num_rounds}]"
@@ -67,17 +69,27 @@ def train(msg: Message, context: Context):
     task_name = cfg.task_name
     dataset_name = cfg.dataset.name
     dataset_config = cfg.datasets[dataset_name]
+    if "num_labels" in dataset_config:
+        cfg.model.num_labels = int(dataset_config.num_labels)
 
     # -- Task adapter --------------------------------------------------
     adapter = get_task_adapter(task_name)
 
     # -- Data ----------------------------------------------------------
-    logger.debug("%s Loading dataset partition %d/%d...", tag, partition_id, num_partitions)
+    logger.debug(
+        "%s Loading dataset partition %d/%d...", tag, partition_id, num_partitions
+    )
     encoding_func = adapter.get_encoding_fn(cfg.model.name, dataset_config)
     data_collator = adapter.get_data_collator(cfg.model.name)
 
-    train_set, _ = load_data(partition_id, num_partitions, dataset_config)
+    train_set, val_set = load_data(
+        partition_id,
+        num_partitions,
+        dataset_config,
+        cfg.dataset.partition,
+    )
     train_set = train_set.map(encoding_func, batched=True)
+    val_set = val_set.map(encoding_func, batched=True)
     logger.debug("%s Dataset ready: %d samples", tag, len(train_set))
 
     # -- Model ---------------------------------------------------------
@@ -104,7 +116,9 @@ def train(msg: Message, context: Context):
         model=model,
         args=training_arguments,
         train_dataset=train_set,
+        eval_dataset=val_set,
         data_collator=data_collator,
+        compute_metrics=adapter.compute_metrics,
     )
 
     # -- Train ---------------------------------------------------------
@@ -124,6 +138,22 @@ def train(msg: Message, context: Context):
         results.training_loss,
         actual_train_time,
     )
+
+    # -- Evaluation --------------------------------------------------
+    # Evaluation phase is only needed for some strategies (TiFL).
+    if evaluate_during_training:
+        logger.info("%s Validation started — samples=%d", tag, len(val_set))
+        eval_metrics = trainer.evaluate()
+        metric_name = adapter.get_metric_name()
+        local_val_metric = eval_metrics.get(f"eval_{metric_name}", float("nan"))
+        local_val_loss = eval_metrics.get("eval_loss", float("nan"))
+        logger.info(
+            "%s Validation done — loss=%.4f  %s=%.4f",
+            tag,
+            local_val_loss,
+            metric_name,
+            local_val_metric,
+        )
 
     # -- Inject compute heterogeneity delay ----------------------------
     profile = _load_device_profile(context.node_config)
@@ -149,10 +179,16 @@ def train(msg: Message, context: Context):
     metrics = {
         "train_loss": results.training_loss,
         "num-examples": len(train_set),
-        "duration": total_duration,
+        "training_time": total_duration,
         "actual_train_time": actual_train_time,
-        "node_id": partition_id,
+        "partition_id": partition_id,
     }
+
+    if evaluate_during_training:
+        metrics[f"val_{metric_name}"] = local_val_metric
+        metrics[f"val_loss"] = local_val_loss
+        metrics[f"val_num_examples"] = len(val_set)
+
     metric_record = MetricRecord(metrics)
     content = RecordDict({"arrays": model_record, "metrics": metric_record})
     logger.debug("%s Response ready — total_duration=%.1fs", tag, total_duration)
@@ -184,8 +220,13 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
     logger.debug("[C%03d] Resource request received", partition_id)
 
     # Load dataset to report num_samples
-    dataset_config = cfg.datasets[cfg.dataset_name]
-    train_set, _ = load_data(partition_id, num_partitions, dataset_config)
+    dataset_config = cfg.datasets[cfg.dataset.name]
+    train_set, _ = load_data(
+        partition_id,
+        num_partitions,
+        dataset_config,
+        cfg.dataset.partition,
+    )
     num_samples = len(train_set)
 
     # Load device profile (ground truth for simulation)
@@ -209,7 +250,9 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
 def _load_device_profile(node_config: dict) -> dict | None:
     profile_path = node_config.get("device-profile-path")
     if not profile_path:
-        logger.warning("device-profile-path not set in node-config — compute delay simulation disabled")
+        logger.warning(
+            "device-profile-path not set in node-config — compute delay simulation disabled"
+        )
         return None
     if not os.path.exists(profile_path):
         logger.warning(

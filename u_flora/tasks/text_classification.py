@@ -32,6 +32,7 @@ class TextClassificationAdapter(TaskAdapter):
         (e.g. ``"sentence"`` for SST-2, ``"question1,question2"`` for QQP)
     """
 
+    metric_name = "accuracy"
     _accuracy = evaluate.load("accuracy")
 
     # ---- Model ---------------------------------------------------------------
@@ -40,8 +41,11 @@ class TextClassificationAdapter(TaskAdapter):
         return TaskType.SEQ_CLS
 
     def get_model(self, model_cfg: DictConfig) -> PreTrainedModel:
+        num_labels = int(getattr(model_cfg, "num_labels", 2))
         model = AutoModelForSequenceClassification.from_pretrained(
             model_cfg.name,
+            num_labels=num_labels,
+            ignore_mismatched_sizes=True,
             torch_dtype=torch.float32,
         )
         lora_config = self.build_lora_config(model_cfg.lora)
@@ -72,9 +76,15 @@ class TextClassificationAdapter(TaskAdapter):
 
     # ---- Evaluation ----------------------------------------------------------
 
+    def get_metric_name(self):
+        return self.metric_name
+    
+    def is_higher_metric_better(self):
+        return True
+
     def compute_metrics(self, eval_pred: Any) -> dict[str, float]:
         predictions, labels = eval_pred
         predictions = np.argmax(predictions, axis=1)
         acc = self._accuracy.compute(
             predictions=predictions, references=labels)
-        return {"accuracy": acc["accuracy"]}
+        return {self.metric_name: acc["accuracy"]}
