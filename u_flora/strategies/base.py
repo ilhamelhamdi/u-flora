@@ -162,6 +162,7 @@ class BaseStrategy(Strategy):
             )
 
             # Send messages and collect replies
+            # TODO: somehow we need to get each actual duration for each client to properly track wall-clock time. But the `grid.send_and_receive()` API in Flower.ai currently only returns a list of replies without per-client timing info.
             replies = grid.send_and_receive(messages, timeout=timeout)
             logger.info(
                 "[ROUND %d/%d] Received %d/%d replies",
@@ -183,9 +184,7 @@ class BaseStrategy(Strategy):
             self.configure_post_training_round(current_round, replies, selected_pids)
 
             # Log metrics
-            self.log_metrics(
-                current_round, replies, selected_pids, self._strategy_name()
-            )
+            self.log_metrics(current_round, replies, selected_pids)
 
             # Centralized evaluation
             if evaluate_fn:
@@ -303,7 +302,12 @@ class BaseStrategy(Strategy):
     ) -> None:
         """Extension point for strategy-specific metrics logging."""
         feedbacks = self.extract_feedback(replies)
-        self._log_base_metrics(round_num, feedbacks, selected_pids, extra_metrics)
+        self._log_base_metrics(
+            round_num=round_num,
+            feedbacks=feedbacks,
+            selected_pids=selected_pids,
+            extra_metrics=extra_metrics,
+        )
 
     # ------------------------------------------------------------------
     # Feedback extraction
@@ -327,20 +331,20 @@ class BaseStrategy(Strategy):
             )
             pid = int(m["partition_id"])
             feedbacks[pid] = {
-                "train_loss": float(m.get("train_loss", 0.0)),
-                "duration": float(
-                    m.get("duration", 0.0)
-                ),  # TODO: should be tracked by server from send time to receive time, but currently reported by client_app.py
-                "compute_time": float(
-                    m.get("training_time", 0.0)
-                ),  # Represent the compute time to train the model
-                "communication_time": 0.0,  # TODO: should be inferred from duration - compute_time, but currently not reported by client_app.py
+                "train_loss": m.get("train_loss"),
+                # TODO: duration should be tracked by server from send time to receive time, but currently assumed reported by client_app.py
+                "duration": None,
+                "compute_time": m.get("training_time"),
+                # TODO: should be inferred from duration - compute_time.
+                "communication_time": None,
                 "num_samples": float(m.get("num-examples", 0)),
-                # TODO: should be only specific to TiFL, consider moving out of base class
-                "val_accuracy": float(m.get("val_accuracy", 0.0)),
-                "val_loss": float(m.get("val_loss", 0.0)),
-                "val_num_examples": float(m.get("val_num_examples", 0.0)),
             }
+            if self.evaluate_during_training:
+                metric_key = f"eval_{self.metric_name}"
+                feedbacks[pid][metric_key] = m.get(metric_key)
+                feedbacks[pid]["val_loss"] = m.get("val_loss")
+                feedbacks[pid]["val_num_examples"] = m.get("val_num_examples")
+
         return feedbacks
 
     # ------------------------------------------------------------------

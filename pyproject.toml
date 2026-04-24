@@ -40,7 +40,7 @@ clientapp = "u_flora.client_app:app"
 task_name = "text_classification"
 
 # -- Dataset selector & partitioning -------------------------------------------
-dataset.name = "sst2" # Key into [tool.flwr.app.config.datasets.*] below
+dataset.name = "boolq"                   # Key into [tool.flwr.app.config.datasets.*] below
 dataset.partition.strategy = "dirichlet" # "dirichlet" or "iid"
 dataset.partition.dirichlet.alpha = 0.5
 dataset.partition.dirichlet.seed = 42
@@ -57,7 +57,7 @@ train.save-every-round = 5
 train.learning-rate-max = 5e-4
 train.learning-rate-min = 1e-5
 train.training-arguments.output-dir = ""
-train.training-arguments.learning-rate = "" # Overridden by dynamic lr scheduler
+train.training-arguments.learning-rate = ""               # Overridden by dynamic lr scheduler
 train.training-arguments.per-device-train-batch-size = 32
 train.training-arguments.per-device-eval-batch-size = 32
 train.training-arguments.logging-steps = 32
@@ -68,14 +68,6 @@ train.training-arguments.save-steps = 1000
 train.training-arguments.save-total-limit = 2
 train.training-arguments.gradient-checkpointing = false
 train.training-arguments.lr-scheduler-type = "constant"
-
-# -- Client selection strategy -------------------------------------------------
-# name: random | fedcs | oort
-strategy.name = "random"
-strategy.num-to-select = 10
-strategy.seed = 42
-# strategy.fraction-train = 0.2
-# strategy.fraction-evaluate = 0.0
 
 # -- Federation ----------------------------------------------------------------
 num-server-rounds = 10
@@ -89,39 +81,21 @@ wandb.project = "u-flora-testbed"
 wandb.entity = "ilham-abdillah-alhamdi-universitas-indonesia"
 wandb.run-name = ""
 
+# -- Client selection strategy -------------------------------------------------
+# name: random | fedcs | tifl | oort
+strategy.name = "random"
+strategy.seed = 42
+strategy.num-to-select = 10
+
+# ==============================================================================
+# Strategy-specific configurations
+# ==============================================================================
+[tool.flwr.app.config.strategies.random]
+
+
 # ==============================================================================
 # Dataset definitions
 # ==============================================================================
-
-[tool.flwr.app.config.datasets.sst2]
-name = "glue"
-subset = "sst2"
-text_fields = "sentence"
-label_field = "label"
-num_labels = 2
-train_split = "train"
-val_split = "validation"
-num_clients = 100
-
-[tool.flwr.app.config.datasets.qnli]
-name = "glue"
-subset = "qnli"
-text_fields = "question,sentence"
-label_field = "label"
-num_labels = 2
-train_split = "train"
-val_split = "validation"
-num_clients = 100
-
-[tool.flwr.app.config.datasets.qqp]
-name = "glue"
-subset = "qqp"
-text_fields = "question1,question2"
-label_field = "label"
-num_labels = 2
-train_split = "train"
-val_split = "validation"
-num_clients = 100
 
 [tool.flwr.app.config.datasets.boolq]
 name = "super_glue"
@@ -131,7 +105,6 @@ label_field = "label"
 num_labels = 2
 train_split = "train"
 val_split = "validation"
-num_clients = 50
 
 [tool.flwr.app.config.datasets.mnli]
 name = "glue"
@@ -141,4 +114,32 @@ label_field = "label"
 num_labels = 3
 train_split = "train"
 val_split = "validation_matched"
-num_clients = 100
+
+# [tool.flwr.app.config.datasets.sst2]
+# name = "glue"
+# subset = "sst2"
+# text_fields = "sentence"
+# label_field = "label"
+# num_labels = 2
+# train_split = "train"
+# val_split = "validation"
+
+
+# [tool.flwr.app.config.datasets.qnli]
+# name = "glue"
+# subset = "qnli"
+# text_fields = "question,sentence"
+# label_field = "label"
+# num_labels = 2
+# train_split = "train"
+# val_split = "validation"
+
+
+# [tool.flwr.app.config.datasets.qqp]
+# name = "glue"
+# subset = "qqp"
+# text_fields = "question1,question2"
+# label_field = "label"
+# num_labels = 2
+# train_split = "train"
+# val_split = "validation"
