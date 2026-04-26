@@ -65,12 +65,10 @@ LOG_DIR_SUPERNODE = "logs/supernode"
 LOG_DIR_CLIENTAPP = "logs/clientapp"
 PROFILE_DIR = "device_profiles"
 DEFAULT_PROFILE_NAMESPACE = "default"
-COMBINED_PROFILE_POOL_FILE = str(Path(__file__).parent / "traces" / "combined.json")
-NETWORK_PROFILE_TRACE_FILE = str(
-    Path(__file__).parent / "traces" / "network" / "trace.json"
-)
-COMPUTE_PROFILE_TRACE_FILE = str(
-    Path(__file__).parent / "traces" / "computation" / "trace.json"
+# FedScale device-capacity trace: { "<client_id>": {"computation": ms/sample,
+#   "communication": kbps}, ... }
+FEDSCALE_PROFILE_POOL_FILE = str(
+    Path(__file__).parent / "traces"  / "client_device_capacity.json"
 )
 
 # Superlink flower
@@ -162,10 +160,10 @@ def main() -> None:
     p_prof = sub.add_parser(
         "profiles",
         aliases=["scenario-profiles"],
-        help="Sample scenario profiles from traces/combined.json",
+        help="Sample scenario profiles from the FedScale trace.",
     )
     p_prof.add_argument("-n", "--num-clients", type=int, default=100)
-    p_prof.add_argument("--combined-path", type=str, default=COMBINED_PROFILE_POOL_FILE)
+    p_prof.add_argument("--fedscale-path", type=str, default=FEDSCALE_PROFILE_POOL_FILE)
     p_prof.add_argument(
         "--beta",
         type=float,
@@ -196,7 +194,7 @@ def main() -> None:
     elif args.command in {"profiles", "scenario-profiles"}:
         profiles = generate_profiles(
             num_clients=args.num_clients,
-            combined_path=args.combined_path,
+            fedscale_path=args.fedscale_path,
             beta=args.beta,
             num_samples=args.num_samples,
             local_epochs=args.local_epochs,
@@ -524,15 +522,21 @@ def _estimate_round_duration_from_profile(
     local_epochs: int,
     model_size_kb: float,
 ) -> float:
-    train_time_s = (
-        float(profile["computation_latency_ms"]) * num_samples * local_epochs / 1000.0
+    """Composition-ranking helper.
+
+    NOTE: this uses the RAW FedScale ``computation`` value (ms/sample on the
+    benchmark) directly without anchoring to a per-task ``t_actual_ms``.
+    That is fine here because we only need to *rank* profiles by relative
+    speed; the absolute number of seconds is not used downstream of sampling.
+    """
+    raw_comp_ms = float(profile.get("computation", 0.0))
+    comm_kbps = float(profile.get("communication", 0.0))
+
+    compute_s = raw_comp_ms * num_samples * local_epochs / 1000.0
+    comm_s = (
+        2.0 * model_size_kb / comm_kbps if comm_kbps > 0 and model_size_kb > 0 else 0.0
     )
-    comm_time_s = (
-        model_size_kb / max(1.0, float(profile["download_kbps"]))
-        + model_size_kb / max(1.0, float(profile["upload_kbps"]))
-        + float(profile["latency_ms"]) / 1000.0
-    )
-    return train_time_s + comm_time_s
+    return compute_s + comm_s
 
 
 def sample_by_composition(
@@ -582,77 +586,63 @@ def sample_by_composition(
         sampled = dict(original)
         sampled["source_pool_index"] = int(ranked_idx[int(ranked_choice_idx)])
         sampled["client_id"] = new_client_id
-        if not sampled.get("device_name"):
-            sampled.pop("device_name", None)
         selected_profiles.append(sampled)
 
     return selected_profiles
 
 
-def _load_combined_profile_pool(combined_path: str) -> tuple[list[dict], float]:
-    if not os.path.exists(combined_path):
+def _load_fedscale_profile_pool(fedscale_path: str) -> tuple[list[dict], float]:
+    """Load the FedScale device-capacity trace.
+
+    Expected shape:
+        { "<client_id>": {"computation": ms/sample, "communication": kbps}, ... }
+
+    Returns (pool, t_min_ms) where ``pool`` is a list of normalized dicts and
+    ``t_min_ms`` is the fastest device's computation value (used as the
+    relative-speed anchor for client-side simulation).
+    """
+    if not os.path.exists(fedscale_path):
         raise FileNotFoundError(
-            f"Combined profile pool not found: {combined_path}. "
-            "Generate it first using traces/combine.ipynb."
+            f"FedScale trace not found: {fedscale_path}. "
+            "Download it from the FedScale repo and place it under traces/computation/."
         )
 
-    with open(combined_path) as f:
+    with open(fedscale_path) as f:
         data = json.load(f)
 
-    if isinstance(data, dict):
-        pool = data.get("profiles", [])
-        metadata = data.get("metadata", {})
-        t_min_ms = float(metadata.get("t_min_ms", 0))
-    elif isinstance(data, list):
-        pool = data
-        t_min_ms = 0.0
-    else:
+    if not isinstance(data, dict):
         raise ValueError(
-            f"Invalid format for combined pool at {combined_path}. "
-            "Expected list[dict] or {'profiles': [...], 'metadata': {...}}."
+            f"Invalid FedScale trace at {fedscale_path}; expected a dict keyed by client_id."
+        )
+
+    pool: list[dict] = []
+    for raw_id, entry in data.items():
+        if not isinstance(entry, dict):
+            continue
+        comp = entry.get("computation")
+        comm = entry.get("communication")
+        if comp is None or comm is None:
+            continue
+        pool.append(
+            {
+                "computation": float(comp),
+                "communication": float(comm),
+                "trace_id": str(raw_id),
+            }
         )
 
     if not pool:
         raise ValueError(
-            f"Combined profile pool at {combined_path} is empty. "
-            "Regenerate it using traces/combine.ipynb."
+            f"FedScale trace at {fedscale_path} produced an empty pool."
         )
 
-    required_keys = {
-        "computation_latency_ms",
-        "download_kbps",
-        "upload_kbps",
-        "latency_ms",
-    }
-    normalized_pool: list[dict] = []
-    for idx, raw in enumerate(pool):
-        missing = required_keys.difference(raw.keys())
-        if missing:
-            raise ValueError(
-                f"Profile index {idx} in {combined_path} is missing keys: {sorted(missing)}"
-            )
-
-        normalized = {
-            "computation_latency_ms": float(raw["computation_latency_ms"]),
-            "download_kbps": float(raw["download_kbps"]),
-            "upload_kbps": float(raw["upload_kbps"]),
-            "latency_ms": float(raw["latency_ms"]),
-            "jitter_ms": float(raw.get("jitter_ms", 0.0)),
-            "network_type": raw.get("network_type", "unknown"),
-        }
-        if raw.get("device_name"):
-            normalized["device_name"] = raw["device_name"]
-        normalized_pool.append(normalized)
-
-    if t_min_ms <= 0:
-        t_min_ms = min(p["computation_latency_ms"] for p in normalized_pool)
-
-    return normalized_pool, t_min_ms
+    t_min_ms = min(p["computation"] for p in pool if p["computation"] > 0)
+    return pool, t_min_ms
 
 
 def generate_profiles(
     num_clients: int,
-    combined_path: str = COMBINED_PROFILE_POOL_FILE,
+    fedscale_path: str = FEDSCALE_PROFILE_POOL_FILE,
     beta: float = 0.0,
     num_samples: int = AVG_NUM_SAMPLES,
     local_epochs: int = 1,
@@ -660,8 +650,8 @@ def generate_profiles(
     seed: int = 42,
     output_dir: str = PROFILE_DIR,
 ) -> list[dict]:
-    """Sample and persist scenario-specific device profiles from combined pool."""
-    pool, t_min_ms = _load_combined_profile_pool(combined_path)
+    """Sample and persist scenario-specific device profiles from the FedScale pool."""
+    pool, t_min_ms = _load_fedscale_profile_pool(fedscale_path)
 
     profile_dicts = sample_by_composition(
         profiles=pool,
@@ -694,7 +684,7 @@ def generate_profiles(
             "num_samples": num_samples,
             "local_epochs": local_epochs,
             "model_size_kb": model_size_kb,
-            "pool_path": combined_path,
+            "pool_path": fedscale_path,
             "pool_size": len(pool),
         },
     }
@@ -802,40 +792,11 @@ def _configure_toxiproxy_for_client(
     )
     resp.raise_for_status()
 
+    # FedScale shape: single symmetric `communication` kbps — apply to both streams.
+    rate_kb_per_s = max(1, int(float(profile["communication"]) / 8))
     toxics = [
-        # Bandwidth (downstream) — KB/s = kbps / 8
-        (
-            f"bw_down_{cid}",
-            "bandwidth",
-            "downstream",
-            {"rate": max(1, int(profile["download_kbps"] / 8))},
-        ),
-        # Bandwidth (upstream)
-        (
-            f"bw_up_{cid}",
-            "bandwidth",
-            "upstream",
-            {"rate": max(1, int(profile["upload_kbps"] / 8))},
-        ),
-        # Latency — half RTT each way
-        (
-            f"lat_down_{cid}",
-            "latency",
-            "downstream",
-            {
-                "latency": max(1, int(profile["latency_ms"] / 2)),
-                "jitter": max(0, int(profile["jitter_ms"] / 2)),
-            },
-        ),
-        (
-            f"lat_up_{cid}",
-            "latency",
-            "upstream",
-            {
-                "latency": max(1, int(profile["latency_ms"] / 2)),
-                "jitter": max(0, int(profile["jitter_ms"] / 2)),
-            },
-        ),
+        (f"bw_down_{cid}", "bandwidth", "downstream", {"rate": rate_kb_per_s}),
+        (f"bw_up_{cid}", "bandwidth", "upstream", {"rate": rate_kb_per_s}),
     ]
 
     for name, toxic_type, stream, attributes in toxics:
@@ -876,21 +837,16 @@ def _delete_pid_file() -> None:
 
 
 def _print_profile_summary(profiles: list[dict]) -> None:
-    """Print a concise summary of the generated profiles."""
+    """Print a concise summary of the generated FedScale-shaped profiles."""
     n = len(profiles)
-    comp = sorted(p["computation_latency_ms"] for p in profiles)
-    dl = sorted(p["download_kbps"] for p in profiles)
-    rtt = sorted(p["latency_ms"] for p in profiles)
-    net_types: dict[str, int] = {}
-    for p in profiles:
-        nt = p["network_type"]
-        net_types[nt] = net_types.get(nt, 0) + 1
+    comp = sorted(p["computation"] for p in profiles)
+    bw = sorted(p["communication"] for p in profiles)
 
     def percentile(vals: list, pct: int) -> float:
         return vals[min(int(len(vals) * pct / 100), len(vals) - 1)]
 
     print(f"\n{'=' * 70}")
-    print(f"  {n} Device Profiles")
+    print(f"  {n} Device Profiles (FedScale)")
     print(f"{'=' * 70}")
     print(
         f"  {'Metric':<25} {'P10':>10} {'P25':>10} {'P50':>10} {'P75':>10} {'P90':>10}"
@@ -899,15 +855,13 @@ def _print_profile_summary(profiles: list[dict]) -> None:
 
     for label, vals in [
         ("Compute (ms/sample)", comp),
-        ("Download (kbps)", dl),
-        ("RTT (ms)", rtt),
+        ("Bandwidth (kbps)", bw),
     ]:
         row = [f"{percentile(vals, p):.1f}" for p in [10, 25, 50, 75, 90]]
         print(f"  {label:<25} {'':>3}".rstrip() + "  ".join(f"{v:>10}" for v in row))
 
-    print(f"\n  Network types: {net_types}")
-    print(f"  Heterogeneity (compute): {comp[-1] / max(comp[0], 0.01):.1f}x")
-    print(f"  Heterogeneity (network): {dl[-1] / max(dl[0], 0.01):.1f}x")
+    print(f"\n  Heterogeneity (compute): {comp[-1] / max(comp[0], 0.01):.1f}x")
+    print(f"  Heterogeneity (bandwidth): {bw[-1] / max(bw[0], 0.01):.1f}x")
 
 
 if __name__ == "__main__":

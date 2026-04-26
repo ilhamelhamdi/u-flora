@@ -25,8 +25,9 @@ from flwr.common import (
 from flwr.server import Grid
 from flwr.serverapp.strategy import Result, Strategy, strategy_utils
 
-from ..client_profile.typing import ClientState
+from ..client_profile.typing import ClientState, DeviceProfile
 from ..utils.metrics import compute_gini_coefficient, compute_jain_fairness_index
+from ..utils.timing import estimate_round_duration_s
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ class BaseStrategy(Strategy):
         metric_name: str = "accuracy",  # accuracy, f1, perplexity
         is_higher_better: bool = True,
         evaluate_during_training: bool = False,
+        model_size_kb: float = 0.0,
         **kwargs: Any,
     ) -> None:
         self.client_states = client_states
@@ -62,6 +64,9 @@ class BaseStrategy(Strategy):
         self.metric_name = metric_name
         self.is_higher_better = is_higher_better
         self.evaluate_during_training = evaluate_during_training
+        # Used by strategies that estimate per-client durations server-side
+        # (FedCS, TiFL, Oort exploration).
+        self.model_size_kb = float(model_size_kb)
 
         # Built at start() by querying all nodes
         self._pid_to_nid: dict[int, int] = {}  # partition_id → node_id
@@ -161,8 +166,9 @@ class BaseStrategy(Strategy):
                 len(selected_pids),
             )
 
-            # Send messages and collect replies
-            # TODO: somehow we need to get each actual duration for each client to properly track wall-clock time. But the `grid.send_and_receive()` API in Flower.ai currently only returns a list of replies without per-client timing info.
+            # Per-client wall-clock time is reported by clients as
+            # `simulated_duration_s` in the metrics dict (see client_app.py).
+            # `extract_feedback` reads it back into `feedbacks[pid]["duration"]`.
             replies = grid.send_and_receive(messages, timeout=timeout)
             logger.info(
                 "[ROUND %d/%d] Received %d/%d replies",
@@ -332,11 +338,11 @@ class BaseStrategy(Strategy):
             pid = int(m["partition_id"])
             feedbacks[pid] = {
                 "train_loss": m.get("train_loss"),
-                # TODO: duration should be tracked by server from send time to receive time, but currently assumed reported by client_app.py
-                "duration": None,
-                "compute_time": m.get("training_time"),
-                # TODO: should be inferred from duration - compute_time.
-                "communication_time": None,
+                # Duration is reported by the client based on its device
+                # profile (compute + comm). See client_app._compute_simulated_duration.
+                "duration": float(m.get("simulated_duration_s", 0.0)),
+                "compute_time": float(m.get("simulated_compute_s", 0.0)),
+                "communication_time": float(m.get("simulated_comm_s", 0.0)),
                 "num_samples": float(m.get("num-examples", 0)),
             }
             if self.evaluate_during_training:
@@ -484,6 +490,27 @@ class BaseStrategy(Strategy):
         record = RecordDict({self.configrecord_key: ConfigRecord(cfg_dict)})
         node_ids = [self._pid_to_nid[p] for p in partition_ids if p in self._pid_to_nid]
         return list(self._construct_messages(record, node_ids, message_type))
+
+    # ------------------------------------------------------------------
+    # Duration estimation (server-side; uses calibration constants)
+    # ------------------------------------------------------------------
+
+    def _estimate_duration(
+        self,
+        profile: DeviceProfile,
+        num_samples: int,
+        local_epochs: int,
+    ) -> tuple[float, float, float]:
+        """Estimate (compute_s, comm_s, total_s) for one client one round."""
+        return estimate_round_duration_s(
+            profile={
+                "computation": profile.computation,
+                "communication": profile.communication,
+            },
+            num_samples=num_samples,
+            local_epochs=local_epochs,
+            model_size_kb=self.model_size_kb,
+        )
 
     # ------------------------------------------------------------------
     # Internal state helpers

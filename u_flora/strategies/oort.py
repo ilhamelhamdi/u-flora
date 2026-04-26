@@ -258,10 +258,10 @@ class OortStrategy(BaseStrategy):
         for pid in unexplored:
             state = self.client_states[pid]
             if state.profile is not None:
-                est = state.profile.estimate_round_duration(
+                _, _, est = self._estimate_duration(
+                    state.profile,
                     num_samples=max(1, state.num_samples),
                     local_epochs=1,
-                    model_size_kb=3140,
                 )
                 w = 1 / max(1e-6, est)
             else:

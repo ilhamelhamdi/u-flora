@@ -1,10 +1,12 @@
 import logging
+
 from omegaconf import DictConfig
 
 from . import BaseStrategy, RandomStrategy, FedCSStrategy, TiFLStrategy, OortStrategy
 from ..client_profile.typing import ClientState
 
 logger = logging.getLogger(__name__)
+
 
 def build_strategy(
     cfg: DictConfig,
@@ -24,12 +26,15 @@ def build_strategy(
     seed = strategy_cfg.get("seed", 42)
     local_epochs = cfg.train.training_arguments.num_train_epochs
 
+    model_size_kb = float(cfg.get("model_size_kb", 0.0))
+
     common = dict(
         client_states=client_states,
         save_path=save_path,
         use_wandb=use_wandb,
         metric_name=metric_name,
         is_higher_better=is_higher_better,
+        model_size_kb=model_size_kb,
     )
 
     if name == "random":
@@ -38,7 +43,6 @@ def build_strategy(
     if name == "fedcs":
         return FedCSStrategy(
             round_deadline_s=strategy_cfg.round_deadline_s,
-            model_size_kb=strategy_cfg.model_size_kb,
             local_epochs=local_epochs,
             c_fraction=strategy_cfg.c_fraction,
             seed=seed,
@@ -52,7 +56,6 @@ def build_strategy(
             sync_rounds=strategy_cfg.sync_rounds,
             prob_update_interval=strategy_cfg.prob_update_interval,
             round_deadline_s=strategy_cfg.round_deadline_s,
-            model_size_kb=strategy_cfg.model_size_kb,
             local_epochs=local_epochs,
             seed=seed,
             **common,
