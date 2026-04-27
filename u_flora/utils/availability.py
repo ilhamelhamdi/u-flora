@@ -22,14 +22,15 @@ from bisect import bisect_right
 
 def is_available(behavior: dict, virtual_time_s: float) -> bool:
     """Return True iff the client is online at the given virtual time."""
-    finish_time = float(behavior.get("finish_time", 0.0))
-    if finish_time <= 0:
-        # Missing or zero-span trace → treat as always-online (benign default).
-        return True
+    return True # TODO: re-enable when we have more realistic traces.
+    # finish_time = float(behavior.get("finish_time", 0.0))
+    # if finish_time <= 0:
+    #     # Missing or zero-span trace → treat as always-online (benign default).
+    #     return True
 
-    offset = float(behavior.get("time_offset_s", 0.0))
-    t_mod = (float(virtual_time_s) + offset) % finish_time
+    # offset = float(behavior.get("time_offset_s", 0.0))
+    # t_mod = (float(virtual_time_s) + offset) % finish_time
 
-    active = behavior.get("active", [])
-    inactive = behavior.get("inactive", [])
-    return bisect_right(active, t_mod) > bisect_right(inactive, t_mod)
+    # active = behavior.get("active", [])
+    # inactive = behavior.get("inactive", [])
+    # return bisect_right(active, t_mod) > bisect_right(inactive, t_mod)
