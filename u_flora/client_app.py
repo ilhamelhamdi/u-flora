@@ -18,6 +18,7 @@ from flwr.clientapp import ClientApp
 from flwr.common.config import unflatten_dict
 from omegaconf import DictConfig
 from peft import get_peft_model_state_dict, set_peft_model_state_dict
+import torch
 from transformers import TrainingArguments, Trainer
 
 from .tasks.registry import get_task_adapter
@@ -121,82 +122,94 @@ def train(msg: Message, context: Context):
         eval_dataset=val_set,
         data_collator=data_collator,
         compute_metrics=adapter.compute_metrics,
+        torch_compile=False,
     )
 
-    # -- Train ---------------------------------------------------------
-    logger.info(
-        "%s Training started — samples=%d  epochs=%g  lr=%.2e",
-        tag,
-        len(train_set),
-        training_arguments.num_train_epochs,
-        new_lr,
-    )
-    start_time = time.time()
-    results = trainer.train()
-    actual_train_time = time.time() - start_time
-    logger.info(
-        "%s Training done — loss=%.4f  time=%.1fs",
-        tag,
-        results.training_loss,
-        actual_train_time,
-    )
-
-    # -- Evaluation --------------------------------------------------
-    # Evaluation phase is only needed for some strategies (TiFL).
-    if evaluate_during_training:
-        logger.info("%s Validation started — samples=%d", tag, len(val_set))
-        eval_metrics = trainer.evaluate()
-        metric_name = adapter.get_metric_name()
-        local_val_metric = eval_metrics.get(f"eval_{metric_name}", float("nan"))
-        local_val_loss = eval_metrics.get("eval_loss", float("nan"))
+    try:
+        # -- Train ---------------------------------------------------------
         logger.info(
-            "%s Validation done — loss=%.4f  %s=%.4f",
+            "%s Training started — samples=%d  epochs=%g  lr=%.2e",
             tag,
-            local_val_loss,
-            metric_name,
-            local_val_metric,
+            len(train_set),
+            training_arguments.num_train_epochs,
+            new_lr,
+        )
+        start_time = time.time()
+        results = trainer.train()
+        actual_train_time = time.time() - start_time
+        logger.info(
+            "%s Training done — loss=%.4f  time=%.1fs",
+            tag,
+            results.training_loss,
+            actual_train_time,
         )
 
-    # -- Compute simulated wall-clock duration -------------------------
-    profile = _load_device_profile(context)
-    local_epochs = int(training_arguments.num_train_epochs)
-    sim_compute_s, sim_comm_s, sim_total_s = _compute_simulated_duration(
-        profile=profile,
-        num_samples=len(train_set),
-        local_epochs=local_epochs,
-        context=context,
-    )
-    logger.debug(
-        "%s Simulated duration: total=%.2fs (compute=%.2fs, comm=%.2fs); "
-        "actual_train_time=%.2fs",
-        tag,
-        sim_total_s,
-        sim_compute_s,
-        sim_comm_s,
-        actual_train_time,
-    )
+        # -- Evaluation --------------------------------------------------
+        # Evaluation phase is only needed for some strategies (TiFL).
+        if evaluate_during_training:
+            logger.info("%s Validation started — samples=%d", tag, len(val_set))
+            eval_metrics = trainer.evaluate()
+            metric_name = adapter.get_metric_name()
+            local_val_metric = eval_metrics.get(f"eval_{metric_name}", float("nan"))
+            local_val_loss = eval_metrics.get("eval_loss", float("nan"))
+            logger.info(
+                "%s Validation done — loss=%.4f  %s=%.4f",
+                tag,
+                local_val_loss,
+                metric_name,
+                local_val_metric,
+            )
 
-    # -- Build response ------------------------------------------------
-    model_record = ArrayRecord(get_peft_model_state_dict(model))
-    metrics = {
-        "train_loss": results.training_loss,
-        "num-examples": len(train_set),
-        "simulated_duration_s": sim_total_s,
-        "simulated_compute_s": sim_compute_s,
-        "simulated_comm_s": sim_comm_s,
-        "actual_train_time": actual_train_time,
-        "partition_id": partition_id,
-    }
+        # -- Compute simulated wall-clock duration -------------------------
+        profile = _load_device_profile(context)
+        local_epochs = int(training_arguments.num_train_epochs)
+        sim_compute_s, sim_comm_s, sim_total_s = _compute_simulated_duration(
+            profile=profile,
+            num_samples=len(train_set),
+            local_epochs=local_epochs,
+            context=context,
+        )
+        logger.debug(
+            "%s Simulated duration: total=%.2fs (compute=%.2fs, comm=%.2fs); "
+            "actual_train_time=%.2fs",
+            tag,
+            sim_total_s,
+            sim_compute_s,
+            sim_comm_s,
+            actual_train_time,
+        )
 
-    if evaluate_during_training:
-        metrics[f"val_{metric_name}"] = local_val_metric
-        metrics["val_loss"] = local_val_loss
-        metrics["val_num_examples"] = len(val_set)
+        # -- Build response ------------------------------------------------
+        model_record = ArrayRecord(get_peft_model_state_dict(model))
+        metrics = {
+            "train_loss": results.training_loss,
+            "num-examples": len(train_set),
+            "simulated_duration_s": sim_total_s,
+            "simulated_compute_s": sim_compute_s,
+            "simulated_comm_s": sim_comm_s,
+            "actual_train_time": actual_train_time,
+            "partition_id": partition_id,
+        }
 
-    metric_record = MetricRecord(metrics)
-    content = RecordDict({"arrays": model_record, "metrics": metric_record})
-    logger.debug("%s Response ready — simulated_duration=%.1fs", tag, sim_total_s)
-    return Message(content=content, reply_to=msg)
+        if evaluate_during_training:
+            metrics[f"val_{metric_name}"] = local_val_metric
+            metrics["val_loss"] = local_val_loss
+            metrics["val_num_examples"] = len(val_set)
+
+        metric_record = MetricRecord(metrics)
+        content = RecordDict({"arrays": model_record, "metrics": metric_record})
+        logger.debug("%s Response ready — simulated_duration=%.1fs", tag, sim_total_s)
+        return Message(content=content, reply_to=msg)
+    except Exception as e:
+        # Cleanup
+        if 'model' in locals():
+            model.to("cpu")
+        del trainer
+        if 'model' in locals():
+            del model
+        import gc
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
 @app.query("identify")

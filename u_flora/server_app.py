@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any
 
 import pandas as pd
+import torch
 import wandb
 from flwr.app import ArrayRecord, Context, MetricRecord
 from flwr.common.config import unflatten_dict
@@ -167,8 +168,16 @@ def _get_evaluate_fn(
             eval_dataset=validation_set,
             compute_metrics=task_adapter.compute_metrics,
             data_collator=data_collator,
+            torch_compile=False,
         )
         metrics = trainer.evaluate()
+
+
+        model.to("cpu")
+        del trainer
+        import gc
+        gc.collect()
+        torch.cuda.empty_cache()
 
         logger.info(f"[Eval {label}] Result: {metrics}")
 
