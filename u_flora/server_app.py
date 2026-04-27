@@ -89,7 +89,7 @@ def main(grid: Grid, context: Context) -> None:
         cfg,
         client_states,
         save_path,
-        model_size_kb=task_adapter.get_model_size_kb(cfg.model),
+        model_size_kb=task_adapter.get_lora_adapter_size_kb(cfg.model),
         use_wandb=True,
         metric_name=task_adapter.get_metric_name(),
         is_higher_better=task_adapter.is_higher_metric_better(),

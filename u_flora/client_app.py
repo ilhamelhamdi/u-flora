@@ -163,7 +163,7 @@ def train(msg: Message, context: Context):
             profile=profile,
             num_samples=len(train_set),
             local_epochs=local_epochs,
-            model_size_kb=adapter.get_model_size_kb(cfg.model),
+            model_size_kb=adapter.get_lora_adapter_size_kb(cfg.model),
             context=context,
         )
         logger.debug(
