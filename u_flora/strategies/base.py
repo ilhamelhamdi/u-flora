@@ -360,6 +360,10 @@ class BaseStrategy(Strategy):
         """
         feedbacks: dict[int, dict[str, float]] = {}
         for msg in valid_replies:
+            if not msg.has_content():
+                logger.warning("Skipping a message with no content (likely a client crash/OOM).")
+                continue
+            
             m = (
                 msg.content["metrics"]
                 if "metrics" in msg.content
@@ -368,8 +372,6 @@ class BaseStrategy(Strategy):
             pid = int(m["partition_id"])
             feedbacks[pid] = {
                 "train_loss": m.get("train_loss"),
-                # Duration is reported by the client based on its device
-                # profile (compute + comm). See client_app._compute_simulated_duration.
                 "duration": float(m.get("simulated_duration_s", 0.0)),
                 "compute_time": float(m.get("simulated_compute_s", 0.0)),
                 "communication_time": float(m.get("simulated_comm_s", 0.0)),
