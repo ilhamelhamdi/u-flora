@@ -198,9 +198,9 @@ def _initialize_wandb(cfg):
     timestamp = datetime.now().strftime("%Y%m%d_%H:%M:%S")
     dataset_name = cfg.dataset.name
     strategy_name = cfg.strategy.name
-    strategy_seed = cfg.strategy.seed
+    seed = cfg.seed
     run_name_suffix = cfg.wandb.run_name
-    run_name = f"{strategy_name}-{dataset_name}-{strategy_seed}"
+    run_name = f"{strategy_name}-{dataset_name}-{seed}"
     if run_name_suffix:
         run_name += f"-{run_name_suffix}"
     run_name += f"-{timestamp}"
