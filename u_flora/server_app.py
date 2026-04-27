@@ -158,10 +158,11 @@ def _get_evaluate_fn(
             logger.info("[Eval %s] Checkpoint saved → %s", label, ckpt_path)
 
         # Optionally cap eval number
+        eval_set = validation_set
         max_samples = cfg.eval.get("max_samples", -1) 
         if max_samples > 0:
             limit = min(len(validation_set), max_samples)
-            validation_set = validation_set.select(range(limit))
+            eval_set = validation_set.select(range(limit))
             logger.info("[Eval %s] Capped evaluation to %d samples", label, limit)
 
         # Evaluate
@@ -172,7 +173,7 @@ def _get_evaluate_fn(
         trainer = Trainer(
             model=model,
             args=trainer_args,
-            eval_dataset=validation_set,
+            eval_dataset=eval_set,
             compute_metrics=task_adapter.compute_metrics,
             data_collator=data_collator,
             torch_compile=False,
