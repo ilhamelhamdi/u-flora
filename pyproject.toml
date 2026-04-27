@@ -39,13 +39,13 @@ clientapp = "u_flora.client_app:app"
 # Controls which TaskAdapter is used. One of: text_classification, causal_lm
 task_name = "text_classification"
 
-seed = 42 # Global seed for reproducibility (dataset partitioning, client selection randomness, etc.)
+# Global seed for reproducibility (dataset partitioning, client selection randomness, etc.)
+seed = 42 
 
 # -- Dataset selector & partitioning -------------------------------------------
 dataset.name = "boolq"                   # Key into [tool.flwr.app.config.datasets.*] below
 dataset.partition.strategy = "dirichlet" # "dirichlet" or "iid"
-dataset.partition.dirichlet.alpha = 0.5
-dataset.partition.dirichlet.seed = 42
+dataset.partition.dirichlet.alpha = 8
 
 # -- Model ---------------------------------------------------------------------
 model.name = "answerdotai/ModernBERT-base"
@@ -60,14 +60,14 @@ train.learning-rate-max = 5e-4
 train.learning-rate-min = 1e-5
 train.training-arguments.output-dir = ""
 train.training-arguments.learning-rate = ""               # Overridden by dynamic lr scheduler
-train.training-arguments.per-device-train-batch-size = 8
-train.training-arguments.per-device-eval-batch-size = 8
+train.training-arguments.per-device-train-batch-size = 16
+train.training-arguments.per-device-eval-batch-size = 16
 train.training-arguments.logging-steps = 32
 train.training-arguments.report-to = "none"
 train.training-arguments.num-train-epochs = 1
-train.training-arguments.max-steps = 10 # TODO: Comment this
-train.training-arguments.save-steps = 1000
-train.training-arguments.save-total-limit = 2
+# train.training-arguments.max-steps = 10 # TODO: Comment this
+# train.training-arguments.save-steps = 1000
+# train.training-arguments.save-total-limit = 2
 train.training-arguments.gradient-checkpointing = false
 train.training-arguments.lr-scheduler-type = "constant"
 
@@ -80,18 +80,18 @@ device-profile-path = "device_profiles/default/profiles.json"
 server.heartbeat-timeout-s = 30.0
 
 # -- Evaluation ----------------------------------------------------------------
-eval.batch-size = 32
-eval.max-samples = 320 # TODO: Comment this
+eval.batch-size = 64
+# eval.max-samples = 320 # TODO: Comment this
 
 # -- Experiment tracking -------------------------------------------------------
-wandb.project = "u-flora-testbed"
+wandb.project = "u-flora-experiments"
 wandb.entity = "ilham-abdillah-alhamdi-universitas-indonesia"
-wandb.run-name = ""
+wandb.run-name = "alpha-test"
 
 # -- Client selection strategy -------------------------------------------------
 # name: random | fedcs | tifl | oort
-strategy.name = "oort"
-strategy.num-to-select = 10 # for fixed k strategies like random, tifl, oort
+strategy.name = "random"
+strategy.num-to-select = 5 # for fixed k strategies like random, tifl, oort
 
 strategy.fedcs.round-deadline-s = 120.0
 strategy.fedcs.c-fraction = 0.5 # Fraction of clients to request device profiles from each round
