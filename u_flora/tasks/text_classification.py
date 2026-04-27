@@ -10,6 +10,7 @@ from typing import Any, Callable
 
 import evaluate
 import numpy as np
+import math
 import torch
 from omegaconf import DictConfig
 from peft import TaskType, get_peft_model
@@ -47,9 +48,16 @@ class TextClassificationAdapter(TaskAdapter):
             num_labels=num_labels,
             ignore_mismatched_sizes=True,
             torch_dtype=torch.float32,
+            use_safetensors=False,
+            low_cpu_mem_usage=True,
         )
         lora_config = self.build_lora_config(model_cfg.lora)
         return get_peft_model(model, lora_config)
+    
+    def get_model_size_kb(self, model_cfg: DictConfig) -> int:
+        peft_model = self.get_model(model_cfg)
+        total_size_bytes = sum(p.numel() * p.element_size() for p in peft_model.parameters())
+        return math.ceil(total_size_bytes / 1024)
 
     # ---- Tokenization --------------------------------------------------------
 

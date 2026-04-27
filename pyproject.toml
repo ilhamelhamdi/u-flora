@@ -62,7 +62,7 @@ train.training-arguments.per-device-train-batch-size = 32
 train.training-arguments.per-device-eval-batch-size = 32
 train.training-arguments.logging-steps = 32
 train.training-arguments.report-to = "none"
-train.training-arguments.num-train-epochs = 3
+train.training-arguments.num-train-epochs = 1
 train.training-arguments.max-steps = 10
 train.training-arguments.save-steps = 1000
 train.training-arguments.save-total-limit = 2
@@ -75,8 +75,7 @@ num-clients = 50
 
 # -- Device-profile simulation -------------------------------------------------
 device-profile-path = "device_profiles/default/all_profiles.json"
-model-size-kb = 3174.0
-heartbeat-timeout-s = 30.0
+server.heartbeat-timeout-s = 30.0
 
 # -- Evaluation ----------------------------------------------------------------
 eval.batch-size = 64
@@ -89,13 +88,26 @@ wandb.run-name = ""
 # -- Client selection strategy -------------------------------------------------
 # name: random | fedcs | tifl | oort
 strategy.name = "random"
-strategy.seed = 42
-strategy.num-to-select = 10
 
-# ==============================================================================
-# Strategy-specific configurations
-# ==============================================================================
-[tool.flwr.app.config.strategies.random]
+strategy.seed = 42
+strategy.num-to-select = 10 # for fixed k strategies like random, tifl, oort
+
+strategy.fedcs.round-deadline-s = 120.0
+strategy.fedcs.c-fraction = 0.5 # Fraction of clients to request device profiles from each round
+
+strategy.tifl.num-tiers = 5 # Number of TiFL tiers
+strategy.tifl.sync-rounds = 2 # Number of rounds at offline profiling before creating tiers
+strategy.tifl.prob-update-interval = 5 # Number of rounds to update tier selection probability
+strategy.tifl.round-deadline-s = 360.0 # Deadline for preround client profiling 
+
+strategy.oort.epsilon = 0.9  # Fraction of clients to explore (vs exploit) each round
+strategy.oort.alpha = 0.2    # How much to weight recency vs historical
+strategy.oort.pacer-window = 5 # Rounds to look back when adjusting selection probabilities
+strategy.oort.pacer-delta = 15 # Time in seconds to add/relax developer-preferred deadline
+strategy.oort.initial-t = 120 # Initial developer-preferred deadline in seconds
+strategy.oort.cutoff-c = 0.95 # Percentage of utility cutoff from k-th ranked client to consider for selection
+strategy.oort.max-participation-rounds = 5 # Maximum rounds a client can participate
+strategy.oort.utility-clip-percentile = 95 # Percentile for clipping utility values to avoid outliers dominating selection
 
 
 # ==============================================================================

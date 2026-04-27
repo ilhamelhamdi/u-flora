@@ -40,6 +40,11 @@ class TaskAdapter(ABC):
         """
         ...
 
+    @abstractmethod
+    def get_model_size_kb(self, model_cfg: DictConfig) -> int:
+        """Return the size of the pretrained model in KB (for reporting upload/download costs)."""
+        ...
+
     # ---- Tokenization --------------------------------------------------------
 
     @abstractmethod
