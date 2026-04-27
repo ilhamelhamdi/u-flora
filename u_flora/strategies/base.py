@@ -699,7 +699,7 @@ class BaseStrategy(Strategy):
             if extra_metrics:
                 log_dict.update(extra_metrics)
 
-            wandb.log(log_dict, commit=False)
+            wandb.log(log_dict)
             wandb.log({"client/raw_training_history": self._history_table})
 
         logger.info(
