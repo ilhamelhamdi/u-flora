@@ -22,9 +22,9 @@ def build_strategy(
     Reads from ``cfg.strategy`` (name: ``random`` | ``fedcs`` | ``tifl`` | ``oort``).
     """
     strategy = cfg.strategy
+    seed = cfg.seed
     strategy_name = strategy.name
     num_to_select = strategy.num_to_select
-    seed = strategy.get("seed", 42)
     local_epochs = cfg.train.training_arguments.num_train_epochs
     heartbeat_timeout_s = cfg.server.heartbeat_timeout_s
 

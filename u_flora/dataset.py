@@ -19,13 +19,14 @@ _FDS_CACHE: FederatedDataset | None = None
 _FDS_KEY: str | None = None
 
 
-def _get_partitioner(num_partitions: int, partition_config: DictConfig):
+def _get_partitioner(num_partitions: int, config: DictConfig):
     """Create a partitioner based on the strategy name.
 
     Args:
         num_partitions: Number of FL client partitions.
-        partition_config: Config with partitioning parameters: ``strategy``, ``dirichlet.alpha``, ``dirichlet.seed``.
+        config: Config with partitioning parameters: ``strategy``, ``dirichlet.alpha``, ``dirichlet.seed``.
     """
+    partition_config = config.dataset.partition
     strategy = partition_config.strategy
     if strategy == "dirichlet":
         try:
@@ -35,7 +36,7 @@ def _get_partitioner(num_partitions: int, partition_config: DictConfig):
                 num_partitions=num_partitions,
                 partition_by="label",
                 alpha=partition_config.dirichlet.alpha,
-                seed=partition_config.dirichlet.seed,
+                seed=config.seed,
             )
         except ImportError:
             logger.warning("DirichletPartitioner not available, falling back to IID")
@@ -45,16 +46,14 @@ def _get_partitioner(num_partitions: int, partition_config: DictConfig):
 def load_data(
     partition_id: int,
     num_partitions: int,
-    dataset_config: DictConfig,
-    partition_config: DictConfig,
+    config: DictConfig,
 ):
     """Load a client's data partition.
 
     Args:
         partition_id: This client's partition index.
         num_partitions: Total number of partitions.
-        dataset_config: Config with ``name``, ``subset`` fields.
-        partition_config: Config with partitioning parameters: ``strategy``, ``dirichlet.alpha``, ``dirichlet.seed``.
+        config: Config with dataset and partitioning parameters.
 
     Returns:
         (train_set, val_set) tuple of HuggingFace datasets.
@@ -62,17 +61,19 @@ def load_data(
     global _FDS_CACHE, _FDS_KEY
 
     # Build a cache key to detect config changes
-    subset = getattr(dataset_config, "subset", None)
-    val_split = getattr(dataset_config, "val_split", "validation")
-    alpha = getattr(getattr(partition_config, "dirichlet", {}), "alpha", "")
-    seed = getattr(getattr(partition_config, "dirichlet", {}), "seed", "")
+    seed = config.seed
+    dataset_config = config.datasets[config.dataset.name]
+    partition_config = config.dataset.partition
+    subset = dataset_config.get("subset", None)
+    val_split = dataset_config.get("val_split", "validation")
+    alpha = partition_config.get("dirichlet", {}).get("alpha", "")
     cache_key = (
         f"{dataset_config.name}:{subset}:{num_partitions}:"
         f"{partition_config.strategy}:{val_split}:{alpha}:{seed}"
     )
 
     if _FDS_CACHE is None or _FDS_KEY != cache_key:
-        train_partitioner = _get_partitioner(num_partitions, partition_config)
+        train_partitioner = _get_partitioner(num_partitions, config)
         val_partitioner = IidPartitioner(num_partitions=num_partitions)
 
         _FDS_CACHE = FederatedDataset(

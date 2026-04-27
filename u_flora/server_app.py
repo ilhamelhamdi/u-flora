@@ -195,13 +195,15 @@ def _get_evaluate_fn(
 
 def _initialize_wandb(cfg):
     """Initialize W&B with experiment metadata."""
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    task_name = cfg.task_name
+    timestamp = datetime.now().strftime("%Y%m%d_%H:%M:%S")
+    dataset_name = cfg.dataset.name
     strategy_name = cfg.strategy.name
+    strategy_seed = cfg.strategy.seed
     run_name_suffix = cfg.wandb.run_name
-    run_name = f"{strategy_name}-{task_name}-{timestamp}"
+    run_name = f"{strategy_name}-{dataset_name}-{strategy_seed}"
     if run_name_suffix:
         run_name += f"-{run_name_suffix}"
+    run_name += f"-{timestamp}"
 
     return wandb.init(
         project=cfg.wandb.project,

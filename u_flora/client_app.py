@@ -63,7 +63,9 @@ def train(msg: Message, context: Context):
 
     num_rounds = cfg.num_server_rounds
     server_round = msg.content["config"]["server-round"]
-    evaluate_during_training = msg.content["config"].get("evaluate_during_training", False)
+    evaluate_during_training = msg.content["config"].get(
+        "evaluate_during_training", False
+    )
 
     # Shorthand prefix for all log lines from this client this round
     tag = f"[C{partition_id:03d} | R{server_round}/{num_rounds}]"
@@ -85,12 +87,7 @@ def train(msg: Message, context: Context):
     encoding_func = adapter.get_encoding_fn(cfg.model.name, dataset_config)
     data_collator = adapter.get_data_collator(cfg.model.name)
 
-    train_set, val_set = load_data(
-        partition_id,
-        num_partitions,
-        dataset_config,
-        cfg.dataset.partition,
-    )
+    train_set, val_set = load_data(partition_id, num_partitions, cfg)
     train_set = train_set.map(encoding_func, batched=True)
     val_set = val_set.map(encoding_func, batched=True)
     logger.debug("%s Dataset ready: %d samples", tag, len(train_set))
@@ -202,12 +199,13 @@ def train(msg: Message, context: Context):
         return Message(content=content, reply_to=msg)
     except Exception as e:
         # Cleanup
-        if 'model' in locals():
+        if "model" in locals():
             model.to("cpu")
         del trainer
-        if 'model' in locals():
+        if "model" in locals():
             del model
         import gc
+
         gc.collect()
         torch.cuda.empty_cache()
 
@@ -245,7 +243,11 @@ def handle_heartbeat(msg: Message, context: Context) -> Message:
     )
     return Message(
         content=RecordDict(
-            {"config": ConfigRecord({"available": available, "partition_id": partition_id})}
+            {
+                "config": ConfigRecord(
+                    {"available": available, "partition_id": partition_id}
+                )
+            }
         ),
         reply_to=msg,
     )
@@ -253,9 +255,7 @@ def handle_heartbeat(msg: Message, context: Context) -> Message:
 
 @app.query("resource_request")
 def handle_resource_request(msg: Message, context: Context) -> Message:
-    """Return device capability + dataset size (FedCS / TiFL profiling reply).
-
-    """
+    """Return device capability + dataset size (FedCS / TiFL profiling reply)."""
     partition_id = int(context.node_config["partition-id"])
     num_partitions = int(context.node_config["num-partitions"])
     cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
@@ -263,13 +263,7 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
     logger.debug("[C%03d] Resource request received", partition_id)
 
     # Load dataset to report num_samples
-    dataset_config = cfg.datasets[cfg.dataset.name]
-    train_set, _ = load_data(
-        partition_id,
-        num_partitions,
-        dataset_config,
-        cfg.dataset.partition,
-    )
+    train_set, _ = load_data(partition_id, num_partitions, cfg)
     num_samples = len(train_set)
 
     profile = _load_device_profile(context)
@@ -290,7 +284,9 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
 
 def _resolve_profile_path(context: Context) -> str | None:
     """Find the profile file path."""
-    run_path = context.run_config.get("device-profile-path") if context.run_config else None
+    run_path = (
+        context.run_config.get("device-profile-path") if context.run_config else None
+    )
     if run_path:
         return str(run_path)
     return context.node_config.get("device-profile-path")

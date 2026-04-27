@@ -39,6 +39,8 @@ clientapp = "u_flora.client_app:app"
 # Controls which TaskAdapter is used. One of: text_classification, causal_lm
 task_name = "text_classification"
 
+seed = 42 # Global seed for reproducibility (dataset partitioning, client selection randomness, etc.)
+
 # -- Dataset selector & partitioning -------------------------------------------
 dataset.name = "boolq"                   # Key into [tool.flwr.app.config.datasets.*] below
 dataset.partition.strategy = "dirichlet" # "dirichlet" or "iid"
@@ -89,8 +91,6 @@ wandb.run-name = ""
 # -- Client selection strategy -------------------------------------------------
 # name: random | fedcs | tifl | oort
 strategy.name = "oort"
-
-strategy.seed = 42
 strategy.num-to-select = 10 # for fixed k strategies like random, tifl, oort
 
 strategy.fedcs.round-deadline-s = 120.0
