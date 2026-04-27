@@ -192,7 +192,7 @@ def _initialize_wandb(cfg):
         entity=cfg.wandb.entity if cfg.wandb.entity else None,
         config=OmegaConf.to_container(cfg, resolve=True),
         name=run_name,
-        reinit='finish_previous'
+        reinit=True,
     )
 
 
