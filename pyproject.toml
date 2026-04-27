@@ -88,7 +88,7 @@ wandb.run-name = ""
 
 # -- Client selection strategy -------------------------------------------------
 # name: random | fedcs | tifl | oort
-strategy.name = "fedcs"
+strategy.name = "tifl"
 
 strategy.seed = 42
 strategy.num-to-select = 10 # for fixed k strategies like random, tifl, oort
