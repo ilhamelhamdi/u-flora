@@ -1,0 +1,498 @@
+model,soc,gpt2_cpu_f_ms,ram_gb
+Honor Magic8 Pro,Snapdragon 8 Elite Gen 5,117,16
+vivo X300 Pro,Dimensity 9500,55,16
+vivo X300,Dimensity 9500,55,16
+Oppo Find X9 Pro,Dimensity 9500,59,16
+Oppo Find X9,Dimensity 9500,59,16
+Asus ROG Phone 9,Snapdragon 8 Elite,57,16
+Realme GT 7 Pro,Snapdragon 8 Elite,60,16
+Xiaomi 15 Ultra,Snapdragon 8 Elite,57,16
+Oppo Find X8s,Dimensity 9400+,58,16
+Oppo Find X8s+,Dimensity 9400+,55,16
+Xiaomi Poco F7 Ultra,Snapdragon 8 Elite,57,16
+Motorola Razr 60 Ultra,Snapdragon 8 Elite,87,16
+Samsung Galaxy S25 Ultra,Snapdragon 8 Elite,59,12
+Samsung Galaxy S25+,Snapdragon 8 Elite,57,12
+Xiaomi 15 Pro,Snapdragon 8 Elite,57,12
+Samsung Galaxy S25,Snapdragon 8 Elite,90,12
+Xiaomi 15,Snapdragon 8 Elite,57,12
+vivo iQOO 13,Snapdragon 8 Elite,66,16
+Samsung Galaxy S25 Edge,Snapdragon 8 Elite,57,12
+ZTE nubia Red Magic 10 Pro,Snapdragon 8 Elite,59,24
+Oppo Find X8 Ultra,Snapdragon 8 Elite,71,16
+vivo X200 Ultra,Snapdragon 8 Elite,68,16
+OnePlus 13s,Snapdragon 8 Elite,115,12
+OnePlus 13,Snapdragon 8 Elite,72,16
+Honor Magic7 Pro,Snapdragon 8 Elite,58,12
+Oppo Find X8 Pro,Dimensity 9400,59,16
+vivo X200 Pro,Dimensity 9400,65,16
+vivo X200,Dimensity 9400,74,16
+vivo iQOO Neo10 Pro,Dimensity 9400,70,16
+Oppo Find X8,Dimensity 9400,55,16
+Oppo Find N5,Snapdragon 8 Elite,122,16
+vivo X200 Pro Mini,Dimensity 9400,82,16
+Apple iPhone 17 Pro,Apple A19 Pro,12,12
+Asus ROG Phone 8,Snapdragon 8 Gen 3,77,16
+Realme GT 6,Snapdragon 8 Gen 3,69,12
+ZTE nubia RedMagic Nova,Snapdragon 8 Gen 3,93,12
+Asus Zenfone 11 Ultra,Snapdragon 8 Gen 3,71,12
+Samsung Galaxy S24 Ultra,Snapdragon 8 Gen 3,90,12
+Samsung Galaxy S24+,Snapdragon 8 Gen 3,106,12
+Samsung Galaxy S24,Snapdragon 8 Gen 3,76,12
+Sony Xperia 1 VI,Snapdragon 8 Gen 3,97,12
+Samsung Galaxy Z Fold6,Snapdragon 8 Gen 3,103,12
+Xiaomi 14,Snapdragon 8 Gen 3,85,16
+OnePlus 12,Snapdragon 8 Gen 3,96,12
+Lenovo Yoga Tab Plus,Snapdragon 8 Gen 3,92,16
+Xiaomi 14 Ultra,Snapdragon 8 Gen 3,83,12
+Samsung Galaxy Tab S10+,Dimensity 9300+,68,12
+Xiaomi 14T Pro,Dimensity 9300+,70,12
+Xiaomi Poco F7 Pro,Snapdragon 8 Gen 3,84,12
+Samsung Galaxy Tab S10 Ultra,Dimensity 9300+,67,12
+ZTE nubia RedMagic 10 Air,Snapdragon 8 Gen 3,145,12
+Realme GT 7,Dimensity 9400e,71,12
+vivo iQOO Neo10,Snapdragon 8 Gen 3,126,12
+Xiaomi Redmi K70 Ultra,Dimensity 9300+,71,16
+ZTE nubia Red Magic 9 Pro,Snapdragon 8 Gen 3,92,16
+Lenovo Legion Y700,Snapdragon 8 Gen 3,86,16
+vivo iQOO Neo9S Pro,Dimensity 9300+,82,12
+Realme Neo7,Dimensity 9300+,77,12
+vivo iQOO 12,Snapdragon 8 Gen 3,127,16
+vivo X100 Pro,Dimensity 9300,81,16
+Xiaomi 14 Pro,Snapdragon 8 Gen 3,85,16
+Samsung Galaxy Z Flip6,Snapdragon 8 Gen 3,131,12
+Vivo iQOO Z9 Turbo+,Dimensity 9300+,76,16
+Ulefone Armor 28 Ultra,Dimensity 9300+,86,16
+vivo iQOO Neo9 Pro,Dimensity 9300,83,16
+Oppo Find X7,Dimensity 9300,188,16
+vivo X100,Dimensity 9300,87,16
+Honor Magic6 Pro,Snapdragon 8 Gen 3,163,12
+Honor 400 Pro,Snapdragon 8 Gen 3,167,12
+Honor 300 Pro,Snapdragon 8 Gen 3,155,16
+Samsung Galaxy S23 Ultra,Snapdragon 8 Gen 2,85,12
+Samsung Galaxy S23+,Snapdragon 8 Gen 2,84,8
+Samsung Galaxy Tab S9,Snapdragon 8 Gen 2,84,8
+Xiaomi 13 Pro,Snapdragon 8 Gen 2,91,8
+Samsung Galaxy S23,Snapdragon 8 Gen 2,84,8
+Motorola Edge 40 Pro,Snapdragon 8 Gen 2,81,12
+Xiaomi Pad 6S Pro 12.4,Snapdragon 8 Gen 2,86,12
+OnePlus 12R,Snapdragon 8 Gen 2,92,16
+Xiaomi 13 Ultra,Snapdragon 8 Gen 2,90,12
+Xiaomi Poco F6 Pro,Snapdragon 8 Gen 2,90,12
+Xiaomi 13,Snapdragon 8 Gen 2,87,12
+OnePlus 11,Snapdragon 8 Gen 2,84,16
+Sony Xperia 1 V,Snapdragon 8 Gen 2,110,12
+Sony Xperia 5 V,Snapdragon 8 Gen 2,111,8
+vivo X90 Pro+,Snapdragon 8 Gen 2,101,12
+Honor Magic5 Pro,Snapdragon 8 Gen 2,183,12
+Apple iPhone 16 Pro,Apple A18 Pro,48,8
+Xiaomi Poco F7,Snapdragon 8s Gen 4,114,12
+Xiaomi Redmi Turbo 4 Pro,Snapdragon 8s Gen 4,110,12
+Realme GT 7T,Dimensity 8400 Max,98,12
+Realme Neo7 SE,Dimensity 8400 Max,98,12
+vivo iQOO Neo 10,Snapdragon 8s Gen 4,125,16
+Apple iPhone 15 Pro,Apple A17 Pro,84,8
+Realme GT3,Snapdragon 8+ Gen 1,86,16
+Xiaomi Poco X7 Pro,Dimensity 8400 Ultra,100,8
+Realme GT Neo 5 240W,Snapdragon 8+ Gen 1,87,16
+Xiaomi Redmi Turbo 4,Dimensity 8400 Ultra,100,12
+Realme P3 Ultra,Dimensity 8300 Ultra,103,12
+Asus ROG Phone 6,Snapdragon 8+ Gen 1,101,12
+Huawei Mate 50 Pro,Snapdragon 8+ Gen 1,107,8
+Xiaomi 12T Pro,Snapdragon 8+ Gen 1,101,8
+Xiaomi Poco X6 Pro,Dimensity 8300 Ultra,103,8
+OnePlus Ace 2,Snapdragon 8+ Gen 1,125,16
+Oppo Reno13,Dimensity 8300,102,12
+Xiaomi Poco F5 Pro,Snapdragon 8+ Gen 1,104,12
+OnePlus 10T,Snapdragon 8+ Gen 1,141,16
+Oppo Reno10 Pro+,Snapdragon 8+ Gen 1,123,12
+Motorola Razr 40 Ultra,Snapdragon 8+ Gen 1,104,8
+Samsung Galaxy Z Fold4,Snapdragon 8+ Gen 1,113,12
+Xiaomi Poco F4 GT,Snapdragon 8 Gen 1,129,12
+Xiaomi 14T,Dimensity 8300 Ultra,103,12
+Xiaomi 12 Pro,Snapdragon 8 Gen 1,131,12
+Xiaomi 12,Snapdragon 8 Gen 1,109,8
+vivo iQOO 9,Snapdragon 8 Gen 1,115,8
+Xiaomi Redmi K70E,Dimensity 8300 Ultra,101,12
+Honor Magic4 Pro,Snapdragon 8 Gen 1,109,8
+Realme GT2 Pro,Snapdragon 8 Gen 1,94,12
+ZTE nubia Red Magic 7S Pro,Snapdragon 8+ Gen 1,123,12
+Lenovo Legion Y700,Snapdragon 8+ Gen 1,110,16
+ZTE nubia Red Magic 7,Snapdragon 8 Gen 1,127,12
+vivo X80 Pro,Snapdragon 8 Gen 1,138,8
+ZTE Axon 40 Ultra,Snapdragon 8 Gen 1,128,12
+OnePlus 10 Pro,Snapdragon 8 Gen 1,128,12
+Honor X50 GT,Snapdragon 8+ Gen 1,131,12
+Samsung Galaxy Tab S8 Ultra,Snapdragon 8 Gen 1,139,12
+Motorola Edge 30 Ultra,Snapdragon 8+ Gen 1,98,12
+Motorola Edge X30,Snapdragon 8 Gen 1,100,12
+Samsung Galaxy Tab S8+,Snapdragon 8 Gen 1,120,8
+Motorola Edge 60 Pro,Dimensity 8350 Extreme,128,12
+Samsung Galaxy S22 Ultra,Snapdragon 8 Gen 1,119,12
+Realme GT 6,Snapdragon 8s Gen 3,76,12
+Samsung Galaxy S22,Snapdragon 8 Gen 1,147,8
+Xiaomi 14 Civi,Snapdragon 8s Gen 3,95,12
+Motorola Razr 50 Ultra,Snapdragon 8s Gen 3,77,12
+Xiaomi Poco F6,Snapdragon 8s Gen 3,95,8
+vivo iQOO Neo 10R,Snapdragon 8s Gen 3,167,12
+Honor MagicPad 2 12.3,Snapdragon 8s Gen 3,144,12
+Honor 200 Pro,Snapdragon 8s Gen 3,132,12
+Realme GT 6T,Snapdragon 7+ Gen 3,78,12
+Xiaomi Pad 7,Snapdragon 7+ Gen 3,96,12
+OnePlus Nord 4,Snapdragon 7+ Gen 3,116,16
+OnePlus Ace 3V,Snapdragon 7+ Gen 3,184,12
+Realme GT Neo5 SE,Snapdragon 7+ Gen 2,91,12
+Xiaomi Poco F5,Snapdragon 7+ Gen 2,103,12
+Xiaomi Redmi Note 12 Turbo,Snapdragon 7+ Gen 2,105,8
+OnePlus 9 Pro,Snapdragon 888,113,8
+Xiaomi 11T Pro,Snapdragon 888,141,12
+Xiaomi Mi 11i,Snapdragon 888,130,8
+Asus ROG Phone 5 Pro,Snapdragon 888,123,16
+Honor Magic3,Snapdragon 888,189,8
+Sony Xperia 1 III,Snapdragon 888,130,12
+Samsung Galaxy S21 FE,Snapdragon 888,118,6
+Xiaomi Mi 11,Snapdragon 888,135,8
+Xiaomi Mi 11 Ultra,Snapdragon 888,168,12
+vivo X70 Pro+,Snapdragon 888+,186,12
+Asus ROG Phone 5,Snapdragon 888,122,12
+ZTE nubia Red Magic 6 Pro,Snapdragon 888,139,16
+Huawei P50 Pro,Snapdragon 888,146,8
+Samsung Galaxy S21,Snapdragon 888,120,8
+vivo iQOO 7,Snapdragon 888,176,8
+Oppo Find X3 Pro,Snapdragon 888,205,12
+Samsung Galaxy S21 Ultra,Snapdragon 888,166,16
+Xiaomi Redmi K60 Ultra,Dimensity 9200+,150,16
+Xiaomi 13T Pro,Dimensity 9200+,242,12
+Motorola Edge 50 Pro,Snapdragon 7 Gen 3,133,12
+Honor 100,Snapdragon 7 Gen 3,240,12
+Honor 200,Snapdragon 7 Gen 3,253,12
+vivo iQOO Z9,Snapdragon 7 Gen 3,285,8
+vivo V30,Snapdragon 7 Gen 3,253,12
+vivo T3 Pro,Snapdragon 7 Gen 3,290,8
+Realme 14 Pro+,Snapdragon 7s Gen 3,140,8
+Samsung Galaxy XCover7 Pro,Snapdragon 7s Gen 3,148,6
+vivo V50,Snapdragon 7 Gen 3,197,8
+Xiaomi Redmi Note 14 Pro+ 5G,Snapdragon 7s Gen 3,157,12
+vivo S18,Snapdragon 7 Gen 3,192,12
+Nothing Phone (3a) Pro,Snapdragon 7s Gen 3,153,12
+Nothing Phone (3a),Snapdragon 7s Gen 3,158,12
+vivo T4,Snapdragon 7s Gen 3,199,8
+vivo iQOO Z10,Snapdragon 7s Gen 3,202,12
+Realme 14 5G,Snapdragon 6 Gen 4,143,12
+Oppo K13,Snapdragon 6 Gen 4,147,8
+Google Pixel 7,Google Tensor G2,99,8
+Honor 90,Snapdragon 7 Gen 1 AE,139,12
+Google Pixel 7a,Google Tensor G2,104,8
+Google Pixel 7 Pro,Google Tensor G2,106,12
+Google Pixel 9 Pro,Google Tensor G4,126,16
+Xiaomi Redmi K50 Pro,Dimensity 9000,174,12
+Xiaomi Civi 2,Snapdragon 7 Gen 1,134,8
+OnePlus Nord 3,Dimensity 9000,209,16
+Xiaomi Redmi Note 13 Pro,Snapdragon 7s Gen 2,152,8
+Google Pixel 9 Pro Fold,Google Tensor G4,100,16
+Xiaomi Redmi Pad Pro 5G,Snapdragon 7s Gen 2,146,6
+Infinix GT 20 Pro,Dimensity 8200 Ultimate,129,12
+Xiaomi Redmi Pad Pro,Snapdragon 7s Gen 2,144,6
+Tecno Camon 30 Premier,Dimensity 8200 Ultimate,121,12
+Xiaomi Poco X6,Snapdragon 7s Gen 2,157,8
+Motorola Edge 30,Snapdragon 778G+,169,8
+Tecno Camon 30 Pro,Dimensity 8200 Ultimate,123,12
+Samsung Galaxy M55,Snapdragon 7 Gen 1,143,8
+Xiaomi 13 Lite,Snapdragon 7 Gen 1,171,8
+Realme 12 Pro+,Snapdragon 7s Gen 2,125,12
+Xiaomi Poco X5 Pro,Snapdragon 778G,146,8
+Google Pixel 8,Google Tensor G3,118,8
+Google Pixel 8 Pro,Google Tensor G3,109,12
+Huawei nova 11,Snapdragon 778G,189,8
+Google Pixel 9a,Google Tensor G4,130,8
+Google Pixel 6 Pro,Google Tensor,153,12
+Xiaomi 12 Lite,Snapdragon 778G,146,8
+Google Pixel 8a,Google Tensor G3,109,8
+ZTE nubia Flip,Snapdragon 7 Gen 1,179,8
+Xiaomi Redmi K60E,Dimensity 8200,189,8
+Realme GT Neo 3,Dimensity 8100,133,8
+Honor 50,Snapdragon 778G,144,8
+Google Pixel 6,Google Tensor,142,8
+Samsung Galaxy A52s,Snapdragon 778G,203,6
+OnePlus 10R,Dimensity 8100 Max,192,12
+Xiaomi 13T,Dimensity 8200 Ultra,187,8
+Realme 12 Pro,Snapdragon 6 Gen 1,133,12
+Samsung Galaxy S24,Exynos 2400,95,12
+Samsung Galaxy S24+,Exynos 2400,86,12
+Zebra Technologies ET65,Qualcomm QCS6490,208,8
+Xiaomi 12T,Dimensity 8100 Ultra,165,8
+Xiaomi Poco X4 GT,Dimensity 8100,167,8
+Samsung Galaxy S24 FE,Exynos 2400e,80,8
+Motorola Edge 50 Fusion,Snapdragon 6 Gen 1,130,8
+Honor X9c,Snapdragon 6 Gen 1,208,12
+Sony Xperia 10 VI,Snapdragon 6 Gen 1,206,8
+Oppo Reno13 F,Snapdragon 6 Gen 1,204,8
+Honor Magic7 Lite,Snapdragon 6 Gen 1,210,8
+Samsung Galaxy S23 FE,Exynos 2200,120,8
+Samsung Galaxy S22,Exynos 2200,152,8
+Huawei Mate 40 Pro,Kirin 9000 5G,104,8
+Samsung Galaxy S22 Ultra,Exynos 2200,206,12
+Xiaomi Redmi Note 13 Pro+,Dimensity 7200 Ultra,212,12
+Samsung Galaxy S21 Ultra,Exynos 2100,131,16
+Honor V30 Pro,Kirin 990 5G,140,8
+Tecno Camon 40 Pro,Dimensity 7300,135,12
+Motorola Edge 60,Dimensity 7300,149,12
+Motorola Edge 60 Fusion,Dimensity 7300,149,8
+Tecno Pova Curve,Dimensity 7300 Ultimate,136,8
+Nothing Phone (2a),Dimensity 7200 Pro,246,8
+Xiaomi 15S Pro,Xiaomi Xring O1,106,16
+Realme Narzo 70 Turbo,Dimensity 7300 Energy,138,8
+Infinix Note 50x,Dimensity 7300 Ultimate,138,8
+Realme 13+,Dimensity 7300 Energy,138,12
+Ulefone Armor 34 Pro,Dimensity 7300,158,12
+Realme Narzo 80 Pro,Dimensity 7400,134,8
+Motorola Edge 20 Pro,Snapdragon 870,122,12
+Motorola Edge 50 Neo,Dimensity 7300,147,12
+Motorola razr 2024,Dimensity 7300X,150,8
+Samsung Galaxy Note20 Ultra,Exynos 990,194,12
+Huawei P40 Pro,Kirin 990 5G,142,8
+Nothing CMF Phone 2 Pro,Dimensity 7300 Pro,153,8
+Realme 14 Pro,Dimensity 7300 Energy,139,12
+Oppo Reno12,Dimensity 7300 Energy,144,12
+Nothing CMF Phone 1,Dimensity 7300,151,8
+Realme GT Neo 3T,Snapdragon 870,109,8
+Samsung Galaxy Note10+,Exynos 9825,207,12
+Samsung Galaxy Note20,Exynos 990,203,8
+Xiaomi Poco F3,Snapdragon 870,126,8
+Samsung Galaxy S20 Ultra 5G,Exynos 990,216,12
+Realme GT Neo2,Snapdragon 870,130,12
+Samsung Galaxy S20 FE,Exynos 990,200,8
+Samsung Galaxy S20,Exynos 990,196,8
+Asus Zenfone 7,Snapdragon 865,108,8
+Realme X7 Pro,Dimensity 1000+,126,8
+Samsung Galaxy S20+,Exynos 990,233,8
+OnePlus 9R,Snapdragon 870,128,8
+Motorola Edge+,Snapdragon 865,127,12
+Realme 10 Pro+,Dimensity 1080,195,12
+Infinix Zero 5G,Dimensity 1080,177,8
+Oppo Find X2 Pro,Snapdragon 865,123,12
+Asus ROG Phone 3,Snapdragon 865+,118,12
+Xiaomi Mi 10 5G,Snapdragon 865,130,8
+Sony Xperia 5 II,Snapdragon 865,117,8
+Samsung Galaxy S10+,Exynos 9820,225,8
+Samsung Galaxy S10,Exynos 9820,241,8
+Samsung Galaxy Tab S7+,Snapdragon 865+,123,8
+Xiaomi Redmi K30 Ultra,Dimensity 1000+,182,8
+OnePlus 8,Snapdragon 865,119,12
+Samsung Galaxy S20+ 5G,Snapdragon 865,122,12
+Samsung Galaxy S10e,Exynos 9820,240,6
+Huawei nova 5T,Kirin 980,164,6
+Samsung Galaxy S20 FE,Snapdragon 865,123,8
+OnePlus 8 Pro,Snapdragon 865,120,8
+Samsung Galaxy Tab S7,Snapdragon 865+,129,6
+Huawei Mate 20 Pro,Kirin 980,163,8
+Huawei P30 Pro,Kirin 980,165,6
+OnePlus 8T,Snapdragon 865,116,8
+Xiaomi Redmi Note 12 Pro,Dimensity 1080,267,8
+Xiaomi Redmi Note 12 Pro+,Dimensity 1080,254,8
+Realme X3 SuperZoom,Snapdragon 855+,140,8
+Realme X2 Pro,Snapdragon 855+,140,8
+Huawei P30,Kirin 980,164,6
+Xiaomi Redmi K40 Gaming,Dimensity 1200,161,12
+Huawei Mate 70 Pro,Kirin 9020,116,12
+Honor 30S,Kirin 820 5G,175,8
+Huawei Mate X6,Kirin 9020,125,12
+Xiaomi 11T,Dimensity 1200,168,8
+OnePlus Nord 2 5G,Dimensity 1200-AI,218,8
+Asus ROG Phone II,Snapdragon 855+,159,8
+Realme 11 Pro,Dimensity 7050,142,8
+Realme 11 Pro+,Dimensity 7050,143,12
+Hotwav Hyper 7 Pro,Dimensity 7050,225,8
+Realme 12+,Dimensity 7050,148,12
+Cubot KingKong X,Dimensity 7050,299,16
+ZTE nubia Neo,Unisoc T820,174,8
+Xiaomi Poco X3 Pro,Snapdragon 860,164,6
+Motorola Edge 40 Neo,Dimensity 7030,168,12
+Lenovo Z6 Pro,Snapdragon 855,172,8
+Samsung Galaxy Tab S6,Snapdragon 855,176,6
+Xiaomi Mi 9,Snapdragon 855,166,6
+LG G8 ThinQ,Snapdragon 855,171,6
+Xiaomi Redmi K20 Pro,Snapdragon 855,173,6
+OnePlus 7 Pro,Snapdragon 855,184,8
+Oppo Reno10,Dimensity 7050,198,8
+Xiaomi Mi 9T Pro,Snapdragon 855,169,6
+Samsung Galaxy Note10+,Snapdragon 855,247,12
+Samsung Galaxy S10+,Snapdragon 855,168,8
+ZTE nubia Neo 2,Unisoc T820,183,8
+Sony Xperia 5,Snapdragon 855,209,6
+Google Pixel 4 XL,SDM855 + Google TPU,162,6
+Microsoft Surface Duo,Snapdragon 855,177,6
+Google Pixel 4,SDM855 + Google TPU,175,6
+Samsung Galaxy A35,Exynos 1380,132,8
+Samsung Galaxy A54,Exynos 1380,132,8
+Samsung Galaxy Tab S9 FE,Exynos 1380,125,8
+Huawei MatePad Pro 12.2,Kirin T92A (Kirin 9020A),135,12
+Samsung Galaxy A55,Exynos 1480,129,12
+Infinix Note 30 VIP,Dimensity 8050,129,8
+Oppo A92s,Dimensity 800,256,6
+Huawei MatePad 11.5 S,Kirin 9000W,133,8
+Oppo Reno4 Z 5G,Dimensity 800,245,8
+Huawei Pura 70,Kirin 9000S1,137,12
+Huawei Pura 70 Ultra,Kirin 9010,139,16
+Huawei Mate 70,Kirin 9010,138,12
+Huawei MatePad Pro 13.2,Kirin 9000S,154,12
+Huawei Pura 70 Pro,Kirin 9010,142,12
+Huawei Mate 60,Kirin 9000S,142,12
+Huawei Mate 60 Pro,Kirin 9000S,141,12
+Samsung Galaxy A56,Exynos 1580,176,8
+Samsung Galaxy S9+,Exynos 9810,447,6
+Honor X9a,Snapdragon 695,175,6
+Samsung Galaxy Note9,Exynos 9810,621,6
+HMD Crest,Unisoc T760,220,6
+Huawei P40 Lite,Kirin 810,217,6
+Motorola Moto G82,Snapdragon 695,171,6
+Xiaomi Poco X4 Pro,Snapdragon 695,179,6
+Huawei Mate 10 Pro,Kirin 970,389,6
+Samsung Galaxy A52 5G,Snapdragon 750G,191,6
+Realme 9 Pro,Snapdragon 695,185,6
+Motorola Edge 30 Neo,Snapdragon 695,184,8
+Motorola Moto G34,Snapdragon 695,176,8
+Oppo Reno8 T 5G,Snapdragon 695,179,8
+Motorola Moto G84,Snapdragon 695,188,8
+Huawei nova 13 Pro,Kirin 8000,167,12
+Motorola Edge,Snapdragon 765G,241,6
+OnePlus 6T,Snapdragon 845,312,8
+Realme 8,MediaTek Helio G95,230,6
+Motorola Moto G64,Dimensity 7025,170,8
+Nokia 9 PureView,Snapdragon 845,299,6
+LG Wing 5G,Snapdragon 765G,290,8
+Xiaomi Mi 10T Lite 5G,Snapdragon 750,254,6
+OnePlus Nord,Snapdragon 765G,249,8
+OnePlus Nord CE 5G,Snapdragon 750G,268,8
+Xiaomi Redmi Note 11 Pro 5G,Snapdragon 695,243,6
+OnePlus Nord CE,Snapdragon 750G,269,12
+Samsung Galaxy A25,Exynos 1280,300,8
+TCL 10 5G,Snapdragon 765G,266,6
+Xiaomi Poco M5s,MediaTek Helio G95,293,8
+OnePlus Nord N20,Snapdragon 695,250,6
+Xiaomi Poco M6 Pro,Snapdragon 4 Gen 2,180,8
+Xiaomi Poco X5,Snapdragon 695,252,8
+Xiaomi Redmi K30 5G,Snapdragon 765G,294,8
+Samsung Galaxy Note9,Snapdragon 845,311,6
+Samsung Galaxy Note8,Exynos 8895,572,6
+Xiaomi Poco X3 NFC,Snapdragon 732G,277,6
+Xiaomi Mi CC9 Pro,Snapdragon 730G,235,6
+Oppo Find X2 Neo,Snapdragon 765G,253,12
+Xiaomi Mi Mix 2S,Snapdragon 845,374,6
+Xiaomi Mi 10 Lite 5G,Snapdragon 765G,290,6
+Xiaomi Mi 10 Youth 5G,Snapdragon 765G,286,8
+Xiaomi Redmi Note 12 Pro 4G,Snapdragon 732G,290,8
+Honor 200 Smart,Snapdragon 4 Gen 2,212,8
+Oppo Reno5 5G,Snapdragon 765G,295,8
+Xiaomi Redmi Note 10 Pro,Snapdragon 732G,283,6
+vivo Y200e,Snapdragon 4 Gen 2,211,6
+Xiaomi Redmi Note 12,Snapdragon 4 Gen 1,188,8
+Xiaomi Pocophone F1,Snapdragon 845,372,6
+Itel P55,Dimensity 6080,221,6
+Tecno Camon 30,MediaTek Helio G99 Ultimate,221,8
+Tecno Megapad 11,MediaTek Helio G99,225,8
+Infinix Hot 50 Pro+ 4G,MediaTek Helio G100,221,8
+Infinix Note 30,MediaTek Helio G99,218,8
+Infinix Note 40 Pro 4G,MediaTek Helio G99 Ultimate,221,12
+Infinix Zero 30 4G,MediaTek Helio G99,221,8
+Tecno Camon 30S,MediaTek Helio G100,221,8
+Tecno Camon 30S Pro,MediaTek Helio G100,220,8
+Tecno Pova 5,MediaTek Helio G99,222,8
+Tecno Spark 30 Pro,MediaTek Helio G100,221,8
+HMD Fusion,Snapdragon 4 Gen 2,290,8
+Realme 10,MediaTek Helio G99,224,8
+Samsung Galaxy A71,Snapdragon 730,298,6
+Tecno Camon 20 Pro,MediaTek Helio G99,223,8
+Tecno Pova 6,MediaTek Helio G99 Ultimate,224,8
+Tecno Pova 6 Neo,MediaTek Helio G99 Ultimate,221,8
+Tecno Spark 20 Pro Plus,MediaTek Helio G99,221,8
+Infinix Note 40,MediaTek Helio G99 Ultimate,223,8
+OnePlus Nord N10,Snapdragon 690,250,6
+Doogee S96 GT,MediaTek Helio G95,323,8
+Motorola Moto G60,Snapdragon 732G,319,6
+Realme 6 Pro,Snapdragon 720G,240,6
+Realme 8 Pro,Snapdragon 720G,234,8
+Xiaomi Mi 8,Snapdragon 845,376,6
+Infinix Hot 40 Pro,MediaTek Helio G99,222,8
+Infinix Note 30 Pro,MediaTek Helio G99,230,8
+Oppo A74 5G,Snapdragon 480,280,6
+Samsung Galaxy A52,Snapdragon 720G,275,6
+Tecno Pova 6 Pro,Dimensity 6080,228,12
+Tecno Spark 20 Pro,MediaTek Helio G99,223,8
+Infinix Note 12 Pro,MediaTek Helio G99,234,8
+LG K92 5G,Snapdragon 690,267,6
+Motorola G60S,MediaTek Helio G95,297,6
+Xiaomi Redmi Note 9 Pro,Snapdragon 720G,300,6
+Blackview Mega 1,MediaTek Helio G99,232,12
+Xiaomi Redmi Note 10S,MediaTek Helio G95,310,6
+Xiaomi Redmi Note 9S,Snapdragon 720G,301,6
+Blackview Hero 10,MediaTek Helio G99,241,12
+Lenovo Tab Plus,MediaTek Helio G99,241,8
+Motorola One Fusion+,Snapdragon 730G,293,6
+Doogee T40 Pro,MediaTek Helio G99,238,8
+Honor 200 Lite,Dimensity 6080,261,8
+LG Velvet,Snapdragon 845,429,6
+Cubot X70,MediaTek Helio G99,238,12
+Realme X2,Snapdragon 730G,297,8
+Unihertz Jelly Star,MediaTek Helio G99,244,8
+Motorola Moto G72,MediaTek Helio G99,263,6
+Xiaomi Poco M5,MediaTek Helio G99,247,6
+Xiaomi Poco M6 Pro,MediaTek Helio G99 Ultra,249,8
+Xiaomi Redmi Note 13 Pro 4G,MediaTek Helio G99 Ultra,253,8
+Xiaomi Redmi Note 14 Pro 4G,MediaTek Helio G100 Ultra,253,8
+Xiaomi Redmi Pad,MediaTek Helio G99,249,6
+Oppo A3x,Dimensity 6300,244,6
+Oppo Reno12 F,Dimensity 6300,252,12
+Xiaomi Mi 9T,Snapdragon 730,320,6
+Tecno Camon 19 Pro,MediaTek Helio G96,245,8
+Oppo A3 Pro,Dimensity 6300,253,8
+Honor 90 Lite,Dimensity 6020,280,8
+Lenovo Yoga Tab 11,Mediatek Helio G90T,319,8
+Xiaomi Redmi Note 12S,MediaTek Helio G96,391,8
+Razer Phone,Snapdragon 835,407,8
+Xiaomi Poco M4 Pro,MediaTek Helio G96,353,8
+Xiaomi Redmi Note 8 Pro,MediaTek Helio G90T,316,6
+Xiaomi Redmi Note 7 Pro,Snapdragon 675,311,6
+Samsung Galaxy A70,Snapdragon 675,334,6
+Realme XT,Snapdragon 712,470,8
+Motorola Razr,Snapdragon 710,542,6
+Lenovo Xiaoxin Pad 2024,Snapdragon 685,338,6
+Xiaomi Redmi Note 13,Snapdragon 685,338,8
+Xiaomi Redmi Note 12 4G,Snapdragon 685,366,6
+Honor X7c,Snapdragon 685,370,8
+Xiaomi Redmi Note 13 4G,Snapdragon 685,372,8
+OnePlus 3T,Snapdragon 820,646,6
+Realme C55,MediaTek Helio G88,350,8
+Infinix Note 30i,MediaTek Helio G85,357,8
+Tecno Spark 20,MediaTek Helio G85,353,8
+Tecno Camon 19 Neo,MediaTek Helio G85,352,6
+Oppo A58 4G,MediaTek Helio G85,392,8
+Realme C67 4G,Snapdragon 685,377,6
+Realme C75,MediaTek Helio G92 Max,367,8
+Ulefone Armor 8 Pro,MediaTek Helio P60,533,8
+Motorola Moto G24,MediaTek Helio G85,376,8
+Tecno Spark 30,MediaTek Helio G91,362,8
+Tecno Spark 30C,MediaTek Helio G81,377,6
+Infinix Hot 50i,MediaTek Helio G81,397,6
+Honor X7b,Snapdragon 680,418,8
+Honor X8b,Snapdragon 680,411,8
+Oppo A91,MediaTek Helio P70,571,8
+vivo S1,MediaTek Helio P65,440,6
+Xiaomi Redmi 12,MediaTek Helio G88,362,8
+Xiaomi Redmi 13,MediaTek Helio G91 Ultra,395,8
+Xiaomi Redmi 13C,MediaTek Helio G85,377,8
+Oppo Reno3 Pro,MediaTek Helio P95,377,8
+Samsung Galaxy A9,Snapdragon 660,550,6
+Xiaomi Redmi 10,MediaTek Helio G88,392,6
+Honor X8a,MediaTek Helio G88,406,8
+Oppo Reno5 Lite,MediaTek Helio P95,371,8
+Blackview Tab 16 Pro,Unisoc T616,396,8
+Oppo A52,Snapdragon 665,640,6
+Xiaomi Mi A2,Snapdragon 660,630,6
+BlackBerry KEY2,Snapdragon 660,580,6
+HMD Pulse Pro,Unisoc T606,459,6
+Xiaomi Redmi Note 5 Pro,Snapdragon 636,542,6
+Samsung Galaxy C9 Pro,Snapdragon 653,938,6
+Tecno Spark 10,MediaTek Helio G37,721,8
+Umidigi G9C,MediaTek Helio G36,762,6
+Sharp Aquos V7 Plus,MediaTek Helio G37,824,6

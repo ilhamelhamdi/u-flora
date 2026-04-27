@@ -76,7 +76,7 @@ num-server-rounds = 10
 num-clients = 50
 
 # -- Device-profile simulation -------------------------------------------------
-device-profile-path = "device_profiles/default/profiles.json"
+device-profile-path = "device_profiles/50/default/profiles.json"
 server.heartbeat-timeout-s = 30.0
 
 # -- Evaluation ----------------------------------------------------------------
