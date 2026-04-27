@@ -186,7 +186,7 @@ class BaseStrategy(Strategy):
                 continue
 
             # configure_train: selection + build messages
-            selected_pids, messages = self.configure_train(current_round, arrays, grid)
+            selected_pids, messages = self.configure_train(current_round, arrays, grid, timeout)
 
             logger.info(
                 "[ROUND %d/%d] Selected %d clients, sending train messages...",
