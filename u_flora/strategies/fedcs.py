@@ -67,7 +67,7 @@ class FedCSStrategy(BaseStrategy):
         grid,
         initial_arrays,
         num_rounds,
-        timeout,
+        timeout=None,
         train_config=None,
         evaluate_config=None,
         evaluate_fn=None,
