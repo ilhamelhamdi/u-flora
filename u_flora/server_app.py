@@ -176,7 +176,6 @@ def _get_evaluate_fn(
             eval_dataset=eval_set,
             compute_metrics=task_adapter.compute_metrics,
             data_collator=data_collator,
-            torch_compile=False,
         )
         metrics = trainer.evaluate()
 

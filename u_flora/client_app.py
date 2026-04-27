@@ -122,7 +122,6 @@ def train(msg: Message, context: Context):
         eval_dataset=val_set,
         data_collator=data_collator,
         compute_metrics=adapter.compute_metrics,
-        torch_compile=False,
     )
 
     try:
