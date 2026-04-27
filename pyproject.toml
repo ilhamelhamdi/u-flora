@@ -63,7 +63,7 @@ train.training-arguments.per-device-eval-batch-size = 8
 train.training-arguments.logging-steps = 32
 train.training-arguments.report-to = "none"
 train.training-arguments.num-train-epochs = 1
-train.training-arguments.max-steps = 10
+train.training-arguments.max-steps = 10 # TODO: Comment this
 train.training-arguments.save-steps = 1000
 train.training-arguments.save-total-limit = 2
 train.training-arguments.gradient-checkpointing = false
@@ -79,6 +79,7 @@ server.heartbeat-timeout-s = 30.0
 
 # -- Evaluation ----------------------------------------------------------------
 eval.batch-size = 32
+eval.max-samples = 320 # TODO: Comment this
 
 # -- Experiment tracking -------------------------------------------------------
 wandb.project = "u-flora-testbed"

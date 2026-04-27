@@ -157,6 +157,13 @@ def _get_evaluate_fn(
             model.save_pretrained(ckpt_path)
             logger.info("[Eval %s] Checkpoint saved → %s", label, ckpt_path)
 
+        # Optionally cap eval number
+        max_samples = cfg.eval.get("max_samples", -1) 
+        if max_samples > 0:
+            limit = min(len(validation_set), max_samples)
+            validation_set = validation_set.select(range(limit))
+            logger.info("[Eval %s] Capped evaluation to %d samples", label, limit)
+
         # Evaluate
         trainer_args = TrainingArguments(
             output_dir=f"{save_path}/eval",
