@@ -166,6 +166,7 @@ def train(msg: Message, context: Context):
             profile=profile,
             num_samples=len(train_set),
             local_epochs=local_epochs,
+            model_size_kb=adapter.get_model_size_kb(cfg.model),
             context=context,
         )
         logger.debug(
@@ -340,13 +341,13 @@ def _compute_simulated_duration(
     profile: dict | None,
     num_samples: int,
     local_epochs: int,
+    model_size_kb: float,
     context: Context,
 ) -> tuple[float, float, float]:
     if profile is None:
         return 0.0, 0.0, 0.0
 
     cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
-    model_size_kb = float(cfg.get("model_size_kb", 0.0)) if context.run_config else 0.0
 
     return estimate_round_duration_s(
         profile=profile,
