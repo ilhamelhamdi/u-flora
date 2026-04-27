@@ -42,7 +42,11 @@ class RandomStrategy(BaseStrategy):
         grid: Grid,
         timeout: float,
     ) -> tuple[list[int], list[Message]]:
-        all_pids = list(self.client_states.keys())
+        # Only sample from available clients (heartbeat updates ClientState.available
+        # at the start of each round in BaseStrategy.start).
+        all_pids = [p for p, s in self.client_states.items() if s.available]
+        if not all_pids:
+            return [], []
         k = min(self.num_to_select, len(all_pids))
         selected = self._rng.sample(all_pids, k)
         messages = self._make_train_messages(selected, arrays, round_num)

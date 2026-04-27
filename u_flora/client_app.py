@@ -23,6 +23,7 @@ from transformers import TrainingArguments, Trainer
 from .tasks.registry import get_task_adapter
 from .dataset import load_data
 from .utils import replace_keys, cosine_annealing, configure_logging
+from .utils.availability import is_available
 from .utils.timing import estimate_round_duration_s
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -205,6 +206,34 @@ def handle_identify(msg: Message, context: Context) -> Message:
     logger.debug("[C%03d] Identify query received", partition_id)
     return Message(
         content=RecordDict({"config": ConfigRecord({"partition_id": partition_id})}),
+        reply_to=msg,
+    )
+
+
+@app.query("heartbeat")
+def handle_heartbeat(msg: Message, context: Context) -> Message:
+    """Reply with availability at the server-supplied virtual time."""
+    partition_id = int(context.node_config["partition-id"])
+    virtual_time_s = float(msg.content["config"].get("virtual_time_s", 0.0))
+
+    profile = _load_device_profile(context)
+    behavior = profile.get("behavior") if isinstance(profile, dict) else None
+
+    if behavior is None:
+        available = True
+    else:
+        available = bool(is_available(behavior, virtual_time_s))
+
+    logger.debug(
+        "[C%03d] Heartbeat at t=%.1fs -> available=%s",
+        partition_id,
+        virtual_time_s,
+        available,
+    )
+    return Message(
+        content=RecordDict(
+            {"config": ConfigRecord({"available": available, "partition_id": partition_id})}
+        ),
         reply_to=msg,
     )
 

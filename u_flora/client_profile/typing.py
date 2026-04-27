@@ -65,6 +65,9 @@ class ClientState:
     last_selected_round: int = 0
     times_selected: int = 0
 
+    # Availability for the current round (updated by heartbeat each round)
+    available: bool = True
+
     # Oort-specific: whether this client has been explored
     explored: bool = False
 

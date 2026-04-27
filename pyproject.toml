@@ -73,6 +73,11 @@ train.training-arguments.lr-scheduler-type = "constant"
 num-server-rounds = 10
 num-clients = 50
 
+# -- Device-profile simulation -------------------------------------------------
+device-profile-path = "device_profiles/default/all_profiles.json"
+model-size-kb = 3174.0
+heartbeat-timeout-s = 30.0
+
 # -- Evaluation ----------------------------------------------------------------
 eval.batch-size = 64
 

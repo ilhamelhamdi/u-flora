@@ -56,6 +56,7 @@ class BaseStrategy(Strategy):
         is_higher_better: bool = True,
         evaluate_during_training: bool = False,
         model_size_kb: float = 0.0,
+        heartbeat_timeout_s: float = 30.0,
         **kwargs: Any,
     ) -> None:
         self.client_states = client_states
@@ -67,6 +68,12 @@ class BaseStrategy(Strategy):
         # Used by strategies that estimate per-client durations server-side
         # (FedCS, TiFL, Oort exploration).
         self.model_size_kb = float(model_size_kb)
+        # Per-round heartbeat timeout. Heartbeat itself takes 0 *simulated*
+        # time and does not advance the virtual clock.
+        self.heartbeat_timeout_s = float(heartbeat_timeout_s)
+        # Last-round availability snapshot (filled by _check_availability).
+        self._last_available_pids: set[int] = set()
+        self._last_unavailable_pids: set[int] = set()
 
         # Built at start() by querying all nodes
         self._pid_to_nid: dict[int, int] = {}  # partition_id → node_id
@@ -155,6 +162,28 @@ class BaseStrategy(Strategy):
         for current_round in range(1, num_rounds + 1):
             logger.info("")
             logger.info("[ROUND %d/%d]", current_round, num_rounds)
+
+            # Heartbeat: filter unavailable clients before selection.
+            virtual_time_s = self._cumulative_wall_clock
+            self._check_availability(grid, virtual_time_s)
+            n_avail = len(self._last_available_pids)
+            n_total = len(self._pid_to_nid)
+            logger.info(
+                "[ROUND %d/%d] Heartbeat at t=%.1fs: %d/%d clients available",
+                current_round,
+                num_rounds,
+                virtual_time_s,
+                n_avail,
+                n_total,
+            )
+
+            if n_avail == 0:
+                logger.warning(
+                    "[ROUND %d/%d] No available clients — skipping round",
+                    current_round,
+                    num_rounds,
+                )
+                continue
 
             # configure_train: selection + build messages
             selected_pids, messages = self.configure_train(current_round, arrays, grid)
@@ -492,6 +521,61 @@ class BaseStrategy(Strategy):
         return list(self._construct_messages(record, node_ids, message_type))
 
     # ------------------------------------------------------------------
+    # Availability heartbeat (per-round)
+    # ------------------------------------------------------------------
+
+    def _check_availability(self, grid: Grid, virtual_time_s: float) -> set[int]:
+        """Send a heartbeat to every node and update ``ClientState.available``.
+
+        Clients that don't reply (timeout / error) are treated as unavailable.
+        Heartbeat takes zero *simulated* time and does not advance the virtual
+        clock. Returns the set of available partition_ids.
+        """
+        all_pids = list(self._pid_to_nid.keys())
+        if not all_pids:
+            self._last_available_pids = set()
+            self._last_unavailable_pids = set()
+            return set()
+
+        record = RecordDict(
+            {
+                self.configrecord_key: ConfigRecord(
+                    {"virtual_time_s": float(virtual_time_s)}
+                )
+            }
+        )
+        message_type = f"{MessageType.QUERY}.heartbeat"
+        messages = self._construct_messages(
+            record,
+            [self._pid_to_nid[p] for p in all_pids],
+            message_type,
+        )
+        replies = grid.send_and_receive(messages, timeout=self.heartbeat_timeout_s)
+
+        available: set[int] = set()
+        for reply in replies:
+            if reply.has_error():
+                continue
+            nid = reply.metadata.src_node_id
+            pid = self._nid_to_pid.get(nid)
+            if pid is None:
+                continue
+            cfg = reply.content.get(self.configrecord_key)
+            if cfg is None:
+                continue
+            if bool(cfg.get("available", False)):
+                available.add(pid)
+
+        # Anyone in client_states but not in `available` is unavailable
+        # (covers timeouts and explicit False replies alike).
+        for pid, state in self.client_states.items():
+            state.available = pid in available
+
+        self._last_available_pids = available
+        self._last_unavailable_pids = set(self.client_states.keys()) - available
+        return available
+
+    # ------------------------------------------------------------------
     # Duration estimation (server-side; uses calibration constants)
     # ------------------------------------------------------------------
 
@@ -601,6 +685,8 @@ class BaseStrategy(Strategy):
                 "round/duration_std": dur_std,
                 "round/num_client_selected": len(selected_pids),
                 "round/num_client_completed": len(feedbacks),
+                "round/n_available": float(len(self._last_available_pids)),
+                "round/n_unavailable": float(len(self._last_unavailable_pids)),
                 "fairness/jain_index": jfi,
                 "fairness/gini_coefficient": gini,
                 "fairness/participation_std": p_std,

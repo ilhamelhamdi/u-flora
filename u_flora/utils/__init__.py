@@ -1,5 +1,6 @@
 """u_flora.utils."""
 
+from .availability import is_available
 from .config import replace_keys
 from .logging import configure_logging
 from .timing import estimate_round_duration_s
@@ -10,4 +11,5 @@ __all__ = [
     "configure_logging",
     "cosine_annealing",
     "estimate_round_duration_s",
+    "is_available",
 ]

@@ -27,6 +27,7 @@ def build_strategy(
     local_epochs = cfg.train.training_arguments.num_train_epochs
 
     model_size_kb = float(cfg.get("model_size_kb", 0.0))
+    heartbeat_timeout_s = float(cfg.get("heartbeat_timeout_s", 30.0))
 
     common = dict(
         client_states=client_states,
@@ -35,6 +36,7 @@ def build_strategy(
         metric_name=metric_name,
         is_higher_better=is_higher_better,
         model_size_kb=model_size_kb,
+        heartbeat_timeout_s=heartbeat_timeout_s,
     )
 
     if name == "random":

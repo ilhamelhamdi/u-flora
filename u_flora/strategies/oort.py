@@ -72,7 +72,8 @@ class OortStrategy(BaseStrategy):
         grid: Grid,
         timeout: float,
     ) -> tuple[list[int], list[Message]]:
-        all_pids = list(self.client_states.keys())
+        # Only consider clients reported available by heartbeat this round.
+        all_pids = [p for p, s in self.client_states.items() if s.available]
         if not all_pids:
             return [], []
 
