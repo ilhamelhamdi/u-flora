@@ -58,8 +58,8 @@ train.learning-rate-max = 5e-4
 train.learning-rate-min = 1e-5
 train.training-arguments.output-dir = ""
 train.training-arguments.learning-rate = ""               # Overridden by dynamic lr scheduler
-train.training-arguments.per-device-train-batch-size = 32
-train.training-arguments.per-device-eval-batch-size = 32
+train.training-arguments.per-device-train-batch-size = 8
+train.training-arguments.per-device-eval-batch-size = 8
 train.training-arguments.logging-steps = 32
 train.training-arguments.report-to = "none"
 train.training-arguments.num-train-epochs = 1
@@ -78,7 +78,7 @@ device-profile-path = "device_profiles/default/profiles.json"
 server.heartbeat-timeout-s = 30.0
 
 # -- Evaluation ----------------------------------------------------------------
-eval.batch-size = 64
+eval.batch-size = 32
 
 # -- Experiment tracking -------------------------------------------------------
 wandb.project = "u-flora-testbed"
