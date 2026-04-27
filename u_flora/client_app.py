@@ -309,10 +309,10 @@ def _load_device_profile(context: Context) -> dict | None:
         return None
 
     with open(profile_path) as f:
-        all_profiles = json.load(f)
+        profiles = json.load(f)
 
     key = _resolve_profile_key(context)
-    profile = all_profiles.get(key)
+    profile = profiles.get(key)
     if profile is None:
         logger.warning(
             "Profile key '%s' not found in %s — simulated duration will be 0.",

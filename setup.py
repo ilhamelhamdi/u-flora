@@ -245,7 +245,7 @@ def up(
             node_id=p["client_id"],
             profile=p,
             profile_key=get_node_name(p["client_id"]),
-            profile_path=os.path.join(namespace_dir, "all_profiles.json"),
+            profile_path=os.path.join(namespace_dir, "profiles.json"),
             clientappio_port=SUPERNODE_PORT_START + p["client_id"],
             superlink_address=_superlink_addr(p["client_id"]),
             total_nodes=len(profiles),
@@ -760,10 +760,10 @@ def generate_profiles(
         get_node_name(profile["client_id"]): profile for profile in profile_dicts
     }
 
-    all_profiles_path = os.path.join(output_dir, "all_profiles.json")
-    with open(all_profiles_path, "w") as f:
+    profiles_path = os.path.join(output_dir, "profiles.json")
+    with open(profiles_path, "w") as f:
         json.dump(profiles_by_node, f, indent=2)
-    logger.info("Saved %d profiles to %s", len(profile_dicts), all_profiles_path)
+    logger.info("Saved %d profiles to %s", len(profile_dicts), profiles_path)
 
     metadata_path = os.path.join(output_dir, "metadata.json")
     metadata = {
@@ -799,7 +799,7 @@ def load_profiles(profile_dir: str = PROFILE_DIR) -> list[dict]:
             "Generate it first with 'python setup.py profiles --namespace=<name>'."
         )
 
-    combined = os.path.join(profile_dir, "all_profiles.json")
+    combined = os.path.join(profile_dir, "profiles.json")
     if not os.path.exists(combined):
         raise FileNotFoundError(
             f"No profiles found at {combined}. "
