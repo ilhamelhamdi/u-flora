@@ -156,6 +156,7 @@ class BaseStrategy(Strategy):
             else:
                 result.evaluate_metrics_serverapp[0] = res
                 logger.info("Initial evaluation metrics: %s", res)
+                self._log_pretrain_eval(res)
 
         # Step 4: Main training loop
         logger.info("Starting federated training (%d rounds)...", num_rounds)
@@ -219,15 +220,19 @@ class BaseStrategy(Strategy):
             # Depending on the strategy, we may want to extract client feedback and update states
             self.configure_post_training_round(current_round, replies, selected_pids)
 
-            # Log metrics
-            self.log_metrics(current_round, replies, selected_pids)
-
-            # Centralized evaluation
+            # Centralized evaluation 
+            eval_extra: dict[str, float] | None = None
             if evaluate_fn:
                 res = evaluate_fn(current_round, arrays)
                 if res is not None:
                     result.evaluate_metrics_serverapp[current_round] = res
                     self._update_best_metric(current_round, res)
+                    eval_extra = self._eval_metrics_for_wandb(res)
+
+            # Log metrics (eval scalars merged in)
+            self.log_metrics(
+                current_round, replies, selected_pids, extra_metrics=eval_extra
+            )
 
         result.arrays = arrays
         logger.info("")
@@ -714,6 +719,27 @@ class BaseStrategy(Strategy):
             len(feedbacks),
             jfi,
         )
+
+    @staticmethod
+    def _eval_metrics_for_wandb(res: MetricRecord) -> dict[str, float]:
+        out: dict[str, float] = {}
+        for k, v in res.items():
+            if not isinstance(v, (int, float)):
+                continue
+            key = f"eval/{k[len('eval_'):]}" if k.startswith("eval_") else f"eval/{k}"
+            out[key] = float(v)
+        return out
+
+    def _log_pretrain_eval(self, res: MetricRecord) -> None:
+        """Log round-0 evaluation on the same x-axes used during the training loop."""
+        if not self.use_wandb:
+            return
+        log_dict: dict[str, float] = {
+            "round/server_round": 0,
+            "round/cumulative_wall_clock": 0.0,
+        }
+        log_dict.update(self._eval_metrics_for_wandb(res))
+        wandb.log(log_dict)
 
     def _log_summary(self, num_rounds: int, result: Result) -> None:
         """Log end-of-training summary metrics to W&B."""

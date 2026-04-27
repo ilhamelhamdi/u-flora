@@ -169,6 +169,7 @@ def _get_evaluate_fn(
         trainer_args = TrainingArguments(
             output_dir=f"{save_path}/eval",
             per_device_eval_batch_size=cfg.eval.batch_size,
+            report_to="none",  # strategy logs eval metrics on its own W&B step
         )
         trainer = Trainer(
             model=model,
