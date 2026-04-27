@@ -33,7 +33,7 @@ class OortStrategy(BaseStrategy):
     def __init__(
         self,
         num_to_select: int,
-        epsilon: float = 0.9, # same as in paper
+        epsilon: float = 0.9,  # same as in paper
         alpha: float = 2.0,
         pacer_window: int = 10,
         pacer_delta: float | None = None,
@@ -131,13 +131,9 @@ class OortStrategy(BaseStrategy):
         messages = self._make_train_messages(selected, arrays, round_num)
         return selected, messages
 
-    def aggregate_train(
-        self,
-        round_num: int,
-        replies: list[Message],
-        selected_pids: list[int],
-        extra_metrics: dict[str, float] | None = None,
-    ) -> tuple[ArrayRecord | None, MetricRecord | None]:
+    def configure_post_training_round(self, round_num, replies, selected_pids):
+        super().configure_post_training_round(round_num, replies, selected_pids)
+
         valid_replies = [msg for msg in replies if not msg.has_error()]
         feedbacks_preview = self.extract_feedback(valid_replies)
 
@@ -157,6 +153,12 @@ class OortStrategy(BaseStrategy):
 
         self._update_pacer_if_needed()
 
+    def log_metrics(self, round_num, replies, selected_pids, extra_metrics=None):
+        round_utility = (
+            self._round_utility_history[-1]
+            if self._round_utility_history
+            else float("nan")
+        )
         oort_extras = {
             "strategy/oort_round_utility": float(round_utility),
             "strategy/oort_explored_clients": float(
@@ -193,8 +195,7 @@ class OortStrategy(BaseStrategy):
 
         if extra_metrics:
             oort_extras.update(extra_metrics)
-
-        return super().aggregate_train(round_num, replies, selected_pids, oort_extras)
+        return super().log_metrics(round_num, replies, selected_pids, extra_metrics)
 
     def _observed_client_utility(
         self, pid: int, fb: dict[str, float], round_num: int
@@ -211,7 +212,9 @@ class OortStrategy(BaseStrategy):
     def _client_final_utility(self, pid: int, round_num: int) -> float:
         state = self.client_states[pid]
 
-        loss = state.last_train_loss if state.last_train_loss is not None else 0.0 # if no feedback yet or in initial round, assume 0 loss (could also use a default or skip)
+        loss = (
+            state.last_train_loss if state.last_train_loss is not None else 0.0
+        )  # if no feedback yet or in initial round, assume 0 loss (could also use a default or skip)
         stat_utility = state.num_samples * abs(loss)
         staleness_bonus = self._staleness_bonus(pid, round_num)
         system_penalty = self._system_penalty(state.last_duration_s)

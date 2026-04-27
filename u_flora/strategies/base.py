@@ -186,7 +186,9 @@ class BaseStrategy(Strategy):
                 continue
 
             # configure_train: selection + build messages
-            selected_pids, messages = self.configure_train(current_round, arrays, grid, timeout)
+            selected_pids, messages = self.configure_train(
+                current_round, arrays, grid, timeout
+            )
 
             logger.info(
                 "[ROUND %d/%d] Selected %d clients, sending train messages...",
@@ -207,15 +209,14 @@ class BaseStrategy(Strategy):
                 len(messages),
             )
 
-            # aggregate_train: FedAvg + metrics logging
-            new_arrays, train_metrics = self.aggregate_train(
-                current_round, replies, selected_pids
-            )
+            # aggregate_train: FedAvg
+            new_arrays, train_metrics = self.aggregate_train(current_round, replies)
             if new_arrays is not None:
                 arrays = new_arrays
             if train_metrics is not None:
                 result.train_metrics_clientapp[current_round] = train_metrics
 
+            # Depending on the strategy, we may want to extract client feedback and update states
             self.configure_post_training_round(current_round, replies, selected_pids)
 
             # Log metrics
