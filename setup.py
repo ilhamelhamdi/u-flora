@@ -163,6 +163,11 @@ def main() -> None:
     # --- batch ---
     p_batch = sub.add_parser("batch", help="Run batch experiments")
     p_batch.add_argument("--batch-config", required=True, type=str)
+    p_batch.add_argument(
+        "--detach",
+        action="store_true",
+        help="Run batch in background and exit immediately",
+    )
 
     # --- profiles ---
     p_prof = sub.add_parser(
@@ -198,7 +203,10 @@ def main() -> None:
     elif args.command == "run":
         run_task(args.overrides)
     elif args.command == "batch":
-        run_batch(args.batch_config)
+        if args.detach:
+            _detach_batch(args.batch_config)
+        else:
+            run_batch(args.batch_config)
     elif args.command in {"profiles", "scenario-profiles"}:
         profiles = generate_profiles(
             num_clients=args.num_clients,
@@ -463,7 +471,9 @@ def _teardown_toxiproxy() -> None:
 # ── Experiment Execution ──────────────────────────────────────────────────────
 
 
-def run_task(overrides: list[str], block: bool = False) -> int | None:
+def run_task(
+    overrides: list[str], block: bool = False, name: str | None = None
+) -> int | None:
     """Run a single FL experiment via ``flwr run``.
 
     Example:
@@ -507,7 +517,13 @@ def run_task(overrides: list[str], block: bool = False) -> int | None:
 
     logger.info("Running: %s", " ".join(cmd))
 
-    log_path = f"{LOG_DIR}/flower-task.log"
+    if name:
+        log_dir = f"{LOG_DIR}/{name}"
+        os.makedirs(log_dir, exist_ok=True)
+        log_path = f"{log_dir}/flower-task.log"
+    else:
+        log_path = f"{LOG_DIR}/flower-task.log"
+
     with open(log_path, "w") as log_file:
         if block:
             result = subprocess.run(
@@ -597,13 +613,45 @@ def run_batch(batch_config_path: str) -> None:
             base or "none",
             merged_overrides,
         )
-        rc = run_task(merged_overrides, block=True)
+        rc = run_task(merged_overrides, block=True, name=name)
         if rc not in (0, None):
             logger.error("Experiment %s failed (exit %d)", name, rc)
 
         time.sleep(5)
 
     logger.info("Batch complete: %d/%d experiments run.", total, total)
+
+
+def _detach_batch(batch_config_path: str) -> None:
+    cmd = [
+        sys.executable,
+        str(Path(__file__).resolve()),
+        "batch",
+        "--batch-config",
+        batch_config_path,
+    ]
+    log_path = f"{LOG_DIR}/batch-detached.log"
+    proc = _spawn_detached_process(cmd, log_path)
+    logger.info(
+        "Detached batch started (pid %d). See log file: %s",
+        proc.pid,
+        log_path,
+    )
+
+
+def _spawn_detached_process(cmd: list[str], log_path: str) -> subprocess.Popen:
+    os.makedirs(LOG_DIR, exist_ok=True)
+    log_file = open(log_path, "a")
+    cwd = str(Path(__file__).parent)
+
+    return subprocess.Popen(
+        cmd,
+        stdout=log_file,
+        stderr=log_file,
+        stdin=subprocess.DEVNULL,
+        cwd=cwd,
+        start_new_session=True,
+    )
 
 
 # ── Device Profile Management ─────────────────────────────────────────────────
