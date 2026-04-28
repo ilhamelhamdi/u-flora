@@ -29,6 +29,7 @@ from .utils.timing import apply_duration_jitter, estimate_round_duration_s
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 warnings.filterwarnings("ignore", category=UserWarning)
 
 configure_logging(level=os.environ.get("U_FLORA_LOG_LEVEL", "INFO"))
@@ -182,6 +183,13 @@ def train(msg: Message, context: Context):
 
         # -- Build response ------------------------------------------------
         model_record = ArrayRecord(get_peft_model_state_dict(model))
+
+        model.to("cpu")
+        del trainer, model
+        import gc
+        gc.collect()
+        torch.cuda.empty_cache()
+
         metrics = {
             "train_loss": results.training_loss,
             "num-examples": len(train_set),

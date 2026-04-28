@@ -145,6 +145,10 @@ def _get_evaluate_fn(
         label = "pre-training" if server_round == 0 else f"round {server_round}"
         logger.info("[Eval %s] Running centralized evaluation...", label)
 
+        import gc
+        gc.collect()
+        torch.cuda.empty_cache()
+
         model = task_adapter.get_model(cfg.model)
         set_peft_model_state_dict(model, arrays.to_torch_state_dict())
 
