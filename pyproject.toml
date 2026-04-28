@@ -65,7 +65,7 @@ model.lora.peft-lora-dropout = 0.05
 model.lora.peft-target-modules = "Wqkv,attn.Wo"
 
 # -- Training ------------------------------------------------------------------
-# train.save-every-round = 5
+train.save-every-round = 5
 train.learning-rate-max = 5e-4
 train.learning-rate-min = 1e-5
 train.training-arguments.output-dir = ""
