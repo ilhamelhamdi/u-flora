@@ -1,0 +1,22 @@
+strategy: uflora
+task: boolq
+# Group 3 main: full U-Flora with mandatory-optional + async profiling +
+# convergence-driven fairness.
+# TODO: requires `uflora` strategy implementation.
+overrides:
+  - "task-name=text_classification"
+  - "dataset.name=boolq"
+  - "num-clients=50"
+  - "device-profile-path=device_profiles/50/default/profiles.json"
+  - "strategy.name=uflora"
+  - "strategy.num-to-select=5"
+  - "strategy.uflora.min-k=5"
+  - "strategy.uflora.d-max=5"             # K_actual ∈ [5, 10]
+  - "strategy.uflora.p-max=5"             # async-profile up to 5 clients/round
+  - "strategy.uflora.lambda-max=1.0"
+  - "strategy.uflora.dm-ema-beta=0.3"
+  - "strategy.uflora.alpha-ema=0.3"
+  - "strategy.oort.alpha=2.0"
+  - "strategy.oort.utility-clip-percentile=95"
+  - "dataset.partition.strategy=dirichlet"
+  - "dataset.partition.dirichlet.alpha=8"

@@ -1,0 +1,23 @@
+strategy: oort_fair
+task: mnli
+# Group 3 ablation: Oort with our convergence-driven fairness mechanism.
+# TODO: requires `oort_fair` strategy implementation.
+overrides:
+  - "task-name=text_classification"
+  - "dataset.name=mnli"
+  - "num-clients=300"
+  - "device-profile-path=device_profiles/300/default/profiles.json"
+  - "strategy.name=oort_fair"
+  - "strategy.num-to-select=30"
+  - "strategy.oort.epsilon=0.9"
+  - "strategy.oort.alpha=2.0"
+  - "strategy.oort.pacer-window=10"
+  - "strategy.oort.pacer-delta=75"
+  - "strategy.oort.initial-t=750"
+  - "strategy.oort.cutoff-c=0.95"
+  - "strategy.oort.max-participation-rounds=10"
+  - "strategy.oort.utility-clip-percentile=95"
+  - "strategy.oort_fair.lambda-max=1.0"
+  - "strategy.oort_fair.dm-ema-beta=0.3"
+  - "dataset.partition.strategy=dirichlet"
+  - "dataset.partition.dirichlet.alpha=8"

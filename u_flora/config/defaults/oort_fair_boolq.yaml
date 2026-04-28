@@ -1,0 +1,28 @@
+strategy: oort_fair
+task: boolq
+# Group 3 ablation: Oort with our convergence-driven fairness mechanism λ(t)
+# replacing Oort's manual fairness scalar f. Isolates the contribution of the
+# fairness mechanism alone (no mandatory-optional, no async profiling).
+#
+# TODO: requires `oort_fair` strategy implementation (Oort with λ(t) hook
+#       instead of static f). Not yet wired into u_flora/strategies/factory.py.
+overrides:
+  - "task-name=text_classification"
+  - "dataset.name=boolq"
+  - "num-clients=50"
+  - "device-profile-path=device_profiles/50/default/profiles.json"
+  - "strategy.name=oort_fair"
+  - "strategy.num-to-select=5"
+  - "strategy.oort.epsilon=0.9"
+  - "strategy.oort.alpha=2.0"
+  - "strategy.oort.pacer-window=10"
+  - "strategy.oort.pacer-delta=15"
+  - "strategy.oort.initial-t=120"
+  - "strategy.oort.cutoff-c=0.95"
+  - "strategy.oort.max-participation-rounds=10"
+  - "strategy.oort.utility-clip-percentile=95"
+  # Convergence-driven fairness knobs (replace Oort's `f`)
+  - "strategy.oort_fair.lambda-max=1.0"
+  - "strategy.oort_fair.dm-ema-beta=0.3"
+  - "dataset.partition.strategy=dirichlet"
+  - "dataset.partition.dirichlet.alpha=8"
