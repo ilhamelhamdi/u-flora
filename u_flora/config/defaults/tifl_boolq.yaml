@@ -1,15 +1,15 @@
 strategy: tifl
 task: boolq
 overrides:
-  - "task_name=text_classification"
+  - "task-name=text_classification"
   - "dataset.name=boolq"
-  - "num_clients=50"
+  - "num-clients=50"
   - "device-profile-path=device_profiles/50/default/profiles.json"
   - "strategy.name=tifl"
-  - "strategy.num_to_select=5"
-  - "strategy.tifl.num_tiers=5"
-  - "strategy.tifl.sync_rounds=2"
-  - "strategy.tifl.prob_update_interval=5"
-  - "strategy.tifl.round_deadline_s=360.0"
+  - "strategy.num-to-select=5"
+  - "strategy.tifl.num-tiers=5"
+  - "strategy.tifl.sync-rounds=2"
+  - "strategy.tifl.prob-update-interval=5"
+  - "strategy.tifl.round-deadline-s=360.0"
   - "dataset.partition.strategy=dirichlet"
   - "dataset.partition.dirichlet.alpha=8"

@@ -47,7 +47,7 @@ clientapp = "u_flora.client_app:app"
 [tool.flwr.app.config]
 # -- Task selector -------------------------------------------------------------
 # Controls which TaskAdapter is used. One of: text_classification, causal_lm
-task_name = "text_classification"
+task-name = "text_classification"
 
 # Global seed for reproducibility (dataset partitioning, client selection randomness, etc.)
 seed = 42 

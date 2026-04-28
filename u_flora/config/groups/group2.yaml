@@ -10,22 +10,70 @@ description: >
 experiments:
   # ====================== seed = 42 (enabled) ======================
   # alpha = 2.0 (high non-IID)
-  - { name: g2_random_mnli_a0.1_s42, base: random_mnli, overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
-  - { name: g2_fedcs_mnli_a0.1_s42,  base: fedcs_mnli,  overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
-  - { name: g2_tifl_mnli_a0.1_s42,   base: tifl_mnli,   overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
-  - { name: g2_oort_mnli_a0.1_s42,   base: oort_mnli,   overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
+  - {
+      name: g2_random_mnli_a0.1_s42,
+      base: random_mnli,
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
+  - {
+      name: g2_fedcs_mnli_a0.1_s42,
+      base: fedcs_mnli,
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
+  - {
+      name: g2_tifl_mnli_a0.1_s42,
+      base: tifl_mnli,
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
+  - {
+      name: g2_oort_mnli_a0.1_s42,
+      base: oort_mnli,
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
 
   # alpha = 8.0 (mild non-IID)
-  - { name: g2_random_mnli_a8_s42,   base: random_mnli, overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"] }
-  - { name: g2_fedcs_mnli_a8_s42,    base: fedcs_mnli,  overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"] }
-  - { name: g2_tifl_mnli_a8_s42,     base: tifl_mnli,   overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"] }
-  - { name: g2_oort_mnli_a8_s42,     base: oort_mnli,   overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"] }
+  - {
+      name: g2_random_mnli_a8_s42,
+      base: random_mnli,
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"],
+    }
+  - {
+      name: g2_fedcs_mnli_a8_s42,
+      base: fedcs_mnli,
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"],
+    }
+  - {
+      name: g2_tifl_mnli_a8_s42,
+      base: tifl_mnli,
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"],
+    }
+  - {
+      name: g2_oort_mnli_a8_s42,
+      base: oort_mnli,
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"],
+    }
 
   # alpha = ∞ (IID; encoded as 1e6)
-  - { name: g2_random_mnli_aIID_s42, base: random_mnli, overrides: ["seed=42", "dataset.partition.strategy='iid'"] }
-  - { name: g2_fedcs_mnli_aIID_s42,  base: fedcs_mnli,  overrides: ["seed=42", "dataset.partition.strategy='iid'"] }
-  - { name: g2_tifl_mnli_aIID_s42,   base: tifl_mnli,   overrides: ["seed=42", "dataset.partition.strategy='iid'"] }
-  - { name: g2_oort_mnli_aIID_s42,   base: oort_mnli,   overrides: ["seed=42", "dataset.partition.strategy='iid'"] }
+  - {
+      name: g2_random_mnli_aIID_s42,
+      base: random_mnli,
+      overrides: ["seed=42", "dataset.partition.strategy='iid'"],
+    }
+  - {
+      name: g2_fedcs_mnli_aIID_s42,
+      base: fedcs_mnli,
+      overrides: ["seed=42", "dataset.partition.strategy='iid'"],
+    }
+  - {
+      name: g2_tifl_mnli_aIID_s42,
+      base: tifl_mnli,
+      overrides: ["seed=42", "dataset.partition.strategy='iid'"],
+    }
+  - {
+      name: g2_oort_mnli_aIID_s42,
+      base: oort_mnli,
+      overrides: ["seed=42", "dataset.partition.strategy='iid'"],
+    }
 
   # ====================== seed = 123 (disabled) ====================
   # alpha = 2.0 (high non-IID)
