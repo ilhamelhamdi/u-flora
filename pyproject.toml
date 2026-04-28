@@ -31,7 +31,7 @@ packages = ["."]
 publisher = "flwrlabs"
 
 fab-exclude = [
-    "traces/**",      # Exclude raw trace files
+    "traces",      # Exclude raw trace files
 ]
 
 [tool.flwr.app.components]
