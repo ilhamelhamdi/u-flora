@@ -226,6 +226,7 @@ class FedCSStrategy(BaseStrategy):
             if (
                 not r.has_error()
                 and r.has_content()
+                and r.content.get("simulated_duration_s") is not None
                 and r.content.get("simulated_duration_s") <= self.round_deadline_s
             ):
                 result.append(r)
