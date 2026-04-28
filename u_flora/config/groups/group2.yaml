@@ -7,6 +7,7 @@ description: >
   Three seeds per configuration. alpha=0.5 is shared with Group 1, so this group
   contributes 4 x 3 x 3 = 36 runs.
 
+superlink-connection: "local-300"
 experiments:
   # ====================== seed = 42 (enabled) ======================
   # alpha = 2.0 (high non-IID)

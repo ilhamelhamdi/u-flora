@@ -472,7 +472,10 @@ def _teardown_toxiproxy() -> None:
 
 
 def run_task(
-    overrides: list[str], block: bool = False, name: str | None = None
+    overrides: list[str],
+    block: bool = False,
+    name: str | None = None,
+    superlink_connection: str = SUPERLINK_CONNECTION_NAME,
 ) -> int | None:
     """Run a single FL experiment via ``flwr run``.
 
@@ -480,7 +483,7 @@ def run_task(
         run_task(["task=text_classification", "model=modernbert", "dataset=sst2",
                   "strategy=oort", "num_server_rounds=100"])
     """
-    cmd = ["flwr", "run", ".", SUPERLINK_CONNECTION_NAME, "--stream"]
+    cmd = ["flwr", "run", ".", superlink_connection, "--stream"]
 
     def _format_override_value(raw_value: str) -> str:
         value = raw_value.strip()
@@ -587,6 +590,10 @@ def run_batch(batch_config_path: str) -> None:
     with open(config_path) as f:
         batch = yaml.safe_load(f)
 
+    superlink_connection_name = batch.get(
+        "superlink-connection", SUPERLINK_CONNECTION_NAME
+    )
+
     experiments = batch.get("experiments", [])
     total = len(experiments)
 
@@ -613,7 +620,12 @@ def run_batch(batch_config_path: str) -> None:
             base or "none",
             merged_overrides,
         )
-        rc = run_task(merged_overrides, block=True, name=name)
+        rc = run_task(
+            merged_overrides,
+            block=True,
+            name=name,
+            superlink_connection=superlink_connection_name,
+        )
         if rc not in (0, None):
             logger.error("Experiment %s failed (exit %d)", name, rc)
 
