@@ -30,6 +30,12 @@ packages = ["."]
 [tool.flwr.app]
 publisher = "flwrlabs"
 
+fab-include = [
+    "*.py",
+    "u_flora/**/*.py",
+    "pyproject.toml"
+]
+
 fab-exclude = [
     "traces",      # Exclude raw trace files
 ]
