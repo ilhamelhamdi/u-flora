@@ -708,7 +708,7 @@ class BaseStrategy(Strategy):
                 log_dict.update(extra_metrics)
 
             wandb.log(log_dict)
-            wandb.log({"client/raw_training_history": self._history_table})
+            # wandb.log({"client/raw_training_history": self._history_table})
 
         logger.info(
             "Round %d — wall_clock=%.1fs cumul=%.1fs dur_mean=%.1f±%.1f "
