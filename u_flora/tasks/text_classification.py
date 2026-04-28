@@ -48,8 +48,7 @@ class TextClassificationAdapter(TaskAdapter):
             num_labels=num_labels,
             ignore_mismatched_sizes=True,
             torch_dtype=torch.float32,
-            use_safetensors=False,
-            low_cpu_mem_usage=True,
+            use_safetensors=True,
         )
         lora_config = self.build_lora_config(model_cfg.lora)
         return get_peft_model(model, lora_config)
