@@ -1,0 +1,34 @@
+description: >
+  Group 3 — Algorithm Evaluation (RQ2) — MNLI only (300 clients pool).
+  Compares U-Flora variants against adaptive-K baselines and ablations:
+    - fedcs_uncapped : full FedCS deadline-filling (variable K).
+    - oort_fair      : Oort + convergence-driven fairness lambda(t).
+                       Isolates contribution of fairness mechanism alone.
+    - uflora_noprofile : mandatory-optional structure, no async profiling.
+                         Isolates contribution of mandatory-optional alone.
+    - uflora_full    : complete proposed algorithm.
+  Random / TiFL / Oort-core are reused from group1-300 (no variable-K variants).
+  Three seeds per configuration. Total: 4 (variant) x 1 (task) x 3 (seed) = 12 runs.
+
+  TODO: requires `oort_fair` and `uflora` strategies to be implemented in
+        u_flora/strategies/ and registered in factory.py.
+
+superlink-connection: "local-300"
+experiments:
+  # ====================== seed = 42 ======================
+  - { name: g3_fedcs_uncapped_mnli_s42,  base: fedcs_uncapped_mnli,  overrides: ["seed=42"] }
+  - { name: g3_oort_fair_mnli_s42,       base: oort_fair_mnli,       overrides: ["seed=42"] }
+  - { name: g3_uflora_noprofile_mnli_s42, base: uflora_noprofile_mnli, overrides: ["seed=42"] }
+  - { name: g3_uflora_full_mnli_s42,     base: uflora_full_mnli,     overrides: ["seed=42"] }
+
+  # ====================== seed = 123 ======================
+  # - { name: g3_fedcs_uncapped_mnli_s123,  base: fedcs_uncapped_mnli,  overrides: ["seed=123"] }
+  # - { name: g3_oort_fair_mnli_s123,       base: oort_fair_mnli,       overrides: ["seed=123"] }
+  # - { name: g3_uflora_noprofile_mnli_s123, base: uflora_noprofile_mnli, overrides: ["seed=123"] }
+  # - { name: g3_uflora_full_mnli_s123,     base: uflora_full_mnli,     overrides: ["seed=123"] }
+
+  # ====================== seed = 456 ======================
+  # - { name: g3_fedcs_uncapped_mnli_s456,  base: fedcs_uncapped_mnli,  overrides: ["seed=456"] }
+  # - { name: g3_oort_fair_mnli_s456,       base: oort_fair_mnli,       overrides: ["seed=456"] }
+  # - { name: g3_uflora_noprofile_mnli_s456, base: uflora_noprofile_mnli, overrides: ["seed=456"] }
+  # - { name: g3_uflora_full_mnli_s456,     base: uflora_full_mnli,     overrides: ["seed=456"] }
