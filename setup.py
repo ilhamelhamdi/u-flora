@@ -463,8 +463,8 @@ def run_task(overrides: list[str], block: bool = False) -> int | None:
     """
     cmd = ["flwr", "run", ".", SUPERLINK_CONNECTION_NAME, "--stream"]
 
-    for ov in overrides:
-        cmd.extend(["--run-config", ov])
+    ov = " ".join(overrides)
+    cmd.extend(["--run-config", f'{ov}'])
 
     logger.info("Running: %s", " ".join(cmd))
 
