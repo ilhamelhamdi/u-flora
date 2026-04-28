@@ -4,6 +4,7 @@ overrides:
   - "task_name=text_classification"
   - "dataset.name=boolq"
   - "num_clients=50"
+  - "device-profile-path='device_profiles/50/default/profiles.json'"
   - "strategy.name=oort"
   - "strategy.num_to_select=5"
   - "strategy.oort.epsilon=0.9"

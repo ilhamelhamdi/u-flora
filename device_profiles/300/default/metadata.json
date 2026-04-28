@@ -3,7 +3,7 @@
   "sampling": {
     "beta": 0.0,
     "seed": 42,
-    "num_clients": 100,
+    "num_clients": 300,
     "num_samples": 200,
     "local_epochs": 1,
     "model_size_kb": 3174.0,
