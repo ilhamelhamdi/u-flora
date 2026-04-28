@@ -53,7 +53,7 @@ task-name = "text_classification"
 seed = 42 
 
 # -- Federation ----------------------------------------------------------------
-num-server-rounds = 10
+num-server-rounds = 100
 num-clients = 50    # Different dataset has different number of clients
 
 # -- Device-profile simulation -------------------------------------------------
@@ -73,7 +73,7 @@ simulation.jitter.comm-stall-factor-max = 10.0
 # -- Experiment tracking -------------------------------------------------------
 wandb.project = "u-flora-experiments"
 wandb.entity = "ilham-abdillah-alhamdi-universitas-indonesia"
-wandb.run-name = "alpha-test"
+wandb.run-name = "beta-test"
 
 # -- Client selection strategy -------------------------------------------------
 # name: random | fedcs | tifl | oort
@@ -121,7 +121,7 @@ train.training-arguments.per-device-eval-batch-size = 16
 train.training-arguments.logging-steps = 32
 train.training-arguments.report-to = "none"
 train.training-arguments.num-train-epochs = 1
-train.training-arguments.max-steps = 10 # TODO: Comment this
+# train.training-arguments.max-steps = 10 # TODO: Comment this
 # train.training-arguments.save-steps = 1000
 # train.training-arguments.save-total-limit = 2
 train.training-arguments.gradient-checkpointing = false
@@ -129,7 +129,7 @@ train.training-arguments.lr-scheduler-type = "constant"
 
 # -- Evaluation ----------------------------------------------------------------
 eval.batch-size = 64
-eval.max-samples = 320 # TODO: Comment this
+# eval.max-samples = 320 # TODO: Comment this
 
 
 # ==============================================================================
