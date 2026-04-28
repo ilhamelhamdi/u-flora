@@ -19,11 +19,11 @@ from flwr.common.config import unflatten_dict
 from omegaconf import DictConfig
 from peft import get_peft_model_state_dict, set_peft_model_state_dict
 import torch
-from transformers import TrainingArguments, Trainer
+from transformers import Trainer, TrainingArguments
 
 from .tasks.registry import get_task_adapter
 from .dataset import load_data
-from .utils import replace_keys, cosine_annealing, configure_logging
+from .utils import replace_keys, cosine_annealing, warmup_then_cosine, FedProxTrainer, configure_logging
 from .utils.availability import is_available
 from .utils.timing import apply_duration_jitter, estimate_round_duration_s
 
@@ -98,22 +98,31 @@ def train(msg: Message, context: Context):
     model = adapter.get_model(cfg.model)
     set_peft_model_state_dict(model, msg.content["arrays"].to_torch_state_dict())
 
+    # Capture global params before any local updates (used by FedProx).
+    global_params = [p.detach().clone() for p in model.parameters() if p.requires_grad]
+
     # -- Training arguments --------------------------------------------
     train_args_dict = dict(cfg.train.training_arguments)
     training_arguments = TrainingArguments(**train_args_dict)
 
-    # Learning rate schedule
-    new_lr = cosine_annealing(
+    # Learning rate schedule: linear warmup then cosine annealing.
+    warmup_rounds = int(getattr(cfg.train, "warmup_rounds", 0))
+    new_lr = warmup_then_cosine(
         server_round,
         num_rounds,
         cfg.train.learning_rate_max,
         cfg.train.learning_rate_min,
+        warmup_rounds=warmup_rounds,
     )
     training_arguments.learning_rate = new_lr
     training_arguments.output_dir = msg.content["config"]["save_path"]
     training_arguments.report_to = "none"
 
-    trainer = Trainer(
+    # FedProx: use proximal regularization when mu > 0.
+    fedprox_mu = float(
+        getattr(getattr(cfg.train, "fedprox", None), "mu", 0.0) or 0.0
+    )
+    trainer_kwargs: dict = dict(
         model=model,
         args=training_arguments,
         train_dataset=train_set,
@@ -121,6 +130,12 @@ def train(msg: Message, context: Context):
         data_collator=data_collator,
         compute_metrics=adapter.compute_metrics,
     )
+    if fedprox_mu > 0.0:
+        trainer_kwargs["global_params"] = global_params
+        trainer_kwargs["mu"] = fedprox_mu
+        trainer = FedProxTrainer(**trainer_kwargs)
+    else:
+        trainer = Trainer(**trainer_kwargs)
 
     try:
         # -- Train ---------------------------------------------------------
