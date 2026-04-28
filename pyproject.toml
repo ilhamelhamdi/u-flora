@@ -31,17 +31,6 @@ packages = ["."]
 publisher = "flwrlabs"
 
 fab-exclude = [
-    "**/__pycache__",
-    "*.pyc",
-    ".git",
-    ".venv",
-    "data/**",         # Exclude local datasets
-    "outputs/**",      # Exclude previous run outputs
-    "models/**",       # Exclude large model weights/checkpoints
-    "wandb/**",        # Exclude tracking logs
-    "*.bin",           # Exclude common weight formats
-    "*.pt",
-    "*.safetensors",
     "traces/**",      # Exclude raw trace files
 ]
 
