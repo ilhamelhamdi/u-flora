@@ -230,18 +230,6 @@ class FedCSStrategy(BaseStrategy):
 
         return list(selected)
 
-    def filter_replies(self, replies):
-        """Filter out late replies that arrived after the round deadline."""
-        result = []
-        for r in replies:
-            if (
-                not r.has_error()
-                and r.has_content()
-                and r.content.get("simulated_duration_s") is not None
-                and r.content.get("simulated_duration_s") <= self.round_deadline_s
-            ):
-                result.append(r)
-        return result
 
     def _estimate_distribution_to_client_i(self, state: ClientState) -> float:
         """Estimate time to download the global model in second(s)."""

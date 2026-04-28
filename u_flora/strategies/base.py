@@ -199,7 +199,7 @@ class BaseStrategy(Strategy):
             )
 
             replies = grid.send_and_receive(messages, timeout=timeout)
-            replies = self.filter_replies(replies) # Needed for strategies that account for straggler by filtering late replies. In real deployment, this equals to be dropped.
+            # replies = self.filter_replies(replies) # Needed for strategies that account for straggler by filtering late replies. In real deployment, this equals to be dropped.
             logger.info(
                 "[ROUND %d/%d] Received %d/%d replies",
                 current_round,
@@ -388,10 +388,10 @@ class BaseStrategy(Strategy):
 
         return feedbacks
     
-    def filter_replies(self, replies: list[Message]) -> list[Message]:
-        """Filter out late replies that arrived after the round deadline (for strategies that account for stragglers)."""
-        # By default, no filtering (all replies are considered valid).
-        return replies
+    # def filter_replies(self, replies: list[Message]) -> list[Message]:
+    #     """Filter out late replies that arrived after the round deadline (for strategies that account for stragglers)."""
+    #     # By default, no filtering (all replies are considered valid).
+    #     return replies
 
     # ------------------------------------------------------------------
     # Strategy ABC stubs (centralized eval not used)
