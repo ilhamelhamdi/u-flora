@@ -47,8 +47,9 @@ def estimate_round_duration_s(
         compute_s = 0.0
 
     if comm_kbps > 0 and model_size_kb > 0:
-        # Symmetric: download the global model and upload the update.
-        comm_s = 2.0 * model_size_kb / comm_kbps
+        # Two-way: download adapter + upload update over a symmetric link.
+        # The factor 8 converts kilobytes to kilobits to match `comm_kbps`.
+        comm_s = 2.0 * 8.0 * model_size_kb / comm_kbps
     else:
         comm_s = 0.0
 
