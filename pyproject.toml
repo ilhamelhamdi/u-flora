@@ -72,12 +72,22 @@ train.training-arguments.gradient-checkpointing = false
 train.training-arguments.lr-scheduler-type = "constant"
 
 # -- Federation ----------------------------------------------------------------
-num-server-rounds = 10
+num-server-rounds = 20
 num-clients = 50
 
 # -- Device-profile simulation -------------------------------------------------
 device-profile-path = "device_profiles/50/default/profiles.json"
 server.heartbeat-timeout-s = 30.0
+
+# Execution-time jitter (applied client-side, after the deterministic estimate).
+simulation.jitter.enabled = true
+simulation.jitter.compute-cv = 0.20            # log-normal CV for compute jitter
+simulation.jitter.comm-cv = 0.50               # log-normal CV for comm jitter (heavier tail)
+simulation.jitter.compute-min-factor = 0.7     # clip floor on compute multiplier
+simulation.jitter.comm-min-factor = 0.5        # clip floor on comm multiplier
+simulation.jitter.comm-stall-prob = 0.05       # P(heavy stall) per round
+simulation.jitter.comm-stall-factor-min = 5.0  # stall multiplier range
+simulation.jitter.comm-stall-factor-max = 10.0
 
 # -- Evaluation ----------------------------------------------------------------
 eval.batch-size = 64

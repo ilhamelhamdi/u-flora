@@ -25,7 +25,7 @@ from .tasks.registry import get_task_adapter
 from .dataset import load_data
 from .utils import replace_keys, cosine_annealing, configure_logging
 from .utils.availability import is_available
-from .utils.timing import estimate_round_duration_s
+from .utils.timing import apply_duration_jitter, estimate_round_duration_s
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
@@ -159,12 +159,16 @@ def train(msg: Message, context: Context):
         # -- Compute simulated wall-clock duration -------------------------
         profile = _load_device_profile(context)
         local_epochs = int(training_arguments.num_train_epochs)
-        sim_compute_s, sim_comm_s, sim_total_s = _compute_simulated_duration(
-            profile=profile,
-            num_samples=len(train_set),
-            local_epochs=local_epochs,
-            model_size_kb=adapter.get_lora_adapter_size_kb(cfg.model),
-            context=context,
+        sim_compute_s, sim_comm_s, sim_total_s, jitter_meta = (
+            _compute_simulated_duration(
+                profile=profile,
+                num_samples=len(train_set),
+                local_epochs=local_epochs,
+                model_size_kb=adapter.get_lora_adapter_size_kb(cfg.model),
+                context=context,
+                server_round=server_round,
+                partition_id=partition_id,
+            )
         )
         logger.debug(
             "%s Simulated duration: total=%.2fs (compute=%.2fs, comm=%.2fs); "
@@ -186,6 +190,7 @@ def train(msg: Message, context: Context):
             "simulated_comm_s": sim_comm_s,
             "actual_train_time": actual_train_time,
             "partition_id": partition_id,
+            **jitter_meta,
         }
 
         if evaluate_during_training:
@@ -339,15 +344,38 @@ def _compute_simulated_duration(
     local_epochs: int,
     model_size_kb: float,
     context: Context,
-) -> tuple[float, float, float]:
+    server_round: int,
+    partition_id: int,
+) -> tuple[float, float, float, dict]:
     if profile is None:
-        return 0.0, 0.0, 0.0
+        return 0.0, 0.0, 0.0, {}
 
     cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
 
-    return estimate_round_duration_s(
+    compute_s, comm_s, _ = estimate_round_duration_s(
         profile=profile,
         num_samples=num_samples,
         local_epochs=local_epochs,
         model_size_kb=model_size_kb,
+    )
+
+    j = (
+        cfg.simulation.jitter
+        if "simulation" in cfg and "jitter" in cfg.simulation
+        else None
+    )
+    if j is None or not bool(getattr(j, "enabled", False)):
+        return compute_s, comm_s, compute_s + comm_s, {}
+
+    return apply_duration_jitter(
+        compute_s,
+        comm_s,
+        compute_cv=float(getattr(j, "compute_cv", 0.0)),
+        comm_cv=float(getattr(j, "comm_cv", 0.0)),
+        compute_min_factor=float(getattr(j, "compute_min_factor", 0.7)),
+        comm_min_factor=float(getattr(j, "comm_min_factor", 0.5)),
+        comm_stall_prob=float(getattr(j, "comm_stall_prob", 0.0)),
+        comm_stall_factor_min=float(getattr(j, "comm_stall_factor_min", 5.0)),
+        comm_stall_factor_max=float(getattr(j, "comm_stall_factor_max", 10.0)),
+        seed=(int(cfg.seed), int(server_round), int(partition_id)),
     )

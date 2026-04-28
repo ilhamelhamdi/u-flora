@@ -24,8 +24,9 @@ import logging
 import random
 from typing import Any
 
-from flwr.common import ArrayRecord, Message, MetricRecord
+from flwr.common import ArrayRecord, Message
 from flwr.server import Grid
+from flwr.serverapp.strategy import strategy_utils
 
 from .base import BaseStrategy
 from ..client_profile.typing import ClientState
@@ -76,7 +77,8 @@ class FedCSStrategy(BaseStrategy):
             grid=grid,
             initial_arrays=initial_arrays,
             num_rounds=num_rounds,
-            timeout=self.round_deadline_s,  # Inject round deadline as timeout for resource request + selection phase
+            # timeout=self.round_deadline_s,  # If use real deployment, inject round deadline as timeout for resource request + selection phase
+            timeout=timeout,  # For simulation, use the provided timeout
             train_config=train_config,
             evaluate_config=evaluate_config,
             evaluate_fn=evaluate_fn,
@@ -175,8 +177,8 @@ class FedCSStrategy(BaseStrategy):
         )
 
         # Parameters from the paper that we treat as neglible or zero for simplicity:
-        T_cs = 0.0 # T_cs : the overhead of client selection procedure.
-        T_agg = 0.0 # T_agg : the time for aggregating the model updates from the selected clients.
+        T_cs = 0.0  # T_cs : the overhead of client selection procedure.
+        T_agg = 0.0  # T_agg : the time for aggregating the model updates from the selected clients.
 
         t_dist = {
             cid: self._estimate_distribution_to_client_i(candidate_states[cid])
@@ -193,16 +195,22 @@ class FedCSStrategy(BaseStrategy):
 
         while len(candidate_states) > 0:
             costs = {
-                cid: 
-                max(distribution_time, t_dist[cid]) 
+                cid: max(distribution_time, t_dist[cid])
                 + t_upload[cid]
                 + max(0, t_update[cid] - theta)
                 for cid in candidate_states
             }
             selected_cid = min(costs, key=costs.get)
-            candidate_states.pop(selected_cid) # Remove from candidates
-            theta_prime = theta + t_upload[selected_cid] + max(0, t_update[selected_cid] - theta)
-            t = T_cs + max(distribution_time, t_dist[selected_cid]) + theta_prime + T_agg
+            candidate_states.pop(selected_cid)  # Remove from candidates
+            theta_prime = (
+                theta + t_upload[selected_cid] + max(0, t_update[selected_cid] - theta)
+            )
+            t = (
+                T_cs
+                + max(distribution_time, t_dist[selected_cid])
+                + theta_prime
+                + T_agg
+            )
 
             if t <= self.round_deadline_s:
                 selected.add(selected_cid)
@@ -210,6 +218,18 @@ class FedCSStrategy(BaseStrategy):
                 theta = theta_prime
 
         return list(selected)
+
+    def filter_replies(self, replies):
+        """Filter out late replies that arrived after the round deadline."""
+        result = []
+        for r in replies:
+            if (
+                not r.has_error()
+                and r.has_content()
+                and r.content.get("simulated_duration_s") <= self.round_deadline_s
+            ):
+                result.append(r)
+        return result
 
     def _estimate_distribution_to_client_i(self, state: ClientState) -> float:
         """Estimate time to download the global model in second(s)."""
