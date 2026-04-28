@@ -68,7 +68,7 @@ DEFAULT_PROFILE_NAMESPACE = "default"
 # FedScale device-capacity trace: { "<client_id>": {"computation": ms/sample,
 #   "communication": kbps}, ... }
 FEDSCALE_PROFILE_POOL_FILE = str(
-    Path(__file__).parent / "traces"  / "client_device_capacity.json"
+    Path(__file__).parent / "traces" / "client_device_capacity.json"
 )
 # FedScale behavior trace (active/inactive timeline per client):
 #   { "<client_id>": {"duration", "finish_time", "active": [...],
@@ -100,8 +100,10 @@ ESTIMATED_MODEL_SIZE_KB = 3174.0  # ModernBERT; r=8; target_modules=["Wqkv", "at
 
 # ── Process Registry ───────────────────────────────────────────────────────────
 
-PID_FILE = ".pids.json" # File to store PIDs of launched processes for cleanup
-_launched_procs: list[subprocess.Popen] = []  # Track launched processes within this script's execution
+PID_FILE = ".pids.json"  # File to store PIDs of launched processes for cleanup
+_launched_procs: list[subprocess.Popen] = (
+    []
+)  # Track launched processes within this script's execution
 
 # ── Dataclasses ───────────────────────────────────────────────────────────────
 
@@ -212,7 +214,6 @@ def main() -> None:
             _print_profile_summary(profiles)
 
 
-
 # ── Up ───────────────────────────────────────────────────────────────────────
 
 
@@ -290,7 +291,9 @@ def up(
     logger.info("Active processes: %d", len(_launched_procs))
     logger.info("Saving PIDs of launched processes for cleanup...")
     _save_pids(_launched_procs)
-    logger.info("Setup complete. You can now run experiments with 'python setup.py run ...'.")
+    logger.info(
+        "Setup complete. You can now run experiments with 'python setup.py run ...'."
+    )
 
 
 # ── Superlink ──────────────────────────────────────────────────────────────────
@@ -300,10 +303,14 @@ def _build_superlink_cmd() -> list[str]:
     return [
         "flower-superlink",
         "--insecure",
-        "--isolation", "subprocess",
-        "--serverappio-api-address", f"0.0.0.0:{SUPERLINK_PORTS['serverappio']}",
-        "--fleet-api-address",       f"0.0.0.0:{SUPERLINK_PORTS['fleet']}",
-        "--control-api-address",     f"0.0.0.0:{SUPERLINK_PORTS['control']}",
+        "--isolation",
+        "subprocess",
+        "--serverappio-api-address",
+        f"0.0.0.0:{SUPERLINK_PORTS['serverappio']}",
+        "--fleet-api-address",
+        f"0.0.0.0:{SUPERLINK_PORTS['fleet']}",
+        "--control-api-address",
+        f"0.0.0.0:{SUPERLINK_PORTS['control']}",
     ]
 
 
@@ -354,7 +361,9 @@ def _build_supernode_cmd(spec: SupernodeSpec) -> list[str]:
     ]
 
 
-def _launch_supernode(spec: SupernodeSpec, log_dir: str = LOG_DIR_SUPERNODE) -> subprocess.Popen:
+def _launch_supernode(
+    spec: SupernodeSpec, log_dir: str = LOG_DIR_SUPERNODE
+) -> subprocess.Popen:
 
     log_path = Path(log_dir) / f"{spec.name}.log"
     log_fh = open(log_path, "w")
@@ -463,8 +472,38 @@ def run_task(overrides: list[str], block: bool = False) -> int | None:
     """
     cmd = ["flwr", "run", ".", SUPERLINK_CONNECTION_NAME, "--stream"]
 
-    ov = " ".join(overrides)
-    cmd.extend(["--run-config", f'\'{ov}\''])
+    def _format_override_value(raw_value: str) -> str:
+        value = raw_value.strip()
+        if not value:
+            return '""'
+
+        lower = value.lower()
+        if (
+            lower in {"true", "false", "null", "none"}
+            or value.replace(".", "", 1).lstrip("-").isdigit()
+        ):
+            return value
+
+        if (value.startswith('"') and value.endswith('"')) or (
+            value.startswith("'") and value.endswith("'")
+        ):
+            return value
+
+        escaped = value.replace('"', '\\"')
+        return f'"{escaped}"'
+
+    parsed_overrides = []
+    for override in overrides:
+        if "=" not in override:
+            raise ValueError(
+                f"Invalid override format: {override!r}. Expected <key>=<value>."
+            )
+        key, raw_value = override.split("=", 1)
+        parsed_overrides.append(f"{key}={_format_override_value(raw_value)}")
+
+    formatted_overrides = " ".join(parsed_overrides)
+    if formatted_overrides:
+        cmd.extend(["--run-config", formatted_overrides])
 
     logger.info("Running: %s", " ".join(cmd))
 
@@ -478,8 +517,11 @@ def run_task(overrides: list[str], block: bool = False) -> int | None:
                 text=True,
             )
             if result.returncode != 0:
-                logger.error("Experiment failed (exit %d). See log file: %s",
-                             result.returncode, log_path)
+                logger.error(
+                    "Experiment failed (exit %d). See log file: %s",
+                    result.returncode,
+                    log_path,
+                )
             return result.returncode
 
         subprocess.Popen(
@@ -541,9 +583,7 @@ def run_batch(batch_config_path: str) -> None:
         if base:
             base_path = defaults_dir / f"{base}.yaml"
             if not base_path.exists():
-                raise FileNotFoundError(
-                    f"Base config not found: {base} ({base_path})"
-                )
+                raise FileNotFoundError(f"Base config not found: {base} ({base_path})")
             with open(base_path) as base_f:
                 base_cfg = yaml.safe_load(base_f) or {}
             base_overrides = base_cfg.get("overrides", [])
@@ -668,9 +708,7 @@ def _sample_online_offset(behavior: dict, rng: np.random.Generator) -> float:
     if not active or not inactive or finish_time <= 0:
         return 0.0
 
-    intervals = [
-        (float(a), float(b)) for a, b in zip(active, inactive) if b > a
-    ]
+    intervals = [(float(a), float(b)) for a, b in zip(active, inactive) if b > a]
     total_online = sum(b - a for a, b in intervals)
     if total_online <= 0:
         return 0.0
@@ -732,9 +770,7 @@ def _load_fedscale_profile_pool(
         behavior = json.load(f)
 
     if not isinstance(capacity, dict) or not isinstance(behavior, dict):
-        raise ValueError(
-            "Invalid FedScale traces; expected dicts keyed by client_id."
-        )
+        raise ValueError("Invalid FedScale traces; expected dicts keyed by client_id.")
 
     pool: list[dict] = []
     for raw_id, cap_entry in capacity.items():
@@ -861,6 +897,7 @@ def load_profiles(profile_dir: str = PROFILE_DIR) -> list[dict]:
 
     return profiles.values()
 
+
 # ── ToxiProxy Setup ───────────────────────────────────────────────────────────
 
 
@@ -953,13 +990,16 @@ def _configure_toxiproxy_for_client(
         )
         resp.raise_for_status()
 
+
 # ── Process Management ─────────────────────────────────────────────────────────
+
 
 def _save_pids(procs: list[subprocess.Popen]) -> None:
     pids = [os.getpgid(p.pid) for p in procs]
     with open(PID_FILE, "w") as f:
         json.dump(pids, f)
     logger.info("Saved %d PIDs to %s", len(pids), PID_FILE)
+
 
 def _load_pids() -> list[int]:
     if not os.path.exists(PID_FILE):
@@ -968,10 +1008,10 @@ def _load_pids() -> list[int]:
     with open(PID_FILE) as f:
         return json.load(f)
 
+
 def _delete_pid_file() -> None:
     if os.path.exists(PID_FILE):
         os.remove(PID_FILE)
-
 
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
@@ -990,9 +1030,7 @@ def _print_profile_summary(profiles: list[dict]) -> None:
             # duration field isn't carried through; recompute from active/inactive
             active = beh.get("active", [])
             inactive = beh.get("inactive", [])
-            online = sum(
-                max(0, b - a) for a, b in zip(active, inactive)
-            )
+            online = sum(max(0, b - a) for a, b in zip(active, inactive))
             online_frac.append(online / float(beh["finish_time"]))
     online_frac.sort()
 
