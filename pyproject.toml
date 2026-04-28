@@ -111,7 +111,7 @@ model.lora.peft-lora-dropout = 0.05
 model.lora.peft-target-modules = "Wqkv,attn.Wo"
 
 # -- Training ------------------------------------------------------------------
-train.save-every-round = 5
+train.save-every-round = 10
 train.learning-rate-max = 5e-4
 train.learning-rate-min = 1e-5
 train.training-arguments.output-dir = ""
@@ -123,7 +123,7 @@ train.training-arguments.report-to = "none"
 train.training-arguments.num-train-epochs = 1
 # train.training-arguments.max-steps = 10 # TODO: Comment this
 # train.training-arguments.save-steps = 1000
-# train.training-arguments.save-total-limit = 2
+train.training-arguments.save-total-limit = 10
 train.training-arguments.gradient-checkpointing = false
 train.training-arguments.lr-scheduler-type = "constant"
 
