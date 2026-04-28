@@ -67,6 +67,8 @@ def build_strategy(
         return OortStrategy(
             num_to_select=num_to_select,
             epsilon=strategy.oort.epsilon,
+            epsilon_decay=strategy.oort.epsilon_decay,
+            epsilon_min=strategy.oort.epsilon_min,
             alpha=strategy.oort.alpha,
             pacer_window=strategy.oort.pacer_window,
             pacer_delta=strategy.oort.pacer_delta,

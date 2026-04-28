@@ -89,12 +89,14 @@ strategy.tifl.prob-update-interval = 5 # Number of rounds to update tier selecti
 strategy.tifl.round-deadline-s = 360.0 # Deadline for preround client profiling 
 
 strategy.oort.epsilon = 0.9  # Fraction of clients to explore (vs exploit) each round
+strategy.oort.epsilon-decay = 0.98  # Per-round decay factor for epsilon
+strategy.oort.epsilon-min = 0.2    # Minimum epsilon for exploration
 strategy.oort.alpha = 0.2    # How much to weight recency vs historical
 strategy.oort.pacer-window = 5 # Rounds to look back when adjusting selection probabilities
 strategy.oort.pacer-delta = 15 # Time in seconds to add/relax developer-preferred deadline
 strategy.oort.initial-t = 120 # Initial developer-preferred deadline in seconds
 strategy.oort.cutoff-c = 0.95 # Percentage of utility cutoff from k-th ranked client to consider for selection
-strategy.oort.max-participation-rounds = 10 # Maximum rounds a client can participate
+strategy.oort.max-participation-rounds = 20 # Maximum rounds a client can participate
 strategy.oort.utility-clip-percentile = 95 # Percentile for clipping utility values to avoid outliers dominating selection
 
 

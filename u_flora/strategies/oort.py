@@ -34,6 +34,8 @@ class OortStrategy(BaseStrategy):
         self,
         num_to_select: int,
         epsilon: float = 0.9,  # same as in paper
+        epsilon_decay: float = 0.98,  # per-round decay factor for epsilon
+        epsilon_min: float = 0.2,  # minimum epsilon for exploration
         alpha: float = 2.0,
         pacer_window: int = 10,
         pacer_delta: float | None = None,
@@ -48,6 +50,8 @@ class OortStrategy(BaseStrategy):
         self.num_to_select = num_to_select
 
         self.epsilon = min(max(float(epsilon), 0.0), 1.0)
+        self.epsilon_decay = min(max(float(epsilon_decay), 0.0), 1.0)
+        self.epsilon_min = min(max(float(epsilon_min), 0.0), 1.0)
         self.alpha = float(alpha)
         self.pacer_window = max(1, int(pacer_window))
         self.pacer_delta = pacer_delta
@@ -76,6 +80,8 @@ class OortStrategy(BaseStrategy):
         all_pids = [p for p, s in self.client_states.items() if s.available]
         if not all_pids:
             return [], []
+        
+        self._update_epsilon(num_rounds=round_num)  # Decay epsilon per round
 
         # Filter out clients which are selected more than `max_participation_rounds`
         eligible_pids = self._filter_by_participation_cap(all_pids)
@@ -332,6 +338,12 @@ class OortStrategy(BaseStrategy):
             chosen.append(pid)
 
         return chosen
+
+    def _update_epsilon(self, num_rounds: int) -> None:
+        if num_rounds <= 1:
+            return
+        new_epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+        self.epsilon = new_epsilon
 
     def _strategy_name(self) -> str:
         return (
