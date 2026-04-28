@@ -4,7 +4,7 @@ overrides:
   - "task_name=text_classification"
   - "dataset.name=mnli"
   - "num_clients=300"
-  - "device-profile-path=device_profiles/300/default/profiles.json"
+  - "device-profile-path=\"device_profiles/300/default/profiles.json\""
   - "strategy.name=random"
   - "strategy.num_to_select=30"
   - "dataset.partition.strategy=dirichlet"

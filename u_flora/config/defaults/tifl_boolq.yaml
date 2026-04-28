@@ -4,7 +4,7 @@ overrides:
   - "task_name=text_classification"
   - "dataset.name=boolq"
   - "num_clients=50"
-  - "device-profile-path=device_profiles/50/default/profiles.json"
+  - "device-profile-path=\"device_profiles/50/default/profiles.json\""
   - "strategy.name=tifl"
   - "strategy.num_to_select=5"
   - "strategy.tifl.num_tiers=5"
