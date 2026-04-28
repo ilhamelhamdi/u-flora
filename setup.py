@@ -78,7 +78,7 @@ FEDSCALE_BEHAVIOR_TRACE_FILE = str(
 )
 
 # Superlink flower
-SUPERLINK_CONNECTION_NAME = "local-deployment"
+SUPERLINK_CONNECTION_NAME = "local"
 
 # Ports
 SUPERLINK_PORTS = {
@@ -454,7 +454,7 @@ def _teardown_toxiproxy() -> None:
 # ── Experiment Execution ──────────────────────────────────────────────────────
 
 
-def run_task(overrides: list[str]) -> None:
+def run_task(overrides: list[str], block: bool = False) -> int | None:
     """Run a single FL experiment via ``flwr run``.
 
     Example:
@@ -470,6 +470,18 @@ def run_task(overrides: list[str]) -> None:
 
     log_path = f"{LOG_DIR}/flower-task.log"
     with open(log_path, "w") as log_file:
+        if block:
+            result = subprocess.run(
+                cmd,
+                stdout=log_file,
+                stderr=log_file,
+                text=True,
+            )
+            if result.returncode != 0:
+                logger.error("Experiment failed (exit %d). See log file: %s",
+                             result.returncode, log_path)
+            return result.returncode
+
         subprocess.Popen(
             cmd,
             stdout=log_file,
@@ -479,30 +491,42 @@ def run_task(overrides: list[str]) -> None:
         )
 
     logger.info("Experiment started. See log file: %s", log_path)
+    return None
 
 
 def run_batch(batch_config_path: str) -> None:
     """Run a batch of experiments sequentially.
 
-    The batch config is a YAML file listing experiments:
+    The batch config is a YAML file under ``u_flora/config/groups`` and
+    lists experiments with a base config name (from ``u_flora/config/defaults``)
+    plus extra overrides:
 
     ```yaml
     experiments:
       - name: "random_sst2"
+        base: random_sst2
         overrides:
-          - "strategy=random"
-          - "dataset=sst2"
           - "num_server_rounds=100"
       - name: "oort_sst2"
+        base: oort_sst2
         overrides:
-          - "strategy=oort"
-          - "dataset=sst2"
           - "num_server_rounds=100"
     ```
     """
     import yaml
 
-    with open(batch_config_path) as f:
+    groups_dir = Path(__file__).parent / "u_flora" / "config" / "groups"
+    defaults_dir = Path(__file__).parent / "u_flora" / "config" / "defaults"
+
+    config_path = Path(batch_config_path)
+    if not config_path.exists():
+        config_path = groups_dir / batch_config_path
+    if not config_path.exists():
+        raise FileNotFoundError(
+            f"Batch config not found: {batch_config_path} (or {config_path})"
+        )
+
+    with open(config_path) as f:
         batch = yaml.safe_load(f)
 
     experiments = batch.get("experiments", [])
@@ -510,9 +534,32 @@ def run_batch(batch_config_path: str) -> None:
 
     for idx, exp in enumerate(experiments, 1):
         name = exp.get("name", f"experiment_{idx}")
+        base = exp.get("base")
         overrides = exp.get("overrides", [])
-        logger.info("Experiment %d/%d: %s", idx, len(experiments), overrides)
-        run_task(overrides)
+
+        base_overrides: list[str] = []
+        if base:
+            base_path = defaults_dir / f"{base}.yaml"
+            if not base_path.exists():
+                raise FileNotFoundError(
+                    f"Base config not found: {base} ({base_path})"
+                )
+            with open(base_path) as base_f:
+                base_cfg = yaml.safe_load(base_f) or {}
+            base_overrides = base_cfg.get("overrides", [])
+
+        merged_overrides = [*base_overrides, *overrides]
+        logger.info(
+            "Experiment %d/%d (%s, base=%s): %s",
+            idx,
+            len(experiments),
+            name,
+            base or "none",
+            merged_overrides,
+        )
+        rc = run_task(merged_overrides, block=True)
+        if rc not in (0, None):
+            logger.error("Experiment %s failed (exit %d)", name, rc)
 
         time.sleep(5)
 
@@ -539,8 +586,11 @@ def _estimate_round_duration_from_profile(
     comm_kbps = float(profile.get("communication", 0.0))
 
     compute_s = raw_comp_ms * num_samples * local_epochs / 1000.0
+    # 8 converts kilobytes to kilobits to match `comm_kbps`; matches utils/timing.py.
     comm_s = (
-        2.0 * model_size_kb / comm_kbps if comm_kbps > 0 and model_size_kb > 0 else 0.0
+        2.0 * 8.0 * model_size_kb / comm_kbps
+        if comm_kbps > 0 and model_size_kb > 0
+        else 0.0
     )
     return compute_s + comm_s
 

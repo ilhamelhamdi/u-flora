@@ -1,0 +1,18 @@
+strategy: oort
+task: boolq
+overrides:
+  - "task_name=text_classification"
+  - "dataset.name=boolq"
+  - "num_clients=50"
+  - "strategy.name=oort"
+  - "strategy.num_to_select=5"
+  - "strategy.oort.epsilon=0.9"
+  - "strategy.oort.alpha=2.0"
+  - "strategy.oort.pacer_window=10"
+  - "strategy.oort.pacer_delta=15"
+  - "strategy.oort.initial_t=120"
+  - "strategy.oort.cutoff_c=0.95"
+  - "strategy.oort.max_participation_rounds=10"
+  - "strategy.oort.utility_clip_percentile=95"
+  - "dataset.partition.strategy=dirichlet"
+  - "dataset.partition.dirichlet.alpha=8"

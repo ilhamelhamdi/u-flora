@@ -1,0 +1,11 @@
+strategy: fedcs
+task: mnli
+overrides:
+  - "task_name=text_classification"
+  - "dataset.name=mnli"
+  - "num_clients=300"
+  - "strategy.name=fedcs"
+  - "strategy.fedcs.round_deadline_s=750.0"
+  - "strategy.fedcs.c_fraction=0.5"
+  - "dataset.partition.strategy=dirichlet"
+  - "dataset.partition.dirichlet.alpha=8"

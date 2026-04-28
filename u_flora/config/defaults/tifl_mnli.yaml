@@ -1,0 +1,14 @@
+strategy: tifl
+task: mnli
+overrides:
+  - "task_name=text_classification"
+  - "dataset.name=mnli"
+  - "num_clients=300"
+  - "strategy.name=tifl"
+  - "strategy.num_to_select=30"
+  - "strategy.tifl.num_tiers=6"
+  - "strategy.tifl.sync_rounds=2"
+  - "strategy.tifl.prob_update_interval=5"
+  - "strategy.tifl.round_deadline_s=1500.0"
+  - "dataset.partition.strategy=dirichlet"
+  - "dataset.partition.dirichlet.alpha=8"

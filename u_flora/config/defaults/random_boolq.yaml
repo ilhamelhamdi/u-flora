@@ -1,0 +1,10 @@
+strategy: random
+task: boolq
+overrides:
+  - "task_name=text_classification"
+  - "dataset.name=boolq"
+  - "num_clients=50"
+  - "strategy.name=random"
+  - "strategy.num_to_select=5"
+  - "dataset.partition.strategy=dirichlet"
+  - "dataset.partition.dirichlet.alpha=8"

@@ -1,0 +1,66 @@
+description: >
+  Group 2 — Statistical Heterogeneity Sensitivity.
+  MNLI only, all four strategies, three Dirichlet alpha conditions:
+    - alpha=2.0 (high non-IID, strong label concentration)
+    - alpha=8.0 (mild non-IID)
+    - alpha=inf (IID)
+  Three seeds per configuration. alpha=0.5 is shared with Group 1, so this group
+  contributes 4 x 3 x 3 = 36 runs.
+
+experiments:
+  # ====================== seed = 42 (enabled) ======================
+  # alpha = 2.0 (high non-IID)
+  - { name: g2_random_mnli_a0.1_s42, base: random_mnli, overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
+  - { name: g2_fedcs_mnli_a0.1_s42,  base: fedcs_mnli,  overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
+  - { name: g2_tifl_mnli_a0.1_s42,   base: tifl_mnli,   overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
+  - { name: g2_oort_mnli_a0.1_s42,   base: oort_mnli,   overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
+
+  # alpha = 8.0 (mild non-IID)
+  - { name: g2_random_mnli_a8_s42,   base: random_mnli, overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"] }
+  - { name: g2_fedcs_mnli_a8_s42,    base: fedcs_mnli,  overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"] }
+  - { name: g2_tifl_mnli_a8_s42,     base: tifl_mnli,   overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"] }
+  - { name: g2_oort_mnli_a8_s42,     base: oort_mnli,   overrides: ["seed=42", "dataset.partition.dirichlet.alpha=8.0"] }
+
+  # alpha = ∞ (IID; encoded as 1e6)
+  - { name: g2_random_mnli_aIID_s42, base: random_mnli, overrides: ["seed=42", "dataset.partition.strategy='iid'"] }
+  - { name: g2_fedcs_mnli_aIID_s42,  base: fedcs_mnli,  overrides: ["seed=42", "dataset.partition.strategy='iid'"] }
+  - { name: g2_tifl_mnli_aIID_s42,   base: tifl_mnli,   overrides: ["seed=42", "dataset.partition.strategy='iid'"] }
+  - { name: g2_oort_mnli_aIID_s42,   base: oort_mnli,   overrides: ["seed=42", "dataset.partition.strategy='iid'"] }
+
+  # ====================== seed = 123 (disabled) ====================
+  # alpha = 2.0 (high non-IID)
+  # - { name: g2_random_mnli_a0.1_s123, base: random_mnli, overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"] }
+  # - { name: g2_fedcs_mnli_a0.1_s123,  base: fedcs_mnli,  overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"] }
+  # - { name: g2_tifl_mnli_a0.1_s123,   base: tifl_mnli,   overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"] }
+  # - { name: g2_oort_mnli_a0.1_s123,   base: oort_mnli,   overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"] }
+
+  # alpha = 8.0 (mild non-IID)
+  # - { name: g2_random_mnli_a8_s123,   base: random_mnli, overrides: ["seed=123", "dataset.partition.dirichlet.alpha=8.0"] }
+  # - { name: g2_fedcs_mnli_a8_s123,    base: fedcs_mnli,  overrides: ["seed=123", "dataset.partition.dirichlet.alpha=8.0"] }
+  # - { name: g2_tifl_mnli_a8_s123,     base: tifl_mnli,   overrides: ["seed=123", "dataset.partition.dirichlet.alpha=8.0"] }
+  # - { name: g2_oort_mnli_a8_s123,     base: oort_mnli,   overrides: ["seed=123", "dataset.partition.dirichlet.alpha=8.0"] }
+
+  # alpha = ∞ (IID; encoded as 1e6)
+  # - { name: g2_random_mnli_aIID_s123, base: random_mnli, overrides: ["seed=123", "dataset.partition.strategy='iid'"] }
+  # - { name: g2_fedcs_mnli_aIID_s123,  base: fedcs_mnli,  overrides: ["seed=123", "dataset.partition.strategy='iid'"] }
+  # - { name: g2_tifl_mnli_aIID_s123,   base: tifl_mnli,   overrides: ["seed=123", "dataset.partition.strategy='iid'"] }
+  # - { name: g2_oort_mnli_aIID_s123,   base: oort_mnli,   overrides: ["seed=123", "dataset.partition.strategy='iid'"] }
+
+  # ====================== seed = 456 (disabled) ====================
+  # alpha = 2.0 (high non-IID)
+  # - { name: g2_random_mnli_a0.1_s456, base: random_mnli, overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"] }
+  # - { name: g2_fedcs_mnli_a0.1_s456,  base: fedcs_mnli,  overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"] }
+  # - { name: g2_tifl_mnli_a0.1_s456,   base: tifl_mnli,   overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"] }
+  # - { name: g2_oort_mnli_a0.1_s456,   base: oort_mnli,   overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"] }
+
+  # alpha = 8.0 (mild non-IID)
+  # - { name: g2_random_mnli_a8_s456,   base: random_mnli, overrides: ["seed=456", "dataset.partition.dirichlet.alpha=8.0"] }
+  # - { name: g2_fedcs_mnli_a8_s456,    base: fedcs_mnli,  overrides: ["seed=456", "dataset.partition.dirichlet.alpha=8.0"] }
+  # - { name: g2_tifl_mnli_a8_s456,     base: tifl_mnli,   overrides: ["seed=456", "dataset.partition.dirichlet.alpha=8.0"] }
+  # - { name: g2_oort_mnli_a8_s456,     base: oort_mnli,   overrides: ["seed=456", "dataset.partition.dirichlet.alpha=8.0"] }
+
+  # alpha = ∞ (IID; encoded as 1e6)
+  # - { name: g2_random_mnli_aIID_s456, base: random_mnli, overrides: ["seed=456", "dataset.partition.strategy='iid'"] }
+  # - { name: g2_fedcs_mnli_aIID_s456,  base: fedcs_mnli,  overrides: ["seed=456", "dataset.partition.strategy='iid'"] }
+  # - { name: g2_tifl_mnli_aIID_s456,   base: tifl_mnli,   overrides: ["seed=456", "dataset.partition.strategy='iid'"] }
+  # - { name: g2_oort_mnli_aIID_s456,   base: oort_mnli,   overrides: ["seed=456", "dataset.partition.strategy='iid'"] }

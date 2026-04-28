@@ -52,37 +52,8 @@ task_name = "text_classification"
 # Global seed for reproducibility (dataset partitioning, client selection randomness, etc.)
 seed = 42 
 
-# -- Dataset selector & partitioning -------------------------------------------
-dataset.name = "boolq"                   # Key into [tool.flwr.app.config.datasets.*] below
-dataset.partition.strategy = "dirichlet" # "dirichlet" or "iid"
-dataset.partition.dirichlet.alpha = 8
-
-# -- Model ---------------------------------------------------------------------
-model.name = "answerdotai/ModernBERT-base"
-model.lora.peft-lora-r = 8
-model.lora.peft-lora-alpha = 16
-model.lora.peft-lora-dropout = 0.05
-model.lora.peft-target-modules = "Wqkv,attn.Wo"
-
-# -- Training ------------------------------------------------------------------
-train.save-every-round = 5
-train.learning-rate-max = 5e-4
-train.learning-rate-min = 1e-5
-train.training-arguments.output-dir = ""
-train.training-arguments.learning-rate = ""               # Overridden by dynamic lr scheduler
-train.training-arguments.per-device-train-batch-size = 16
-train.training-arguments.per-device-eval-batch-size = 16
-train.training-arguments.logging-steps = 32
-train.training-arguments.report-to = "none"
-train.training-arguments.num-train-epochs = 1
-# train.training-arguments.max-steps = 10 # TODO: Comment this
-# train.training-arguments.save-steps = 1000
-# train.training-arguments.save-total-limit = 2
-train.training-arguments.gradient-checkpointing = false
-train.training-arguments.lr-scheduler-type = "constant"
-
 # -- Federation ----------------------------------------------------------------
-num-server-rounds = 20
+num-server-rounds = 100
 num-clients = 50
 
 # -- Device-profile simulation -------------------------------------------------
@@ -127,8 +98,38 @@ strategy.oort.pacer-window = 5 # Rounds to look back when adjusting selection pr
 strategy.oort.pacer-delta = 15 # Time in seconds to add/relax developer-preferred deadline
 strategy.oort.initial-t = 120 # Initial developer-preferred deadline in seconds
 strategy.oort.cutoff-c = 0.95 # Percentage of utility cutoff from k-th ranked client to consider for selection
-strategy.oort.max-participation-rounds = 5 # Maximum rounds a client can participate
+strategy.oort.max-participation-rounds = 10 # Maximum rounds a client can participate
 strategy.oort.utility-clip-percentile = 95 # Percentile for clipping utility values to avoid outliers dominating selection
+
+
+# -- Dataset selector & partitioning -------------------------------------------
+dataset.name = "boolq"                   # Key into [tool.flwr.app.config.datasets.*] below
+dataset.partition.strategy = "dirichlet" # "dirichlet" or "iid"
+dataset.partition.dirichlet.alpha = 8
+
+# -- Model ---------------------------------------------------------------------
+model.name = "answerdotai/ModernBERT-base"
+model.lora.peft-lora-r = 8
+model.lora.peft-lora-alpha = 16
+model.lora.peft-lora-dropout = 0.05
+model.lora.peft-target-modules = "Wqkv,attn.Wo"
+
+# -- Training ------------------------------------------------------------------
+train.save-every-round = 5
+train.learning-rate-max = 5e-4
+train.learning-rate-min = 1e-5
+train.training-arguments.output-dir = ""
+train.training-arguments.learning-rate = ""               # Overridden by dynamic lr scheduler
+train.training-arguments.per-device-train-batch-size = 16
+train.training-arguments.per-device-eval-batch-size = 16
+train.training-arguments.logging-steps = 32
+train.training-arguments.report-to = "none"
+train.training-arguments.num-train-epochs = 1
+# train.training-arguments.max-steps = 10 # TODO: Comment this
+# train.training-arguments.save-steps = 1000
+# train.training-arguments.save-total-limit = 2
+train.training-arguments.gradient-checkpointing = false
+train.training-arguments.lr-scheduler-type = "constant"
 
 
 # ==============================================================================

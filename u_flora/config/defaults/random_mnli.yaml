@@ -1,0 +1,10 @@
+strategy: random
+task: mnli
+overrides:
+  - "task_name=text_classification"
+  - "dataset.name=mnli"
+  - "num_clients=300"
+  - "strategy.name=random"
+  - "strategy.num_to_select=30"
+  - "dataset.partition.strategy=dirichlet"
+  - "dataset.partition.dirichlet.alpha=8"
