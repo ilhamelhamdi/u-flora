@@ -57,6 +57,7 @@ class BaseStrategy(Strategy):
         evaluate_during_training: bool = False,
         model_size_kb: float = 0.0,
         heartbeat_timeout_s: float = 30.0,
+        history_log_every_n: int = 5,
         **kwargs: Any,
     ) -> None:
         self.client_states = client_states
@@ -71,6 +72,7 @@ class BaseStrategy(Strategy):
         # Per-round heartbeat timeout. Heartbeat itself takes 0 *simulated*
         # time and does not advance the virtual clock.
         self.heartbeat_timeout_s = float(heartbeat_timeout_s)
+        self.history_log_every_n = max(1, int(history_log_every_n))
         # Last-round availability snapshot (filled by _check_availability).
         self._last_available_pids: set[int] = set()
         self._last_unavailable_pids: set[int] = set()
@@ -708,7 +710,8 @@ class BaseStrategy(Strategy):
                 log_dict.update(extra_metrics)
 
             wandb.log(log_dict)
-            # wandb.log({"client/raw_training_history": self._history_table})
+            if round_num % self.history_log_every_n == 0:
+                wandb.log({"client/raw_training_history": self._history_table})
 
         logger.info(
             "Round %d — wall_clock=%.1fs cumul=%.1fs dur_mean=%.1f±%.1f "
@@ -758,6 +761,7 @@ class BaseStrategy(Strategy):
             final_metric = float(m.get(f"eval_{self.metric_name}", 0.0))
 
         if self.use_wandb:
+            wandb.log({"client/raw_training_history": self._history_table}, commit=False)
             summary: dict[str, float] = {
                 "summary/total_wall_clock": self._cumulative_wall_clock,
                 "summary/total_rounds": num_rounds,
