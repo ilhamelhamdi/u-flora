@@ -132,7 +132,7 @@ train.training-arguments.gradient-checkpointing = false
 train.training-arguments.lr-scheduler-type = "constant"
 
 # -- Evaluation ----------------------------------------------------------------
-eval.batch-size = 64
+eval.batch-size = 128
 # eval.max-samples = 320 # TODO: Comment this
 
 
