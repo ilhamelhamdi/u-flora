@@ -46,6 +46,7 @@ def build_strategy(
             round_deadline_s=strategy.fedcs.round_deadline_s,
             local_epochs=local_epochs,
             c_fraction=strategy.fedcs.c_fraction,
+            num_to_select=num_to_select,
             seed=seed,
             **common,
         )

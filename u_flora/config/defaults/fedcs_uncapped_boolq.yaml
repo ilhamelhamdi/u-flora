@@ -1,15 +1,14 @@
-strategy: fedcs
+strategy: fedcs_uncapped
 task: boolq
-# Group 1 / 2 use the *capped* variant (max-to-select = K*) so the K-budget
-# matches Random/TiFL/Oort. Group 3 uses the uncapped variant — see the
-# `fedcs_uncapped_*.yaml` defaults.
+# Group 3 variant: full FedCS deadline-filling, no K cap. Allows variable K
+# bounded only by the deadline. Comparison target for U-Flora-full.
 overrides:
   - "task-name=text_classification"
   - "dataset.name=boolq"
   - "num-clients=50"
   - "device-profile-path=device_profiles/50/default/profiles.json"
   - "strategy.name=fedcs"
-  - "strategy.num-to-select=5"            # cap at K*
+  - "strategy.num-to-select=50"           # set to N (effectively uncapped)
   - "strategy.fedcs.round-deadline-s=120.0"
   - "strategy.fedcs.c-fraction=0.5"
   - "dataset.partition.strategy=dirichlet"

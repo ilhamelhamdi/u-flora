@@ -54,6 +54,9 @@ class FedCSStrategy(BaseStrategy):
         round_deadline_s: float,
         local_epochs: int = 1,
         c_fraction: float = 0.5,  # Fraction of clients to contact for resource request each round.
+        num_to_select: (
+            int | None
+        ) = None,  # If set, overrides the number of clients selected per round (K).
         seed: int = 42,
         **kwargs: Any,
     ) -> None:
@@ -61,6 +64,7 @@ class FedCSStrategy(BaseStrategy):
         self.round_deadline_s = round_deadline_s
         self.local_epochs = local_epochs
         self.c_fraction = c_fraction
+        self.num_to_select = num_to_select
         self._rng = random.Random(seed)
 
     def start(
@@ -216,6 +220,13 @@ class FedCSStrategy(BaseStrategy):
                 selected.add(selected_cid)
                 distribution_time = max(distribution_time, t_dist[selected_cid])
                 theta = theta_prime
+
+            # Stop if we have selected enough clients (if num_to_select is set).
+            if self.num_to_select is not None and len(selected) >= self.num_to_select:
+                logger.info(
+                    "Reached num_to_select=%d, stopping selection.", self.num_to_select
+                )
+                break
 
         return list(selected)
 
