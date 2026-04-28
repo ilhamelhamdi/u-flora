@@ -30,6 +30,21 @@ packages = ["."]
 [tool.flwr.app]
 publisher = "flwrlabs"
 
+fab-exclude = [
+    "**/__pycache__",
+    "*.pyc",
+    ".git",
+    ".venv",
+    "data/**",         # Exclude local datasets
+    "outputs/**",      # Exclude previous run outputs
+    "models/**",       # Exclude large model weights/checkpoints
+    "wandb/**",        # Exclude tracking logs
+    "*.bin",           # Exclude common weight formats
+    "*.pt",
+    "*.safetensors",
+    "traces/**",      # Exclude raw trace files
+]
+
 [tool.flwr.app.components]
 serverapp = "u_flora.server_app:app"
 clientapp = "u_flora.client_app:app"
