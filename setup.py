@@ -65,12 +65,16 @@ LOG_DIR_SUPERNODE = "logs/supernode"
 LOG_DIR_CLIENTAPP = "logs/clientapp"
 PROFILE_DIR = "device_profiles"
 DEFAULT_PROFILE_NAMESPACE = "default"
-COMBINED_PROFILE_POOL_FILE = str(Path(__file__).parent / "traces" / "combined.json")
-NETWORK_PROFILE_TRACE_FILE = str(
-    Path(__file__).parent / "traces" / "network" / "trace.json"
+# FedScale device-capacity trace: { "<client_id>": {"computation": ms/sample,
+#   "communication": kbps}, ... }
+FEDSCALE_PROFILE_POOL_FILE = str(
+    Path(__file__).parent / "traces"  / "client_device_capacity.json"
 )
-COMPUTE_PROFILE_TRACE_FILE = str(
-    Path(__file__).parent / "traces" / "computation" / "trace.json"
+# FedScale behavior trace (active/inactive timeline per client):
+#   { "<client_id>": {"duration", "finish_time", "active": [...],
+#                     "inactive": [...], "model"}, ... }
+FEDSCALE_BEHAVIOR_TRACE_FILE = str(
+    Path(__file__).parent / "traces" / "client_behave_trace.json"
 )
 
 # Superlink flower
@@ -162,10 +166,10 @@ def main() -> None:
     p_prof = sub.add_parser(
         "profiles",
         aliases=["scenario-profiles"],
-        help="Sample scenario profiles from traces/combined.json",
+        help="Sample scenario profiles from the FedScale trace.",
     )
     p_prof.add_argument("-n", "--num-clients", type=int, default=100)
-    p_prof.add_argument("--combined-path", type=str, default=COMBINED_PROFILE_POOL_FILE)
+    p_prof.add_argument("--fedscale-path", type=str, default=FEDSCALE_PROFILE_POOL_FILE)
     p_prof.add_argument(
         "--beta",
         type=float,
@@ -196,7 +200,7 @@ def main() -> None:
     elif args.command in {"profiles", "scenario-profiles"}:
         profiles = generate_profiles(
             num_clients=args.num_clients,
-            combined_path=args.combined_path,
+            fedscale_path=args.fedscale_path,
             beta=args.beta,
             num_samples=args.num_samples,
             local_epochs=args.local_epochs,
@@ -241,7 +245,7 @@ def up(
             node_id=p["client_id"],
             profile=p,
             profile_key=get_node_name(p["client_id"]),
-            profile_path=os.path.join(namespace_dir, "all_profiles.json"),
+            profile_path=os.path.join(namespace_dir, "profiles.json"),
             clientappio_port=SUPERNODE_PORT_START + p["client_id"],
             superlink_address=_superlink_addr(p["client_id"]),
             total_nodes=len(profiles),
@@ -524,15 +528,21 @@ def _estimate_round_duration_from_profile(
     local_epochs: int,
     model_size_kb: float,
 ) -> float:
-    train_time_s = (
-        float(profile["computation_latency_ms"]) * num_samples * local_epochs / 1000.0
+    """Composition-ranking helper.
+
+    NOTE: this uses the RAW FedScale ``computation`` value (ms/sample on the
+    benchmark) directly without anchoring to a per-task ``t_actual_ms``.
+    That is fine here because we only need to *rank* profiles by relative
+    speed; the absolute number of seconds is not used downstream of sampling.
+    """
+    raw_comp_ms = float(profile.get("computation", 0.0))
+    comm_kbps = float(profile.get("communication", 0.0))
+
+    compute_s = raw_comp_ms * num_samples * local_epochs / 1000.0
+    comm_s = (
+        2.0 * model_size_kb / comm_kbps if comm_kbps > 0 and model_size_kb > 0 else 0.0
     )
-    comm_time_s = (
-        model_size_kb / max(1.0, float(profile["download_kbps"]))
-        + model_size_kb / max(1.0, float(profile["upload_kbps"]))
-        + float(profile["latency_ms"]) / 1000.0
-    )
-    return train_time_s + comm_time_s
+    return compute_s + comm_s
 
 
 def sample_by_composition(
@@ -580,79 +590,150 @@ def sample_by_composition(
     for new_client_id, ranked_choice_idx in enumerate(chosen_idx):
         original = profiles[int(ranked_idx[int(ranked_choice_idx)])]
         sampled = dict(original)
+        # Deep-copy behavior so per-client time_offset_s doesn't leak across clients
+        # that happened to draw the same pool entry.
+        if "behavior" in sampled:
+            beh = dict(sampled["behavior"])
+            beh["time_offset_s"] = _sample_online_offset(beh, rng)
+            sampled["behavior"] = beh
         sampled["source_pool_index"] = int(ranked_idx[int(ranked_choice_idx)])
         sampled["client_id"] = new_client_id
-        if not sampled.get("device_name"):
-            sampled.pop("device_name", None)
         selected_profiles.append(sampled)
 
     return selected_profiles
 
 
-def _load_combined_profile_pool(combined_path: str) -> tuple[list[dict], float]:
-    if not os.path.exists(combined_path):
+def _sample_online_offset(behavior: dict, rng: np.random.Generator) -> float:
+    """Sample ``time_offset_s`` uniformly from the client's online intervals.
+
+    Guarantees the client is online at virtual_time=0 (so the first FL round
+    starts with every client available — important for TiFL pretraining and
+    for stable behavior in the warmup phase). As virtual time progresses,
+    the marginal online distribution converges to the population's natural
+    ratio.
+    """
+    active = behavior.get("active", [])
+    inactive = behavior.get("inactive", [])
+    finish_time = float(behavior.get("finish_time", 0.0))
+    if not active or not inactive or finish_time <= 0:
+        return 0.0
+
+    intervals = [
+        (float(a), float(b)) for a, b in zip(active, inactive) if b > a
+    ]
+    total_online = sum(b - a for a, b in intervals)
+    if total_online <= 0:
+        return 0.0
+
+    r = float(rng.uniform(0.0, total_online))
+    acc = 0.0
+    for a, b in intervals:
+        width = b - a
+        if r < acc + width:
+            return a + (r - acc)
+        acc += width
+    # Fallback (numerical edge): return the very last online instant.
+    return intervals[-1][1] - 1e-6
+
+
+def _load_fedscale_profile_pool(
+    fedscale_path: str,
+    behavior_path: str = FEDSCALE_BEHAVIOR_TRACE_FILE,
+) -> tuple[list[dict], float]:
+    """Load the FedScale capacity + behavior traces and pair them.
+
+    The capacity trace has shape::
+        { "<client_id>": {"computation": ms/sample, "communication": kbps}, ...}
+    The behavior trace has shape::
+        { "<client_id>": {"duration", "finish_time",
+                          "active": [...], "inactive": [...], "model"}, ...}
+
+    Only clients present in BOTH traces are kept; pairing preserves the joint
+    distribution from the FedScale dataset.
+
+    Returns (pool, t_min_ms) where each pool item is::
+
+        {
+            "computation":   float,
+            "communication": float,
+            "behavior": {
+                "active":      [...],
+                "inactive":    [...],
+                "finish_time": int,
+                "model":       str,
+            },
+            "trace_id": str,
+        }
+    """
+    if not os.path.exists(fedscale_path):
         raise FileNotFoundError(
-            f"Combined profile pool not found: {combined_path}. "
-            "Generate it first using traces/combine.ipynb."
+            f"FedScale capacity trace not found: {fedscale_path}. "
+            "Download from the FedScale repo into traces/."
+        )
+    if not os.path.exists(behavior_path):
+        raise FileNotFoundError(
+            f"FedScale behavior trace not found: {behavior_path}. "
+            "Download from the FedScale repo into traces/."
         )
 
-    with open(combined_path) as f:
-        data = json.load(f)
+    with open(fedscale_path) as f:
+        capacity = json.load(f)
+    with open(behavior_path) as f:
+        behavior = json.load(f)
 
-    if isinstance(data, dict):
-        pool = data.get("profiles", [])
-        metadata = data.get("metadata", {})
-        t_min_ms = float(metadata.get("t_min_ms", 0))
-    elif isinstance(data, list):
-        pool = data
-        t_min_ms = 0.0
-    else:
+    if not isinstance(capacity, dict) or not isinstance(behavior, dict):
         raise ValueError(
-            f"Invalid format for combined pool at {combined_path}. "
-            "Expected list[dict] or {'profiles': [...], 'metadata': {...}}."
+            "Invalid FedScale traces; expected dicts keyed by client_id."
+        )
+
+    pool: list[dict] = []
+    for raw_id, cap_entry in capacity.items():
+        beh_entry = behavior.get(raw_id)
+        if not isinstance(cap_entry, dict) or not isinstance(beh_entry, dict):
+            continue
+        comp = cap_entry.get("computation")
+        comm = cap_entry.get("communication")
+        active = beh_entry.get("active")
+        inactive = beh_entry.get("inactive")
+        finish = beh_entry.get("finish_time")
+        if comp is None or comm is None:
+            continue
+        if not active or not inactive or not finish:
+            continue
+        pool.append(
+            {
+                "computation": float(comp),
+                "communication": float(comm),
+                "behavior": {
+                    "active": list(active),
+                    "inactive": list(inactive),
+                    "finish_time": int(finish),
+                    "model": beh_entry.get("model", "unknown"),
+                },
+                "trace_id": str(raw_id),
+            }
         )
 
     if not pool:
         raise ValueError(
-            f"Combined profile pool at {combined_path} is empty. "
-            "Regenerate it using traces/combine.ipynb."
+            f"Empty intersection of capacity ({fedscale_path}) and behavior "
+            f"({behavior_path}) traces."
         )
 
-    required_keys = {
-        "computation_latency_ms",
-        "download_kbps",
-        "upload_kbps",
-        "latency_ms",
-    }
-    normalized_pool: list[dict] = []
-    for idx, raw in enumerate(pool):
-        missing = required_keys.difference(raw.keys())
-        if missing:
-            raise ValueError(
-                f"Profile index {idx} in {combined_path} is missing keys: {sorted(missing)}"
-            )
+    logger.info(
+        "Loaded FedScale pool: %d clients (intersection of capacity=%d × behavior=%d)",
+        len(pool),
+        len(capacity),
+        len(behavior),
+    )
 
-        normalized = {
-            "computation_latency_ms": float(raw["computation_latency_ms"]),
-            "download_kbps": float(raw["download_kbps"]),
-            "upload_kbps": float(raw["upload_kbps"]),
-            "latency_ms": float(raw["latency_ms"]),
-            "jitter_ms": float(raw.get("jitter_ms", 0.0)),
-            "network_type": raw.get("network_type", "unknown"),
-        }
-        if raw.get("device_name"):
-            normalized["device_name"] = raw["device_name"]
-        normalized_pool.append(normalized)
-
-    if t_min_ms <= 0:
-        t_min_ms = min(p["computation_latency_ms"] for p in normalized_pool)
-
-    return normalized_pool, t_min_ms
+    t_min_ms = min(p["computation"] for p in pool if p["computation"] > 0)
+    return pool, t_min_ms
 
 
 def generate_profiles(
     num_clients: int,
-    combined_path: str = COMBINED_PROFILE_POOL_FILE,
+    fedscale_path: str = FEDSCALE_PROFILE_POOL_FILE,
     beta: float = 0.0,
     num_samples: int = AVG_NUM_SAMPLES,
     local_epochs: int = 1,
@@ -660,8 +741,8 @@ def generate_profiles(
     seed: int = 42,
     output_dir: str = PROFILE_DIR,
 ) -> list[dict]:
-    """Sample and persist scenario-specific device profiles from combined pool."""
-    pool, t_min_ms = _load_combined_profile_pool(combined_path)
+    """Sample and persist scenario-specific device profiles from the FedScale pool."""
+    pool, t_min_ms = _load_fedscale_profile_pool(fedscale_path)
 
     profile_dicts = sample_by_composition(
         profiles=pool,
@@ -679,10 +760,10 @@ def generate_profiles(
         get_node_name(profile["client_id"]): profile for profile in profile_dicts
     }
 
-    all_profiles_path = os.path.join(output_dir, "all_profiles.json")
-    with open(all_profiles_path, "w") as f:
+    profiles_path = os.path.join(output_dir, "profiles.json")
+    with open(profiles_path, "w") as f:
         json.dump(profiles_by_node, f, indent=2)
-    logger.info("Saved %d profiles to %s", len(profile_dicts), all_profiles_path)
+    logger.info("Saved %d profiles to %s", len(profile_dicts), profiles_path)
 
     metadata_path = os.path.join(output_dir, "metadata.json")
     metadata = {
@@ -694,7 +775,7 @@ def generate_profiles(
             "num_samples": num_samples,
             "local_epochs": local_epochs,
             "model_size_kb": model_size_kb,
-            "pool_path": combined_path,
+            "pool_path": fedscale_path,
             "pool_size": len(pool),
         },
     }
@@ -718,7 +799,7 @@ def load_profiles(profile_dir: str = PROFILE_DIR) -> list[dict]:
             "Generate it first with 'python setup.py profiles --namespace=<name>'."
         )
 
-    combined = os.path.join(profile_dir, "all_profiles.json")
+    combined = os.path.join(profile_dir, "profiles.json")
     if not os.path.exists(combined):
         raise FileNotFoundError(
             f"No profiles found at {combined}. "
@@ -802,40 +883,11 @@ def _configure_toxiproxy_for_client(
     )
     resp.raise_for_status()
 
+    # FedScale shape: single symmetric `communication` kbps — apply to both streams.
+    rate_kb_per_s = max(1, int(float(profile["communication"]) / 8))
     toxics = [
-        # Bandwidth (downstream) — KB/s = kbps / 8
-        (
-            f"bw_down_{cid}",
-            "bandwidth",
-            "downstream",
-            {"rate": max(1, int(profile["download_kbps"] / 8))},
-        ),
-        # Bandwidth (upstream)
-        (
-            f"bw_up_{cid}",
-            "bandwidth",
-            "upstream",
-            {"rate": max(1, int(profile["upload_kbps"] / 8))},
-        ),
-        # Latency — half RTT each way
-        (
-            f"lat_down_{cid}",
-            "latency",
-            "downstream",
-            {
-                "latency": max(1, int(profile["latency_ms"] / 2)),
-                "jitter": max(0, int(profile["jitter_ms"] / 2)),
-            },
-        ),
-        (
-            f"lat_up_{cid}",
-            "latency",
-            "upstream",
-            {
-                "latency": max(1, int(profile["latency_ms"] / 2)),
-                "jitter": max(0, int(profile["jitter_ms"] / 2)),
-            },
-        ),
+        (f"bw_down_{cid}", "bandwidth", "downstream", {"rate": rate_kb_per_s}),
+        (f"bw_up_{cid}", "bandwidth", "upstream", {"rate": rate_kb_per_s}),
     ]
 
     for name, toxic_type, stream, attributes in toxics:
@@ -876,38 +928,53 @@ def _delete_pid_file() -> None:
 
 
 def _print_profile_summary(profiles: list[dict]) -> None:
-    """Print a concise summary of the generated profiles."""
+    """Print a concise summary of the generated FedScale-shaped profiles."""
     n = len(profiles)
-    comp = sorted(p["computation_latency_ms"] for p in profiles)
-    dl = sorted(p["download_kbps"] for p in profiles)
-    rtt = sorted(p["latency_ms"] for p in profiles)
-    net_types: dict[str, int] = {}
+    comp = sorted(p["computation"] for p in profiles)
+    bw = sorted(p["communication"] for p in profiles)
+
+    online_frac: list[float] = []
     for p in profiles:
-        nt = p["network_type"]
-        net_types[nt] = net_types.get(nt, 0) + 1
+        beh = p.get("behavior")
+        if beh and beh.get("finish_time", 0) > 0:
+            # duration field isn't carried through; recompute from active/inactive
+            active = beh.get("active", [])
+            inactive = beh.get("inactive", [])
+            online = sum(
+                max(0, b - a) for a, b in zip(active, inactive)
+            )
+            online_frac.append(online / float(beh["finish_time"]))
+    online_frac.sort()
 
     def percentile(vals: list, pct: int) -> float:
         return vals[min(int(len(vals) * pct / 100), len(vals) - 1)]
 
     print(f"\n{'=' * 70}")
-    print(f"  {n} Device Profiles")
+    print(f"  {n} Device Profiles (FedScale)")
     print(f"{'=' * 70}")
     print(
         f"  {'Metric':<25} {'P10':>10} {'P25':>10} {'P50':>10} {'P75':>10} {'P90':>10}"
     )
     print(f"  {'-' * 25} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10}")
 
-    for label, vals in [
-        ("Compute (ms/sample)", comp),
-        ("Download (kbps)", dl),
-        ("RTT (ms)", rtt),
-    ]:
-        row = [f"{percentile(vals, p):.1f}" for p in [10, 25, 50, 75, 90]]
+    rows = [
+        ("Compute (ms/sample)", comp, "{:.1f}"),
+        ("Bandwidth (kbps)", bw, "{:.1f}"),
+    ]
+    if online_frac:
+        rows.append(("Online fraction", online_frac, "{:.3f}"))
+
+    for label, vals, fmt in rows:
+        row = [fmt.format(percentile(vals, p)) for p in [10, 25, 50, 75, 90]]
         print(f"  {label:<25} {'':>3}".rstrip() + "  ".join(f"{v:>10}" for v in row))
 
-    print(f"\n  Network types: {net_types}")
-    print(f"  Heterogeneity (compute): {comp[-1] / max(comp[0], 0.01):.1f}x")
-    print(f"  Heterogeneity (network): {dl[-1] / max(dl[0], 0.01):.1f}x")
+    print(f"\n  Heterogeneity (compute): {comp[-1] / max(comp[0], 0.01):.1f}x")
+    print(f"  Heterogeneity (bandwidth): {bw[-1] / max(bw[0], 0.01):.1f}x")
+    if online_frac:
+        print(
+            f"  Online-fraction range: {online_frac[0]:.2f}–{online_frac[-1]:.2f} "
+            f"(median {online_frac[len(online_frac)//2]:.2f})"
+        )
 
 
 if __name__ == "__main__":

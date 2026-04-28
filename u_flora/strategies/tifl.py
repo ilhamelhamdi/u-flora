@@ -83,7 +83,6 @@ class TiFLStrategy(BaseStrategy):
     def __init__(
         self,
         num_to_select: int,
-        model_size_kb: float,
         num_tiers: int = 5,
         sync_rounds: int = 3,
         prob_update_interval: int = 10,
@@ -98,7 +97,6 @@ class TiFLStrategy(BaseStrategy):
         self.sync_rounds = max(1, sync_rounds)
         self.prob_update_interval = max(1, prob_update_interval)
         self.round_deadline_s = float(round_deadline_s)
-        self.model_size_kb = float(model_size_kb)
         self.local_epochs = int(local_epochs)
         self._rng = random.Random(seed)
         self._state = TiFLRuntimeState()
@@ -159,22 +157,18 @@ class TiFLStrategy(BaseStrategy):
 
                 cfg = reply.content[self.configrecord_key]
                 profile_data = {
-                    "computation_latency_ms": float(
-                        cfg.get("computation_latency_ms", 50.0)
-                    ),
-                    "download_kbps": float(cfg.get("download_kbps", 5000.0)),
-                    "upload_kbps": float(cfg.get("upload_kbps", 3000.0)),
-                    "latency_ms": float(cfg.get("latency_ms", 50.0)),
+                    "computation": float(cfg.get("computation", 0.0)),
+                    "communication": float(cfg.get("communication", 0.0)),
                     "num_samples": int(cfg.get("num_samples", 1)),
                 }
                 self.client_states[pid].update_from_resource_reply(profile_data)
                 state = self.client_states[pid]
 
                 if state.profile is not None:
-                    latency = state.profile.estimate_round_duration(
+                    _, _, latency = self._estimate_duration(
+                        state.profile,
                         num_samples=max(1, state.num_samples),
                         local_epochs=self.local_epochs,
-                        model_size_kb=self.model_size_kb,
                     )
                 else:
                     latency = self.round_deadline_s
@@ -225,13 +219,23 @@ class TiFLStrategy(BaseStrategy):
                 "TiFL `configure_train` called before tiers are initialized. Run `configure_pretrain` first."
             )
 
+        # Restrict every tier's roster to *currently available* clients
+        # (per heartbeat at the start of this round).
+        round_clients_by_tier: dict[int, list[int]] = {}
+        for tier_id, tier in self._state.tiers.items():
+            avail_in_tier = [
+                pid for pid in tier.clients
+                if self.client_states[pid].available
+            ]
+            round_clients_by_tier[tier_id] = avail_in_tier
+
         available_tiers = [
             tier_id
             for tier_id, tier in self._state.tiers.items()
-            if tier.credits > 0 and tier.clients
+            if tier.credits > 0 and round_clients_by_tier[tier_id]
         ]
         if not available_tiers:
-            logger.warning("TiFL: no tiers with remaining credits")
+            logger.warning("TiFL: no tiers with remaining credits and available clients")
             self._state.last_selected_tier = None
             return [], []
 
@@ -240,13 +244,17 @@ class TiFLStrategy(BaseStrategy):
 
         chosen_tier = self._weighted_choose_tier(available_tiers)
         tier_state = self._state.tiers.get(chosen_tier)
-        if tier_state is None or not tier_state.clients:
-            logger.warning("TiFL: selected tier %d is empty", chosen_tier)
+        round_clients = round_clients_by_tier.get(chosen_tier, [])
+        if tier_state is None or not round_clients:
+            logger.warning(
+                "TiFL: selected tier %d has no available clients this round",
+                chosen_tier,
+            )
             self._state.last_selected_tier = None
             return [], []
 
-        k = min(self.num_to_select, len(tier_state.clients))
-        selected = self._rng.sample(tier_state.clients, k)
+        k = min(self.num_to_select, len(round_clients))
+        selected = self._rng.sample(round_clients, k)
         messages = self._make_train_messages(selected, arrays, round_num)
 
         # Update states: tier credits and last selected tier

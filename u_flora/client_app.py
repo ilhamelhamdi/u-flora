@@ -18,11 +18,14 @@ from flwr.clientapp import ClientApp
 from flwr.common.config import unflatten_dict
 from omegaconf import DictConfig
 from peft import get_peft_model_state_dict, set_peft_model_state_dict
+import torch
 from transformers import TrainingArguments, Trainer
 
 from .tasks.registry import get_task_adapter
 from .dataset import load_data
 from .utils import replace_keys, cosine_annealing, configure_logging
+from .utils.availability import is_available
+from .utils.timing import apply_duration_jitter, estimate_round_duration_s
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
@@ -60,7 +63,9 @@ def train(msg: Message, context: Context):
 
     num_rounds = cfg.num_server_rounds
     server_round = msg.content["config"]["server-round"]
-    evaluate_during_training = msg.content["config"].get("evaluate_during_training", False)
+    evaluate_during_training = msg.content["config"].get(
+        "evaluate_during_training", False
+    )
 
     # Shorthand prefix for all log lines from this client this round
     tag = f"[C{partition_id:03d} | R{server_round}/{num_rounds}]"
@@ -82,12 +87,7 @@ def train(msg: Message, context: Context):
     encoding_func = adapter.get_encoding_fn(cfg.model.name, dataset_config)
     data_collator = adapter.get_data_collator(cfg.model.name)
 
-    train_set, val_set = load_data(
-        partition_id,
-        num_partitions,
-        dataset_config,
-        cfg.dataset.partition,
-    )
+    train_set, val_set = load_data(partition_id, num_partitions, cfg)
     train_set = train_set.map(encoding_func, batched=True)
     val_set = val_set.map(encoding_func, batched=True)
     logger.debug("%s Dataset ready: %d samples", tag, len(train_set))
@@ -121,78 +121,98 @@ def train(msg: Message, context: Context):
         compute_metrics=adapter.compute_metrics,
     )
 
-    # -- Train ---------------------------------------------------------
-    logger.info(
-        "%s Training started — samples=%d  epochs=%g  lr=%.2e",
-        tag,
-        len(train_set),
-        training_arguments.num_train_epochs,
-        new_lr,
-    )
-    start_time = time.time()
-    results = trainer.train()
-    actual_train_time = time.time() - start_time
-    logger.info(
-        "%s Training done — loss=%.4f  time=%.1fs",
-        tag,
-        results.training_loss,
-        actual_train_time,
-    )
-
-    # -- Evaluation --------------------------------------------------
-    # Evaluation phase is only needed for some strategies (TiFL).
-    if evaluate_during_training:
-        logger.info("%s Validation started — samples=%d", tag, len(val_set))
-        eval_metrics = trainer.evaluate()
-        metric_name = adapter.get_metric_name()
-        local_val_metric = eval_metrics.get(f"eval_{metric_name}", float("nan"))
-        local_val_loss = eval_metrics.get("eval_loss", float("nan"))
+    try:
+        # -- Train ---------------------------------------------------------
         logger.info(
-            "%s Validation done — loss=%.4f  %s=%.4f",
+            "%s Training started — samples=%d  epochs=%g  lr=%.2e",
             tag,
-            local_val_loss,
-            metric_name,
-            local_val_metric,
+            len(train_set),
+            training_arguments.num_train_epochs,
+            new_lr,
+        )
+        start_time = time.time()
+        results = trainer.train()
+        actual_train_time = time.time() - start_time
+        logger.info(
+            "%s Training done — loss=%.4f  time=%.1fs",
+            tag,
+            results.training_loss,
+            actual_train_time,
         )
 
-    # -- Inject compute heterogeneity delay ----------------------------
-    profile = _load_device_profile(context.node_config)
-    local_epochs = training_arguments.num_train_epochs
-    total_duration = _inject_compute_delay(
-        profile,
-        len(train_set),
-        int(local_epochs),
-        actual_train_time,
-        task_name=task_name,
-        node_config=context.node_config,
-    )
-    if total_duration > actual_train_time:
+        # -- Evaluation --------------------------------------------------
+        # Evaluation phase is only needed for some strategies (TiFL).
+        if evaluate_during_training:
+            logger.info("%s Validation started — samples=%d", tag, len(val_set))
+            eval_metrics = trainer.evaluate()
+            metric_name = adapter.get_metric_name()
+            local_val_metric = eval_metrics.get(f"eval_{metric_name}", float("nan"))
+            local_val_loss = eval_metrics.get("eval_loss", float("nan"))
+            logger.info(
+                "%s Validation done — loss=%.4f  %s=%.4f",
+                tag,
+                local_val_loss,
+                metric_name,
+                local_val_metric,
+            )
+
+        # -- Compute simulated wall-clock duration -------------------------
+        profile = _load_device_profile(context)
+        local_epochs = int(training_arguments.num_train_epochs)
+        sim_compute_s, sim_comm_s, sim_total_s, jitter_meta = (
+            _compute_simulated_duration(
+                profile=profile,
+                num_samples=len(train_set),
+                local_epochs=local_epochs,
+                model_size_kb=adapter.get_lora_adapter_size_kb(cfg.model),
+                context=context,
+                server_round=server_round,
+                partition_id=partition_id,
+            )
+        )
         logger.debug(
-            "%s Simulated duration: %.1fs (added %.1fs compute delay)",
+            "%s Simulated duration: total=%.2fs (compute=%.2fs, comm=%.2fs); "
+            "actual_train_time=%.2fs",
             tag,
-            total_duration,
-            total_duration - actual_train_time,
+            sim_total_s,
+            sim_compute_s,
+            sim_comm_s,
+            actual_train_time,
         )
 
-    # -- Build response ------------------------------------------------
-    model_record = ArrayRecord(get_peft_model_state_dict(model))
-    metrics = {
-        "train_loss": results.training_loss,
-        "num-examples": len(train_set),
-        "training_time": total_duration,
-        "actual_train_time": actual_train_time,
-        "partition_id": partition_id,
-    }
+        # -- Build response ------------------------------------------------
+        model_record = ArrayRecord(get_peft_model_state_dict(model))
+        metrics = {
+            "train_loss": results.training_loss,
+            "num-examples": len(train_set),
+            "simulated_duration_s": sim_total_s,
+            "simulated_compute_s": sim_compute_s,
+            "simulated_comm_s": sim_comm_s,
+            "actual_train_time": actual_train_time,
+            "partition_id": partition_id,
+            **jitter_meta,
+        }
 
-    if evaluate_during_training:
-        metrics[f"val_{metric_name}"] = local_val_metric
-        metrics[f"val_loss"] = local_val_loss
-        metrics[f"val_num_examples"] = len(val_set)
+        if evaluate_during_training:
+            metrics[f"val_{metric_name}"] = local_val_metric
+            metrics["val_loss"] = local_val_loss
+            metrics["val_num_examples"] = len(val_set)
 
-    metric_record = MetricRecord(metrics)
-    content = RecordDict({"arrays": model_record, "metrics": metric_record})
-    logger.debug("%s Response ready — total_duration=%.1fs", tag, total_duration)
-    return Message(content=content, reply_to=msg)
+        metric_record = MetricRecord(metrics)
+        content = RecordDict({"arrays": model_record, "metrics": metric_record})
+        logger.debug("%s Response ready — simulated_duration=%.1fs", tag, sim_total_s)
+        return Message(content=content, reply_to=msg)
+    except Exception as e:
+        # Cleanup
+        if "model" in locals():
+            model.to("cpu")
+        del trainer
+        if "model" in locals():
+            del model
+        import gc
+
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
 @app.query("identify")
@@ -206,13 +226,41 @@ def handle_identify(msg: Message, context: Context) -> Message:
     )
 
 
+@app.query("heartbeat")
+def handle_heartbeat(msg: Message, context: Context) -> Message:
+    """Reply with availability at the server-supplied virtual time."""
+    partition_id = int(context.node_config["partition-id"])
+    virtual_time_s = float(msg.content["config"].get("virtual_time_s", 0.0))
+
+    profile = _load_device_profile(context)
+    behavior = profile.get("behavior") if isinstance(profile, dict) else None
+
+    if behavior is None:
+        available = True
+    else:
+        available = bool(is_available(behavior, virtual_time_s))
+
+    logger.debug(
+        "[C%03d] Heartbeat at t=%.1fs -> available=%s",
+        partition_id,
+        virtual_time_s,
+        available,
+    )
+    return Message(
+        content=RecordDict(
+            {
+                "config": ConfigRecord(
+                    {"available": available, "partition_id": partition_id}
+                )
+            }
+        ),
+        reply_to=msg,
+    )
+
+
 @app.query("resource_request")
 def handle_resource_request(msg: Message, context: Context) -> Message:
-    """Return device capabilities + dataset size (FedCS resource request).
-
-    The server starts blind; this handler is how FedCSWorkflow learns about
-    each candidate client's profile before running greedy selection.
-    """
+    """Return device capability + dataset size (FedCS / TiFL profiling reply)."""
     partition_id = int(context.node_config["partition-id"])
     num_partitions = int(context.node_config["num-partitions"])
     cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
@@ -220,26 +268,15 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
     logger.debug("[C%03d] Resource request received", partition_id)
 
     # Load dataset to report num_samples
-    dataset_config = cfg.datasets[cfg.dataset.name]
-    train_set, _ = load_data(
-        partition_id,
-        num_partitions,
-        dataset_config,
-        cfg.dataset.partition,
-    )
+    train_set, _ = load_data(partition_id, num_partitions, cfg)
     num_samples = len(train_set)
 
-    # Load device profile (ground truth for simulation)
-    profile = _load_device_profile(context.node_config)
+    profile = _load_device_profile(context)
     response = {
         "partition_id": partition_id,
         "num_samples": num_samples,
-        "computation_latency_ms": (
-            float(profile["computation_latency_ms"]) if profile else 50.0
-        ),
-        "download_kbps": float(profile["download_kbps"]) if profile else 5000.0,
-        "upload_kbps": float(profile["upload_kbps"]) if profile else 3000.0,
-        "latency_ms": float(profile["latency_ms"]) if profile else 50.0,
+        "computation": float(profile["computation"]) if profile else 0.0,
+        "communication": float(profile["communication"]) if profile else 0.0,
     }
     return Message(
         content=RecordDict({"config": ConfigRecord(response)}),
@@ -247,92 +284,98 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
     )
 
 
-def _load_device_profile(node_config: dict) -> dict | None:
-    profile_path = node_config.get("device-profile-path")
+# -- Profile loading -----------------------------------------------------------
+
+
+def _resolve_profile_path(context: Context) -> str | None:
+    """Find the profile file path."""
+    run_path = (
+        context.run_config.get("device-profile-path") if context.run_config else None
+    )
+    if run_path:
+        return str(run_path)
+    return context.node_config.get("device-profile-path")
+
+
+def _resolve_profile_key(context: Context) -> str:
+    """Find the profile key for this client."""
+    explicit = context.node_config.get("device-profile-key")
+    if explicit:
+        return str(explicit)
+    pid = int(context.node_config["partition-id"])
+    return f"supernode-{pid:03d}"
+
+
+def _load_device_profile(context: Context) -> dict | None:
+    """Resolve and load the FedScale-shaped device profile for this client."""
+    profile_path = _resolve_profile_path(context)
     if not profile_path:
         logger.warning(
-            "device-profile-path not set in node-config — compute delay simulation disabled"
+            "device-profile-path not set in run_config or node_config — "
+            "simulated duration will be 0."
         )
         return None
     if not os.path.exists(profile_path):
         logger.warning(
-            "Device profile not found at %s — compute delay simulation disabled",
+            "Device profile not found at %s — simulated duration will be 0.",
             profile_path,
         )
         return None
+
     with open(profile_path) as f:
-        profile = json.load(f)
-    logger.debug("Loaded device profile from %s", profile_path)
+        profiles = json.load(f)
+
+    key = _resolve_profile_key(context)
+    profile = profiles.get(key)
+    if profile is None:
+        logger.warning(
+            "Profile key '%s' not found in %s — simulated duration will be 0.",
+            key,
+            profile_path,
+        )
+        return None
+    logger.debug("Loaded device profile %s from %s", key, profile_path)
     return profile
 
 
-def _load_metadata(node_config: dict) -> dict:
-    profile_path = node_config.get("device-profile-path", "")
-    metadata_path = os.path.join(os.path.dirname(profile_path), "metadata.json")
-    if os.path.exists(metadata_path):
-        with open(metadata_path) as f:
-            return json.load(f)
-    logger.warning(
-        "Profile metadata not found at %s — compute delay calibration disabled",
-        metadata_path,
-    )
-    return {}
-
-
-def _inject_compute_delay(
+def _compute_simulated_duration(
     profile: dict | None,
     num_samples: int,
     local_epochs: int,
-    actual_train_time_s: float,
-    task_name: str,
-    node_config: dict | None = None,
-) -> float:
-    """Sleep to simulate heterogeneous compute capability.
-
-    Returns the total duration (actual_train_time_s + any injected delay).
-    """
-    from configs.compute_baseline import T_ACTUAL_MS_PER_SAMPLE
-
+    model_size_kb: float,
+    context: Context,
+    server_round: int,
+    partition_id: int,
+) -> tuple[float, float, float, dict]:
     if profile is None:
-        return actual_train_time_s
+        return 0.0, 0.0, 0.0, {}
 
-    t_min_ms = _load_metadata(node_config or {}).get("t_min_ms", 0)
-    raw_comp_ms = profile.get("computation_latency_ms", 0)
-    if raw_comp_ms <= 0 or t_min_ms <= 0:
-        return actual_train_time_s
+    cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
 
-    t_actual_ms = T_ACTUAL_MS_PER_SAMPLE.get(task_name)
-    if t_actual_ms is None or t_actual_ms <= 0:
-        logger.warning(
-            "No baseline for task '%s'. Skipping compute delay injection.", task_name
-        )
-        return actual_train_time_s
-
-    slowdown_factor = raw_comp_ms / t_min_ms
-    simulated_ms_per_sample = t_actual_ms * slowdown_factor
-    simulated_train_s = simulated_ms_per_sample * num_samples * local_epochs / 1000.0
-
-    extra_delay = simulated_train_s - actual_train_time_s
-
-    if extra_delay <= 0:
-        logger.debug(
-            "Actual GPU time (%.2fs) already exceeds simulated time (%.2fs) "
-            "for task '%s', client slowdown=%.2fx. No delay injected.",
-            actual_train_time_s,
-            simulated_train_s,
-            task_name,
-            slowdown_factor,
-        )
-        return actual_train_time_s
-
-    logger.debug(
-        "Injecting %.2fs compute delay (simulated=%.2fs, actual=%.2fs, "
-        "slowdown=%.2fx, task=%s)",
-        extra_delay,
-        simulated_train_s,
-        actual_train_time_s,
-        slowdown_factor,
-        task_name,
+    compute_s, comm_s, _ = estimate_round_duration_s(
+        profile=profile,
+        num_samples=num_samples,
+        local_epochs=local_epochs,
+        model_size_kb=model_size_kb,
     )
-    time.sleep(extra_delay)
-    return actual_train_time_s + extra_delay
+
+    j = (
+        cfg.simulation.jitter
+        if "simulation" in cfg and "jitter" in cfg.simulation
+        else None
+    )
+    if j is None or not bool(getattr(j, "enabled", False)):
+        return compute_s, comm_s, compute_s + comm_s, {}
+
+    return apply_duration_jitter(
+        compute_s,
+        comm_s,
+        compute_cv=float(getattr(j, "compute_cv", 0.0)),
+        comm_cv=float(getattr(j, "comm_cv", 0.0)),
+        compute_min_factor=float(getattr(j, "compute_min_factor", 0.7)),
+        comm_min_factor=float(getattr(j, "comm_min_factor", 0.5)),
+        comm_stall_prob=float(getattr(j, "comm_stall_prob", 0.0)),
+        comm_stall_factor_min=float(getattr(j, "comm_stall_factor_min", 5.0)),
+        comm_stall_factor_max=float(getattr(j, "comm_stall_factor_max", 10.0)),
+        seed=(int(cfg.seed), int(server_round), int(partition_id)),
+    )

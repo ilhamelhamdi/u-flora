@@ -24,8 +24,9 @@ import logging
 import random
 from typing import Any
 
-from flwr.common import ArrayRecord, Message, MetricRecord
+from flwr.common import ArrayRecord, Message
 from flwr.server import Grid
+from flwr.serverapp.strategy import strategy_utils
 
 from .base import BaseStrategy
 from ..client_profile.typing import ClientState
@@ -51,7 +52,6 @@ class FedCSStrategy(BaseStrategy):
     def __init__(
         self,
         round_deadline_s: float,
-        model_size_kb: float = 1000.0,
         local_epochs: int = 1,
         c_fraction: float = 0.5,  # Fraction of clients to contact for resource request each round.
         seed: int = 42,
@@ -59,7 +59,6 @@ class FedCSStrategy(BaseStrategy):
     ) -> None:
         super().__init__(**kwargs)
         self.round_deadline_s = round_deadline_s
-        self.model_size_kb = model_size_kb
         self.local_epochs = local_epochs
         self.c_fraction = c_fraction
         self._rng = random.Random(seed)
@@ -69,7 +68,7 @@ class FedCSStrategy(BaseStrategy):
         grid,
         initial_arrays,
         num_rounds,
-        timeout,
+        timeout=None,
         train_config=None,
         evaluate_config=None,
         evaluate_fn=None,
@@ -78,7 +77,8 @@ class FedCSStrategy(BaseStrategy):
             grid=grid,
             initial_arrays=initial_arrays,
             num_rounds=num_rounds,
-            timeout=self.round_deadline_s,  # Inject round deadline as timeout for resource request + selection phase
+            # timeout=self.round_deadline_s,  # If use real deployment, inject round deadline as timeout for resource request + selection phase
+            timeout=timeout,  # For simulation, use the provided timeout
             train_config=train_config,
             evaluate_config=evaluate_config,
             evaluate_fn=evaluate_fn,
@@ -95,10 +95,13 @@ class FedCSStrategy(BaseStrategy):
         grid: Grid,
         timeout: float,
     ) -> tuple[list[int], list[Message]]:
-        all_pids = list(self.client_states.keys())
+        # Only consider available clients (per heartbeat this round).
+        all_pids = [p for p, s in self.client_states.items() if s.available]
+        if not all_pids:
+            return [], []
 
         # ---- Phase 1: Resource Request in Every Round --------------------------------
-        num_candidates = int(len(all_pids) * self.c_fraction),
+        num_candidates = int(len(all_pids) * self.c_fraction)
         candidate_pids = self._rng.sample(all_pids, min(num_candidates, len(all_pids)))
 
         query_msgs = self._make_query_messages(candidate_pids, "resource_request")
@@ -117,13 +120,9 @@ class FedCSStrategy(BaseStrategy):
             resource = reply.content[self.configrecord_key]
             self.client_states[pid].update_from_resource_reply(
                 {
-                    "computation_latency_ms": float(
-                        resource.get("computation_latency_ms")
-                    ),
-                    "download_kbps": float(resource.get("download_kbps")),
-                    "upload_kbps": float(resource.get("upload_kbps")),
-                    "latency_ms": float(resource.get("latency_ms")),
-                    "num_samples": int(resource.get("num_samples")),
+                    "computation": float(resource.get("computation", 0.0)),
+                    "communication": float(resource.get("communication", 0.0)),
+                    "num_samples": int(resource.get("num_samples", 0)),
                 }
             )
             responded_pids.append(pid)
@@ -178,8 +177,8 @@ class FedCSStrategy(BaseStrategy):
         )
 
         # Parameters from the paper that we treat as neglible or zero for simplicity:
-        T_cs = 0.0 # T_cs : the overhead of client selection procedure.
-        T_agg = 0.0 # T_agg : the time for aggregating the model updates from the selected clients.
+        T_cs = 0.0  # T_cs : the overhead of client selection procedure.
+        T_agg = 0.0  # T_agg : the time for aggregating the model updates from the selected clients.
 
         t_dist = {
             cid: self._estimate_distribution_to_client_i(candidate_states[cid])
@@ -196,16 +195,22 @@ class FedCSStrategy(BaseStrategy):
 
         while len(candidate_states) > 0:
             costs = {
-                cid: 
-                max(distribution_time, t_dist[cid]) 
+                cid: max(distribution_time, t_dist[cid])
                 + t_upload[cid]
                 + max(0, t_update[cid] - theta)
                 for cid in candidate_states
             }
             selected_cid = min(costs, key=costs.get)
-            candidate_states.pop(selected_cid) # Remove from candidates
-            theta_prime = theta + t_upload[selected_cid] + max(0, t_update[selected_cid] - theta)
-            t = T_cs + max(distribution_time, t_dist[selected_cid]) + theta_prime + T_agg
+            candidate_states.pop(selected_cid)  # Remove from candidates
+            theta_prime = (
+                theta + t_upload[selected_cid] + max(0, t_update[selected_cid] - theta)
+            )
+            t = (
+                T_cs
+                + max(distribution_time, t_dist[selected_cid])
+                + theta_prime
+                + T_agg
+            )
 
             if t <= self.round_deadline_s:
                 selected.add(selected_cid)
@@ -214,27 +219,40 @@ class FedCSStrategy(BaseStrategy):
 
         return list(selected)
 
+    def filter_replies(self, replies):
+        """Filter out late replies that arrived after the round deadline."""
+        result = []
+        for r in replies:
+            if (
+                not r.has_error()
+                and r.has_content()
+                and r.content.get("simulated_duration_s") <= self.round_deadline_s
+            ):
+                result.append(r)
+        return result
+
     def _estimate_distribution_to_client_i(self, state: ClientState) -> float:
-        """Estimate time to distribute model to client i in second(s)."""
-        download_time = self.model_size_kb / max(1, state.profile.download_kbps)
-        latency_time = state.profile.latency_ms / 1000.0
-        return download_time + latency_time
+        """Estimate time to download the global model in second(s)."""
+        comm = max(1.0, state.profile.communication)
+        return self.model_size_kb / comm
 
     def _estimate_upload_from_client_i(self, state: ClientState) -> float:
-        """Estimate time to upload model update from client i in second(s)."""
-        upload_time = self.model_size_kb / max(1, state.profile.upload_kbps)
-        latency_time = state.profile.latency_ms / 1000.0
-        return upload_time + latency_time
+        """Estimate time to upload the model update in second(s)."""
+        comm = max(1.0, state.profile.communication)
+        return self.model_size_kb / comm
 
     def _estimate_training_time_on_client_i(self, state: ClientState) -> float:
-        """Estimate local training time on client i in second(s)."""
-        computation_time = (
-            state.profile.computation_latency_ms
-            * max(state.num_samples, 1)
-            * self.local_epochs
-            / 1000.0
+        """Estimate local training time on client i in second(s).
+
+        Uses the calibration constants threaded through BaseStrategy
+        (``t_min_ms`` from profile metadata, ``t_actual_ms`` per task).
+        """
+        compute_s, _, _ = self._estimate_duration(
+            state.profile,
+            num_samples=max(state.num_samples, 1),
+            local_epochs=self.local_epochs,
         )
-        return computation_time
+        return compute_s
 
     def _strategy_name(self) -> str:
         return f"FedCS(T={self.round_deadline_s:.0f}s)"

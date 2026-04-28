@@ -30,6 +30,16 @@ packages = ["."]
 [tool.flwr.app]
 publisher = "flwrlabs"
 
+fab-include = [
+    "*.py",
+    "u_flora/**/*.py",
+    "pyproject.toml"
+]
+
+fab-exclude = [
+    "traces",      # Exclude raw trace files
+]
+
 [tool.flwr.app.components]
 serverapp = "u_flora.server_app:app"
 clientapp = "u_flora.client_app:app"
@@ -39,11 +49,13 @@ clientapp = "u_flora.client_app:app"
 # Controls which TaskAdapter is used. One of: text_classification, causal_lm
 task_name = "text_classification"
 
+# Global seed for reproducibility (dataset partitioning, client selection randomness, etc.)
+seed = 42 
+
 # -- Dataset selector & partitioning -------------------------------------------
 dataset.name = "boolq"                   # Key into [tool.flwr.app.config.datasets.*] below
 dataset.partition.strategy = "dirichlet" # "dirichlet" or "iid"
-dataset.partition.dirichlet.alpha = 0.5
-dataset.partition.dirichlet.seed = 42
+dataset.partition.dirichlet.alpha = 8
 
 # -- Model ---------------------------------------------------------------------
 model.name = "answerdotai/ModernBERT-base"
@@ -58,39 +70,65 @@ train.learning-rate-max = 5e-4
 train.learning-rate-min = 1e-5
 train.training-arguments.output-dir = ""
 train.training-arguments.learning-rate = ""               # Overridden by dynamic lr scheduler
-train.training-arguments.per-device-train-batch-size = 32
-train.training-arguments.per-device-eval-batch-size = 32
+train.training-arguments.per-device-train-batch-size = 16
+train.training-arguments.per-device-eval-batch-size = 16
 train.training-arguments.logging-steps = 32
 train.training-arguments.report-to = "none"
-train.training-arguments.num-train-epochs = 3
-train.training-arguments.max-steps = 10
-train.training-arguments.save-steps = 1000
-train.training-arguments.save-total-limit = 2
+train.training-arguments.num-train-epochs = 1
+# train.training-arguments.max-steps = 10 # TODO: Comment this
+# train.training-arguments.save-steps = 1000
+# train.training-arguments.save-total-limit = 2
 train.training-arguments.gradient-checkpointing = false
 train.training-arguments.lr-scheduler-type = "constant"
 
 # -- Federation ----------------------------------------------------------------
-num-server-rounds = 10
+num-server-rounds = 20
 num-clients = 50
+
+# -- Device-profile simulation -------------------------------------------------
+device-profile-path = "device_profiles/50/default/profiles.json"
+server.heartbeat-timeout-s = 30.0
+
+# Execution-time jitter (applied client-side, after the deterministic estimate).
+simulation.jitter.enabled = true
+simulation.jitter.compute-cv = 0.20            # log-normal CV for compute jitter
+simulation.jitter.comm-cv = 0.50               # log-normal CV for comm jitter (heavier tail)
+simulation.jitter.compute-min-factor = 0.7     # clip floor on compute multiplier
+simulation.jitter.comm-min-factor = 0.5        # clip floor on comm multiplier
+simulation.jitter.comm-stall-prob = 0.05       # P(heavy stall) per round
+simulation.jitter.comm-stall-factor-min = 5.0  # stall multiplier range
+simulation.jitter.comm-stall-factor-max = 10.0
 
 # -- Evaluation ----------------------------------------------------------------
 eval.batch-size = 64
+# eval.max-samples = 320 # TODO: Comment this
 
 # -- Experiment tracking -------------------------------------------------------
-wandb.project = "u-flora-testbed"
+wandb.project = "u-flora-experiments"
 wandb.entity = "ilham-abdillah-alhamdi-universitas-indonesia"
-wandb.run-name = ""
+wandb.run-name = "alpha-test"
 
 # -- Client selection strategy -------------------------------------------------
 # name: random | fedcs | tifl | oort
 strategy.name = "random"
-strategy.seed = 42
-strategy.num-to-select = 10
+strategy.num-to-select = 5 # for fixed k strategies like random, tifl, oort
 
-# ==============================================================================
-# Strategy-specific configurations
-# ==============================================================================
-[tool.flwr.app.config.strategies.random]
+strategy.fedcs.round-deadline-s = 120.0
+strategy.fedcs.c-fraction = 0.5 # Fraction of clients to request device profiles from each round
+
+strategy.tifl.num-tiers = 5 # Number of TiFL tiers
+strategy.tifl.sync-rounds = 2 # Number of rounds at offline profiling before creating tiers
+strategy.tifl.prob-update-interval = 5 # Number of rounds to update tier selection probability
+strategy.tifl.round-deadline-s = 360.0 # Deadline for preround client profiling 
+
+strategy.oort.epsilon = 0.9  # Fraction of clients to explore (vs exploit) each round
+strategy.oort.alpha = 0.2    # How much to weight recency vs historical
+strategy.oort.pacer-window = 5 # Rounds to look back when adjusting selection probabilities
+strategy.oort.pacer-delta = 15 # Time in seconds to add/relax developer-preferred deadline
+strategy.oort.initial-t = 120 # Initial developer-preferred deadline in seconds
+strategy.oort.cutoff-c = 0.95 # Percentage of utility cutoff from k-th ranked client to consider for selection
+strategy.oort.max-participation-rounds = 5 # Maximum rounds a client can participate
+strategy.oort.utility-clip-percentile = 95 # Percentile for clipping utility values to avoid outliers dominating selection
 
 
 # ==============================================================================

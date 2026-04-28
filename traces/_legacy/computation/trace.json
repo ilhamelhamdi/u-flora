@@ -1,0 +1,2842 @@
+[
+    {
+        "device_name":"Honor Magic8 Pro",
+        "chipset_name":"Snapdragon 8 Elite Gen 5",
+        "compute_latency_ms":117
+    },
+    {
+        "device_name":"vivo X300 Pro",
+        "chipset_name":"Dimensity 9500",
+        "compute_latency_ms":55
+    },
+    {
+        "device_name":"vivo X300",
+        "chipset_name":"Dimensity 9500",
+        "compute_latency_ms":55
+    },
+    {
+        "device_name":"Oppo Find X9 Pro",
+        "chipset_name":"Dimensity 9500",
+        "compute_latency_ms":59
+    },
+    {
+        "device_name":"Oppo Find X9",
+        "chipset_name":"Dimensity 9500",
+        "compute_latency_ms":59
+    },
+    {
+        "device_name":"Asus ROG Phone 9",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":57
+    },
+    {
+        "device_name":"Realme GT 7 Pro",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":60
+    },
+    {
+        "device_name":"Xiaomi 15 Ultra",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":57
+    },
+    {
+        "device_name":"Oppo Find X8s",
+        "chipset_name":"Dimensity 9400+",
+        "compute_latency_ms":58
+    },
+    {
+        "device_name":"Oppo Find X8s+",
+        "chipset_name":"Dimensity 9400+",
+        "compute_latency_ms":55
+    },
+    {
+        "device_name":"Xiaomi Poco F7 Ultra",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":57
+    },
+    {
+        "device_name":"Motorola Razr 60 Ultra",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":87
+    },
+    {
+        "device_name":"Samsung Galaxy S25 Ultra",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":59
+    },
+    {
+        "device_name":"Samsung Galaxy S25+",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":57
+    },
+    {
+        "device_name":"Xiaomi 15 Pro",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":57
+    },
+    {
+        "device_name":"Samsung Galaxy S25",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":90
+    },
+    {
+        "device_name":"Xiaomi 15",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":57
+    },
+    {
+        "device_name":"vivo iQOO 13",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":66
+    },
+    {
+        "device_name":"Samsung Galaxy S25 Edge",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":57
+    },
+    {
+        "device_name":"ZTE nubia Red Magic 10 Pro",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":59
+    },
+    {
+        "device_name":"Oppo Find X8 Ultra",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":71
+    },
+    {
+        "device_name":"vivo X200 Ultra",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":68
+    },
+    {
+        "device_name":"OnePlus 13s",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":115
+    },
+    {
+        "device_name":"OnePlus 13",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":72
+    },
+    {
+        "device_name":"Honor Magic7 Pro",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":58
+    },
+    {
+        "device_name":"Oppo Find X8 Pro",
+        "chipset_name":"Dimensity 9400",
+        "compute_latency_ms":59
+    },
+    {
+        "device_name":"vivo X200 Pro",
+        "chipset_name":"Dimensity 9400",
+        "compute_latency_ms":65
+    },
+    {
+        "device_name":"vivo X200",
+        "chipset_name":"Dimensity 9400",
+        "compute_latency_ms":74
+    },
+    {
+        "device_name":"vivo iQOO Neo10 Pro",
+        "chipset_name":"Dimensity 9400",
+        "compute_latency_ms":70
+    },
+    {
+        "device_name":"Oppo Find X8",
+        "chipset_name":"Dimensity 9400",
+        "compute_latency_ms":55
+    },
+    {
+        "device_name":"Oppo Find N5",
+        "chipset_name":"Snapdragon 8 Elite",
+        "compute_latency_ms":122
+    },
+    {
+        "device_name":"vivo X200 Pro Mini",
+        "chipset_name":"Dimensity 9400",
+        "compute_latency_ms":82
+    },
+    {
+        "device_name":"Apple iPhone 17 Pro",
+        "chipset_name":"Apple A19 Pro",
+        "compute_latency_ms":12
+    },
+    {
+        "device_name":"Asus ROG Phone 8",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":77
+    },
+    {
+        "device_name":"Realme GT 6",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":69
+    },
+    {
+        "device_name":"ZTE nubia RedMagic Nova",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":93
+    },
+    {
+        "device_name":"Asus Zenfone 11 Ultra",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":71
+    },
+    {
+        "device_name":"Samsung Galaxy S24 Ultra",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":90
+    },
+    {
+        "device_name":"Samsung Galaxy S24+",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":106
+    },
+    {
+        "device_name":"Samsung Galaxy S24",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":76
+    },
+    {
+        "device_name":"Sony Xperia 1 VI",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":97
+    },
+    {
+        "device_name":"Samsung Galaxy Z Fold6",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":103
+    },
+    {
+        "device_name":"Xiaomi 14",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":85
+    },
+    {
+        "device_name":"OnePlus 12",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":96
+    },
+    {
+        "device_name":"Lenovo Yoga Tab Plus",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":92
+    },
+    {
+        "device_name":"Xiaomi 14 Ultra",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":83
+    },
+    {
+        "device_name":"Samsung Galaxy Tab S10+",
+        "chipset_name":"Dimensity 9300+",
+        "compute_latency_ms":68
+    },
+    {
+        "device_name":"Xiaomi 14T Pro",
+        "chipset_name":"Dimensity 9300+",
+        "compute_latency_ms":70
+    },
+    {
+        "device_name":"Xiaomi Poco F7 Pro",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":84
+    },
+    {
+        "device_name":"Samsung Galaxy Tab S10 Ultra",
+        "chipset_name":"Dimensity 9300+",
+        "compute_latency_ms":67
+    },
+    {
+        "device_name":"ZTE nubia RedMagic 10 Air",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":145
+    },
+    {
+        "device_name":"Realme GT 7",
+        "chipset_name":"Dimensity 9400e",
+        "compute_latency_ms":71
+    },
+    {
+        "device_name":"vivo iQOO Neo10",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":126
+    },
+    {
+        "device_name":"Xiaomi Redmi K70 Ultra",
+        "chipset_name":"Dimensity 9300+",
+        "compute_latency_ms":71
+    },
+    {
+        "device_name":"ZTE nubia Red Magic 9 Pro",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":92
+    },
+    {
+        "device_name":"Lenovo Legion Y700",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":86
+    },
+    {
+        "device_name":"vivo iQOO Neo9S Pro",
+        "chipset_name":"Dimensity 9300+",
+        "compute_latency_ms":82
+    },
+    {
+        "device_name":"Realme Neo7",
+        "chipset_name":"Dimensity 9300+",
+        "compute_latency_ms":77
+    },
+    {
+        "device_name":"vivo iQOO 12",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":127
+    },
+    {
+        "device_name":"vivo X100 Pro",
+        "chipset_name":"Dimensity 9300",
+        "compute_latency_ms":81
+    },
+    {
+        "device_name":"Xiaomi 14 Pro",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":85
+    },
+    {
+        "device_name":"Samsung Galaxy Z Flip6",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":131
+    },
+    {
+        "device_name":"Vivo iQOO Z9 Turbo+",
+        "chipset_name":"Dimensity 9300+",
+        "compute_latency_ms":76
+    },
+    {
+        "device_name":"Ulefone Armor 28 Ultra",
+        "chipset_name":"Dimensity 9300+",
+        "compute_latency_ms":86
+    },
+    {
+        "device_name":"vivo iQOO Neo9 Pro",
+        "chipset_name":"Dimensity 9300",
+        "compute_latency_ms":83
+    },
+    {
+        "device_name":"Oppo Find X7",
+        "chipset_name":"Dimensity 9300",
+        "compute_latency_ms":188
+    },
+    {
+        "device_name":"vivo X100",
+        "chipset_name":"Dimensity 9300",
+        "compute_latency_ms":87
+    },
+    {
+        "device_name":"Honor Magic6 Pro",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":163
+    },
+    {
+        "device_name":"Honor 400 Pro",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":167
+    },
+    {
+        "device_name":"Honor 300 Pro",
+        "chipset_name":"Snapdragon 8 Gen 3",
+        "compute_latency_ms":155
+    },
+    {
+        "device_name":"Samsung Galaxy S23 Ultra",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":85
+    },
+    {
+        "device_name":"Samsung Galaxy S23+",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":84
+    },
+    {
+        "device_name":"Samsung Galaxy Tab S9",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":84
+    },
+    {
+        "device_name":"Xiaomi 13 Pro",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":91
+    },
+    {
+        "device_name":"Samsung Galaxy S23",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":84
+    },
+    {
+        "device_name":"Motorola Edge 40 Pro",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":81
+    },
+    {
+        "device_name":"Xiaomi Pad 6S Pro 12.4",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":86
+    },
+    {
+        "device_name":"OnePlus 12R",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":92
+    },
+    {
+        "device_name":"Xiaomi 13 Ultra",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":90
+    },
+    {
+        "device_name":"Xiaomi Poco F6 Pro",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":90
+    },
+    {
+        "device_name":"Xiaomi 13",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":87
+    },
+    {
+        "device_name":"OnePlus 11",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":84
+    },
+    {
+        "device_name":"Sony Xperia 1 V",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":110
+    },
+    {
+        "device_name":"Sony Xperia 5 V",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":111
+    },
+    {
+        "device_name":"vivo X90 Pro+",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":101
+    },
+    {
+        "device_name":"Honor Magic5 Pro",
+        "chipset_name":"Snapdragon 8 Gen 2",
+        "compute_latency_ms":183
+    },
+    {
+        "device_name":"Apple iPhone 16 Pro",
+        "chipset_name":"Apple A18 Pro",
+        "compute_latency_ms":48
+    },
+    {
+        "device_name":"Xiaomi Poco F7",
+        "chipset_name":"Snapdragon 8s Gen 4",
+        "compute_latency_ms":114
+    },
+    {
+        "device_name":"Xiaomi Redmi Turbo 4 Pro",
+        "chipset_name":"Snapdragon 8s Gen 4",
+        "compute_latency_ms":110
+    },
+    {
+        "device_name":"Realme GT 7T",
+        "chipset_name":"Dimensity 8400 Max",
+        "compute_latency_ms":98
+    },
+    {
+        "device_name":"Realme Neo7 SE",
+        "chipset_name":"Dimensity 8400 Max",
+        "compute_latency_ms":98
+    },
+    {
+        "device_name":"vivo iQOO Neo 10",
+        "chipset_name":"Snapdragon 8s Gen 4",
+        "compute_latency_ms":125
+    },
+    {
+        "device_name":"Apple iPhone 15 Pro",
+        "chipset_name":"Apple A17 Pro",
+        "compute_latency_ms":84
+    },
+    {
+        "device_name":"Realme GT3",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":86
+    },
+    {
+        "device_name":"Xiaomi Poco X7 Pro",
+        "chipset_name":"Dimensity 8400 Ultra",
+        "compute_latency_ms":100
+    },
+    {
+        "device_name":"Realme GT Neo 5 240W",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":87
+    },
+    {
+        "device_name":"Xiaomi Redmi Turbo 4",
+        "chipset_name":"Dimensity 8400 Ultra",
+        "compute_latency_ms":100
+    },
+    {
+        "device_name":"Realme P3 Ultra",
+        "chipset_name":"Dimensity 8300 Ultra",
+        "compute_latency_ms":103
+    },
+    {
+        "device_name":"Asus ROG Phone 6",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":101
+    },
+    {
+        "device_name":"Huawei Mate 50 Pro",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":107
+    },
+    {
+        "device_name":"Xiaomi 12T Pro",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":101
+    },
+    {
+        "device_name":"Xiaomi Poco X6 Pro",
+        "chipset_name":"Dimensity 8300 Ultra",
+        "compute_latency_ms":103
+    },
+    {
+        "device_name":"OnePlus Ace 2",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":125
+    },
+    {
+        "device_name":"Oppo Reno13",
+        "chipset_name":"Dimensity 8300",
+        "compute_latency_ms":102
+    },
+    {
+        "device_name":"Xiaomi Poco F5 Pro",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":104
+    },
+    {
+        "device_name":"OnePlus 10T",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":141
+    },
+    {
+        "device_name":"Oppo Reno10 Pro+",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":123
+    },
+    {
+        "device_name":"Motorola Razr 40 Ultra",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":104
+    },
+    {
+        "device_name":"Samsung Galaxy Z Fold4",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":113
+    },
+    {
+        "device_name":"Xiaomi Poco F4 GT",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":129
+    },
+    {
+        "device_name":"Xiaomi 14T",
+        "chipset_name":"Dimensity 8300 Ultra",
+        "compute_latency_ms":103
+    },
+    {
+        "device_name":"Xiaomi 12 Pro",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":131
+    },
+    {
+        "device_name":"Xiaomi 12",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":109
+    },
+    {
+        "device_name":"vivo iQOO 9",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":115
+    },
+    {
+        "device_name":"Xiaomi Redmi K70E",
+        "chipset_name":"Dimensity 8300 Ultra",
+        "compute_latency_ms":101
+    },
+    {
+        "device_name":"Honor Magic4 Pro",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":109
+    },
+    {
+        "device_name":"Realme GT2 Pro",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":94
+    },
+    {
+        "device_name":"ZTE nubia Red Magic 7S Pro",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":123
+    },
+    {
+        "device_name":"Lenovo Legion Y700",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":110
+    },
+    {
+        "device_name":"ZTE nubia Red Magic 7",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":127
+    },
+    {
+        "device_name":"vivo X80 Pro",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":138
+    },
+    {
+        "device_name":"ZTE Axon 40 Ultra",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":128
+    },
+    {
+        "device_name":"OnePlus 10 Pro",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":128
+    },
+    {
+        "device_name":"Honor X50 GT",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":131
+    },
+    {
+        "device_name":"Samsung Galaxy Tab S8 Ultra",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":139
+    },
+    {
+        "device_name":"Motorola Edge 30 Ultra",
+        "chipset_name":"Snapdragon 8+ Gen 1",
+        "compute_latency_ms":98
+    },
+    {
+        "device_name":"Motorola Edge X30",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":100
+    },
+    {
+        "device_name":"Samsung Galaxy Tab S8+",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":120
+    },
+    {
+        "device_name":"Motorola Edge 60 Pro",
+        "chipset_name":"Dimensity 8350 Extreme",
+        "compute_latency_ms":128
+    },
+    {
+        "device_name":"Samsung Galaxy S22 Ultra",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":119
+    },
+    {
+        "device_name":"Realme GT 6",
+        "chipset_name":"Snapdragon 8s Gen 3",
+        "compute_latency_ms":76
+    },
+    {
+        "device_name":"Samsung Galaxy S22",
+        "chipset_name":"Snapdragon 8 Gen 1",
+        "compute_latency_ms":147
+    },
+    {
+        "device_name":"Xiaomi 14 Civi",
+        "chipset_name":"Snapdragon 8s Gen 3",
+        "compute_latency_ms":95
+    },
+    {
+        "device_name":"Motorola Razr 50 Ultra",
+        "chipset_name":"Snapdragon 8s Gen 3",
+        "compute_latency_ms":77
+    },
+    {
+        "device_name":"Xiaomi Poco F6",
+        "chipset_name":"Snapdragon 8s Gen 3",
+        "compute_latency_ms":95
+    },
+    {
+        "device_name":"vivo iQOO Neo 10R",
+        "chipset_name":"Snapdragon 8s Gen 3",
+        "compute_latency_ms":167
+    },
+    {
+        "device_name":"Honor MagicPad 2 12.3",
+        "chipset_name":"Snapdragon 8s Gen 3",
+        "compute_latency_ms":144
+    },
+    {
+        "device_name":"Honor 200 Pro",
+        "chipset_name":"Snapdragon 8s Gen 3",
+        "compute_latency_ms":132
+    },
+    {
+        "device_name":"Realme GT 6T",
+        "chipset_name":"Snapdragon 7+ Gen 3",
+        "compute_latency_ms":78
+    },
+    {
+        "device_name":"Xiaomi Pad 7",
+        "chipset_name":"Snapdragon 7+ Gen 3",
+        "compute_latency_ms":96
+    },
+    {
+        "device_name":"OnePlus Nord 4",
+        "chipset_name":"Snapdragon 7+ Gen 3",
+        "compute_latency_ms":116
+    },
+    {
+        "device_name":"OnePlus Ace 3V",
+        "chipset_name":"Snapdragon 7+ Gen 3",
+        "compute_latency_ms":184
+    },
+    {
+        "device_name":"Realme GT Neo5 SE",
+        "chipset_name":"Snapdragon 7+ Gen 2",
+        "compute_latency_ms":91
+    },
+    {
+        "device_name":"Xiaomi Poco F5",
+        "chipset_name":"Snapdragon 7+ Gen 2",
+        "compute_latency_ms":103
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 12 Turbo",
+        "chipset_name":"Snapdragon 7+ Gen 2",
+        "compute_latency_ms":105
+    },
+    {
+        "device_name":"OnePlus 9 Pro",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":113
+    },
+    {
+        "device_name":"Xiaomi 11T Pro",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":141
+    },
+    {
+        "device_name":"Xiaomi Mi 11i",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":130
+    },
+    {
+        "device_name":"Asus ROG Phone 5 Pro",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":123
+    },
+    {
+        "device_name":"Honor Magic3",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":189
+    },
+    {
+        "device_name":"Sony Xperia 1 III",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":130
+    },
+    {
+        "device_name":"Samsung Galaxy S21 FE",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":118
+    },
+    {
+        "device_name":"Xiaomi Mi 11",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":135
+    },
+    {
+        "device_name":"Xiaomi Mi 11 Ultra",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":168
+    },
+    {
+        "device_name":"vivo X70 Pro+",
+        "chipset_name":"Snapdragon 888+",
+        "compute_latency_ms":186
+    },
+    {
+        "device_name":"Asus ROG Phone 5",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":122
+    },
+    {
+        "device_name":"ZTE nubia Red Magic 6 Pro",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":139
+    },
+    {
+        "device_name":"Huawei P50 Pro",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":146
+    },
+    {
+        "device_name":"Samsung Galaxy S21",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":120
+    },
+    {
+        "device_name":"vivo iQOO 7",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":176
+    },
+    {
+        "device_name":"Oppo Find X3 Pro",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":205
+    },
+    {
+        "device_name":"Samsung Galaxy S21 Ultra",
+        "chipset_name":"Snapdragon 888",
+        "compute_latency_ms":166
+    },
+    {
+        "device_name":"Xiaomi Redmi K60 Ultra",
+        "chipset_name":"Dimensity 9200+",
+        "compute_latency_ms":150
+    },
+    {
+        "device_name":"Xiaomi 13T Pro",
+        "chipset_name":"Dimensity 9200+",
+        "compute_latency_ms":242
+    },
+    {
+        "device_name":"Motorola Edge 50 Pro",
+        "chipset_name":"Snapdragon 7 Gen 3",
+        "compute_latency_ms":133
+    },
+    {
+        "device_name":"Honor 100",
+        "chipset_name":"Snapdragon 7 Gen 3",
+        "compute_latency_ms":240
+    },
+    {
+        "device_name":"Honor 200",
+        "chipset_name":"Snapdragon 7 Gen 3",
+        "compute_latency_ms":253
+    },
+    {
+        "device_name":"vivo iQOO Z9",
+        "chipset_name":"Snapdragon 7 Gen 3",
+        "compute_latency_ms":285
+    },
+    {
+        "device_name":"vivo V30",
+        "chipset_name":"Snapdragon 7 Gen 3",
+        "compute_latency_ms":253
+    },
+    {
+        "device_name":"vivo T3 Pro",
+        "chipset_name":"Snapdragon 7 Gen 3",
+        "compute_latency_ms":290
+    },
+    {
+        "device_name":"Realme 14 Pro+",
+        "chipset_name":"Snapdragon 7s Gen 3",
+        "compute_latency_ms":140
+    },
+    {
+        "device_name":"Samsung Galaxy XCover7 Pro",
+        "chipset_name":"Snapdragon 7s Gen 3",
+        "compute_latency_ms":148
+    },
+    {
+        "device_name":"vivo V50",
+        "chipset_name":"Snapdragon 7 Gen 3",
+        "compute_latency_ms":197
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 14 Pro+ 5G",
+        "chipset_name":"Snapdragon 7s Gen 3",
+        "compute_latency_ms":157
+    },
+    {
+        "device_name":"vivo S18",
+        "chipset_name":"Snapdragon 7 Gen 3",
+        "compute_latency_ms":192
+    },
+    {
+        "device_name":"Nothing Phone (3a) Pro",
+        "chipset_name":"Snapdragon 7s Gen 3",
+        "compute_latency_ms":153
+    },
+    {
+        "device_name":"Nothing Phone (3a)",
+        "chipset_name":"Snapdragon 7s Gen 3",
+        "compute_latency_ms":158
+    },
+    {
+        "device_name":"vivo T4",
+        "chipset_name":"Snapdragon 7s Gen 3",
+        "compute_latency_ms":199
+    },
+    {
+        "device_name":"vivo iQOO Z10",
+        "chipset_name":"Snapdragon 7s Gen 3",
+        "compute_latency_ms":202
+    },
+    {
+        "device_name":"Realme 14 5G",
+        "chipset_name":"Snapdragon 6 Gen 4",
+        "compute_latency_ms":143
+    },
+    {
+        "device_name":"Oppo K13",
+        "chipset_name":"Snapdragon 6 Gen 4",
+        "compute_latency_ms":147
+    },
+    {
+        "device_name":"Google Pixel 7",
+        "chipset_name":"Google Tensor G2",
+        "compute_latency_ms":99
+    },
+    {
+        "device_name":"Honor 90",
+        "chipset_name":"Snapdragon 7 Gen 1 AE",
+        "compute_latency_ms":139
+    },
+    {
+        "device_name":"Google Pixel 7a",
+        "chipset_name":"Google Tensor G2",
+        "compute_latency_ms":104
+    },
+    {
+        "device_name":"Google Pixel 7 Pro",
+        "chipset_name":"Google Tensor G2",
+        "compute_latency_ms":106
+    },
+    {
+        "device_name":"Google Pixel 9 Pro",
+        "chipset_name":"Google Tensor G4",
+        "compute_latency_ms":126
+    },
+    {
+        "device_name":"Xiaomi Redmi K50 Pro",
+        "chipset_name":"Dimensity 9000",
+        "compute_latency_ms":174
+    },
+    {
+        "device_name":"Xiaomi Civi 2",
+        "chipset_name":"Snapdragon 7 Gen 1",
+        "compute_latency_ms":134
+    },
+    {
+        "device_name":"OnePlus Nord 3",
+        "chipset_name":"Dimensity 9000",
+        "compute_latency_ms":209
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 13 Pro",
+        "chipset_name":"Snapdragon 7s Gen 2",
+        "compute_latency_ms":152
+    },
+    {
+        "device_name":"Google Pixel 9 Pro Fold",
+        "chipset_name":"Google Tensor G4",
+        "compute_latency_ms":100
+    },
+    {
+        "device_name":"Xiaomi Redmi Pad Pro 5G",
+        "chipset_name":"Snapdragon 7s Gen 2",
+        "compute_latency_ms":146
+    },
+    {
+        "device_name":"Infinix GT 20 Pro",
+        "chipset_name":"Dimensity 8200 Ultimate",
+        "compute_latency_ms":129
+    },
+    {
+        "device_name":"Xiaomi Redmi Pad Pro",
+        "chipset_name":"Snapdragon 7s Gen 2",
+        "compute_latency_ms":144
+    },
+    {
+        "device_name":"Tecno Camon 30 Premier",
+        "chipset_name":"Dimensity 8200 Ultimate",
+        "compute_latency_ms":121
+    },
+    {
+        "device_name":"Xiaomi Poco X6",
+        "chipset_name":"Snapdragon 7s Gen 2",
+        "compute_latency_ms":157
+    },
+    {
+        "device_name":"Motorola Edge 30",
+        "chipset_name":"Snapdragon 778G+",
+        "compute_latency_ms":169
+    },
+    {
+        "device_name":"Tecno Camon 30 Pro",
+        "chipset_name":"Dimensity 8200 Ultimate",
+        "compute_latency_ms":123
+    },
+    {
+        "device_name":"Samsung Galaxy M55",
+        "chipset_name":"Snapdragon 7 Gen 1",
+        "compute_latency_ms":143
+    },
+    {
+        "device_name":"Xiaomi 13 Lite",
+        "chipset_name":"Snapdragon 7 Gen 1",
+        "compute_latency_ms":171
+    },
+    {
+        "device_name":"Realme 12 Pro+",
+        "chipset_name":"Snapdragon 7s Gen 2",
+        "compute_latency_ms":125
+    },
+    {
+        "device_name":"Xiaomi Poco X5 Pro",
+        "chipset_name":"Snapdragon 778G",
+        "compute_latency_ms":146
+    },
+    {
+        "device_name":"Google Pixel 8",
+        "chipset_name":"Google Tensor G3",
+        "compute_latency_ms":118
+    },
+    {
+        "device_name":"Google Pixel 8 Pro",
+        "chipset_name":"Google Tensor G3",
+        "compute_latency_ms":109
+    },
+    {
+        "device_name":"Huawei nova 11",
+        "chipset_name":"Snapdragon 778G",
+        "compute_latency_ms":189
+    },
+    {
+        "device_name":"Google Pixel 9a",
+        "chipset_name":"Google Tensor G4",
+        "compute_latency_ms":130
+    },
+    {
+        "device_name":"Google Pixel 6 Pro",
+        "chipset_name":"Google Tensor",
+        "compute_latency_ms":153
+    },
+    {
+        "device_name":"Xiaomi 12 Lite",
+        "chipset_name":"Snapdragon 778G",
+        "compute_latency_ms":146
+    },
+    {
+        "device_name":"Google Pixel 8a",
+        "chipset_name":"Google Tensor G3",
+        "compute_latency_ms":109
+    },
+    {
+        "device_name":"ZTE nubia Flip",
+        "chipset_name":"Snapdragon 7 Gen 1",
+        "compute_latency_ms":179
+    },
+    {
+        "device_name":"Xiaomi Redmi K60E",
+        "chipset_name":"Dimensity 8200",
+        "compute_latency_ms":189
+    },
+    {
+        "device_name":"Realme GT Neo 3",
+        "chipset_name":"Dimensity 8100",
+        "compute_latency_ms":133
+    },
+    {
+        "device_name":"Honor 50",
+        "chipset_name":"Snapdragon 778G",
+        "compute_latency_ms":144
+    },
+    {
+        "device_name":"Google Pixel 6",
+        "chipset_name":"Google Tensor",
+        "compute_latency_ms":142
+    },
+    {
+        "device_name":"Samsung Galaxy A52s",
+        "chipset_name":"Snapdragon 778G",
+        "compute_latency_ms":203
+    },
+    {
+        "device_name":"OnePlus 10R",
+        "chipset_name":"Dimensity 8100 Max",
+        "compute_latency_ms":192
+    },
+    {
+        "device_name":"Xiaomi 13T",
+        "chipset_name":"Dimensity 8200 Ultra",
+        "compute_latency_ms":187
+    },
+    {
+        "device_name":"Realme 12 Pro",
+        "chipset_name":"Snapdragon 6 Gen 1",
+        "compute_latency_ms":133
+    },
+    {
+        "device_name":"Samsung Galaxy S24",
+        "chipset_name":"Exynos 2400",
+        "compute_latency_ms":95
+    },
+    {
+        "device_name":"Samsung Galaxy S24+",
+        "chipset_name":"Exynos 2400",
+        "compute_latency_ms":86
+    },
+    {
+        "device_name":"Zebra Technologies ET65",
+        "chipset_name":"Qualcomm QCS6490",
+        "compute_latency_ms":208
+    },
+    {
+        "device_name":"Xiaomi 12T",
+        "chipset_name":"Dimensity 8100 Ultra",
+        "compute_latency_ms":165
+    },
+    {
+        "device_name":"Xiaomi Poco X4 GT",
+        "chipset_name":"Dimensity 8100",
+        "compute_latency_ms":167
+    },
+    {
+        "device_name":"Samsung Galaxy S24 FE",
+        "chipset_name":"Exynos 2400e",
+        "compute_latency_ms":80
+    },
+    {
+        "device_name":"Motorola Edge 50 Fusion",
+        "chipset_name":"Snapdragon 6 Gen 1",
+        "compute_latency_ms":130
+    },
+    {
+        "device_name":"Honor X9c",
+        "chipset_name":"Snapdragon 6 Gen 1",
+        "compute_latency_ms":208
+    },
+    {
+        "device_name":"Sony Xperia 10 VI",
+        "chipset_name":"Snapdragon 6 Gen 1",
+        "compute_latency_ms":206
+    },
+    {
+        "device_name":"Oppo Reno13 F",
+        "chipset_name":"Snapdragon 6 Gen 1",
+        "compute_latency_ms":204
+    },
+    {
+        "device_name":"Honor Magic7 Lite",
+        "chipset_name":"Snapdragon 6 Gen 1",
+        "compute_latency_ms":210
+    },
+    {
+        "device_name":"Samsung Galaxy S23 FE",
+        "chipset_name":"Exynos 2200",
+        "compute_latency_ms":120
+    },
+    {
+        "device_name":"Samsung Galaxy S22",
+        "chipset_name":"Exynos 2200",
+        "compute_latency_ms":152
+    },
+    {
+        "device_name":"Huawei Mate 40 Pro",
+        "chipset_name":"Kirin 9000 5G",
+        "compute_latency_ms":104
+    },
+    {
+        "device_name":"Samsung Galaxy S22 Ultra",
+        "chipset_name":"Exynos 2200",
+        "compute_latency_ms":206
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 13 Pro+",
+        "chipset_name":"Dimensity 7200 Ultra",
+        "compute_latency_ms":212
+    },
+    {
+        "device_name":"Samsung Galaxy S21 Ultra",
+        "chipset_name":"Exynos 2100",
+        "compute_latency_ms":131
+    },
+    {
+        "device_name":"Honor V30 Pro",
+        "chipset_name":"Kirin 990 5G",
+        "compute_latency_ms":140
+    },
+    {
+        "device_name":"Tecno Camon 40 Pro",
+        "chipset_name":"Dimensity 7300",
+        "compute_latency_ms":135
+    },
+    {
+        "device_name":"Motorola Edge 60",
+        "chipset_name":"Dimensity 7300",
+        "compute_latency_ms":149
+    },
+    {
+        "device_name":"Motorola Edge 60 Fusion",
+        "chipset_name":"Dimensity 7300",
+        "compute_latency_ms":149
+    },
+    {
+        "device_name":"Tecno Pova Curve",
+        "chipset_name":"Dimensity 7300 Ultimate",
+        "compute_latency_ms":136
+    },
+    {
+        "device_name":"Nothing Phone (2a)",
+        "chipset_name":"Dimensity 7200 Pro",
+        "compute_latency_ms":246
+    },
+    {
+        "device_name":"Xiaomi 15S Pro",
+        "chipset_name":"Xiaomi Xring O1",
+        "compute_latency_ms":106
+    },
+    {
+        "device_name":"Realme Narzo 70 Turbo",
+        "chipset_name":"Dimensity 7300 Energy",
+        "compute_latency_ms":138
+    },
+    {
+        "device_name":"Infinix Note 50x",
+        "chipset_name":"Dimensity 7300 Ultimate",
+        "compute_latency_ms":138
+    },
+    {
+        "device_name":"Realme 13+",
+        "chipset_name":"Dimensity 7300 Energy",
+        "compute_latency_ms":138
+    },
+    {
+        "device_name":"Ulefone Armor 34 Pro",
+        "chipset_name":"Dimensity 7300",
+        "compute_latency_ms":158
+    },
+    {
+        "device_name":"Realme Narzo 80 Pro",
+        "chipset_name":"Dimensity 7400",
+        "compute_latency_ms":134
+    },
+    {
+        "device_name":"Motorola Edge 20 Pro",
+        "chipset_name":"Snapdragon 870",
+        "compute_latency_ms":122
+    },
+    {
+        "device_name":"Motorola Edge 50 Neo",
+        "chipset_name":"Dimensity 7300",
+        "compute_latency_ms":147
+    },
+    {
+        "device_name":"Motorola razr 2024",
+        "chipset_name":"Dimensity 7300X",
+        "compute_latency_ms":150
+    },
+    {
+        "device_name":"Samsung Galaxy Note20 Ultra",
+        "chipset_name":"Exynos 990",
+        "compute_latency_ms":194
+    },
+    {
+        "device_name":"Huawei P40 Pro",
+        "chipset_name":"Kirin 990 5G",
+        "compute_latency_ms":142
+    },
+    {
+        "device_name":"Nothing CMF Phone 2 Pro",
+        "chipset_name":"Dimensity 7300 Pro",
+        "compute_latency_ms":153
+    },
+    {
+        "device_name":"Realme 14 Pro",
+        "chipset_name":"Dimensity 7300 Energy",
+        "compute_latency_ms":139
+    },
+    {
+        "device_name":"Oppo Reno12",
+        "chipset_name":"Dimensity 7300 Energy",
+        "compute_latency_ms":144
+    },
+    {
+        "device_name":"Nothing CMF Phone 1",
+        "chipset_name":"Dimensity 7300",
+        "compute_latency_ms":151
+    },
+    {
+        "device_name":"Realme GT Neo 3T",
+        "chipset_name":"Snapdragon 870",
+        "compute_latency_ms":109
+    },
+    {
+        "device_name":"Samsung Galaxy Note10+",
+        "chipset_name":"Exynos 9825",
+        "compute_latency_ms":207
+    },
+    {
+        "device_name":"Samsung Galaxy Note20",
+        "chipset_name":"Exynos 990",
+        "compute_latency_ms":203
+    },
+    {
+        "device_name":"Xiaomi Poco F3",
+        "chipset_name":"Snapdragon 870",
+        "compute_latency_ms":126
+    },
+    {
+        "device_name":"Samsung Galaxy S20 Ultra 5G",
+        "chipset_name":"Exynos 990",
+        "compute_latency_ms":216
+    },
+    {
+        "device_name":"Realme GT Neo2",
+        "chipset_name":"Snapdragon 870",
+        "compute_latency_ms":130
+    },
+    {
+        "device_name":"Samsung Galaxy S20 FE",
+        "chipset_name":"Exynos 990",
+        "compute_latency_ms":200
+    },
+    {
+        "device_name":"Samsung Galaxy S20",
+        "chipset_name":"Exynos 990",
+        "compute_latency_ms":196
+    },
+    {
+        "device_name":"Asus Zenfone 7",
+        "chipset_name":"Snapdragon 865",
+        "compute_latency_ms":108
+    },
+    {
+        "device_name":"Realme X7 Pro",
+        "chipset_name":"Dimensity 1000+",
+        "compute_latency_ms":126
+    },
+    {
+        "device_name":"Samsung Galaxy S20+",
+        "chipset_name":"Exynos 990",
+        "compute_latency_ms":233
+    },
+    {
+        "device_name":"OnePlus 9R",
+        "chipset_name":"Snapdragon 870",
+        "compute_latency_ms":128
+    },
+    {
+        "device_name":"Motorola Edge+",
+        "chipset_name":"Snapdragon 865",
+        "compute_latency_ms":127
+    },
+    {
+        "device_name":"Realme 10 Pro+",
+        "chipset_name":"Dimensity 1080",
+        "compute_latency_ms":195
+    },
+    {
+        "device_name":"Infinix Zero 5G",
+        "chipset_name":"Dimensity 1080",
+        "compute_latency_ms":177
+    },
+    {
+        "device_name":"Oppo Find X2 Pro",
+        "chipset_name":"Snapdragon 865",
+        "compute_latency_ms":123
+    },
+    {
+        "device_name":"Asus ROG Phone 3",
+        "chipset_name":"Snapdragon 865+",
+        "compute_latency_ms":118
+    },
+    {
+        "device_name":"Xiaomi Mi 10 5G",
+        "chipset_name":"Snapdragon 865",
+        "compute_latency_ms":130
+    },
+    {
+        "device_name":"Sony Xperia 5 II",
+        "chipset_name":"Snapdragon 865",
+        "compute_latency_ms":117
+    },
+    {
+        "device_name":"Samsung Galaxy S10+",
+        "chipset_name":"Exynos 9820",
+        "compute_latency_ms":225
+    },
+    {
+        "device_name":"Samsung Galaxy S10",
+        "chipset_name":"Exynos 9820",
+        "compute_latency_ms":241
+    },
+    {
+        "device_name":"Samsung Galaxy Tab S7+",
+        "chipset_name":"Snapdragon 865+",
+        "compute_latency_ms":123
+    },
+    {
+        "device_name":"Xiaomi Redmi K30 Ultra",
+        "chipset_name":"Dimensity 1000+",
+        "compute_latency_ms":182
+    },
+    {
+        "device_name":"OnePlus 8",
+        "chipset_name":"Snapdragon 865",
+        "compute_latency_ms":119
+    },
+    {
+        "device_name":"Samsung Galaxy S20+ 5G",
+        "chipset_name":"Snapdragon 865",
+        "compute_latency_ms":122
+    },
+    {
+        "device_name":"Samsung Galaxy S10e",
+        "chipset_name":"Exynos 9820",
+        "compute_latency_ms":240
+    },
+    {
+        "device_name":"Huawei nova 5T",
+        "chipset_name":"Kirin 980",
+        "compute_latency_ms":164
+    },
+    {
+        "device_name":"Samsung Galaxy S20 FE",
+        "chipset_name":"Snapdragon 865",
+        "compute_latency_ms":123
+    },
+    {
+        "device_name":"OnePlus 8 Pro",
+        "chipset_name":"Snapdragon 865",
+        "compute_latency_ms":120
+    },
+    {
+        "device_name":"Samsung Galaxy Tab S7",
+        "chipset_name":"Snapdragon 865+",
+        "compute_latency_ms":129
+    },
+    {
+        "device_name":"Huawei Mate 20 Pro",
+        "chipset_name":"Kirin 980",
+        "compute_latency_ms":163
+    },
+    {
+        "device_name":"Huawei P30 Pro",
+        "chipset_name":"Kirin 980",
+        "compute_latency_ms":165
+    },
+    {
+        "device_name":"OnePlus 8T",
+        "chipset_name":"Snapdragon 865",
+        "compute_latency_ms":116
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 12 Pro",
+        "chipset_name":"Dimensity 1080",
+        "compute_latency_ms":267
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 12 Pro+",
+        "chipset_name":"Dimensity 1080",
+        "compute_latency_ms":254
+    },
+    {
+        "device_name":"Realme X3 SuperZoom",
+        "chipset_name":"Snapdragon 855+",
+        "compute_latency_ms":140
+    },
+    {
+        "device_name":"Realme X2 Pro",
+        "chipset_name":"Snapdragon 855+",
+        "compute_latency_ms":140
+    },
+    {
+        "device_name":"Huawei P30",
+        "chipset_name":"Kirin 980",
+        "compute_latency_ms":164
+    },
+    {
+        "device_name":"Xiaomi Redmi K40 Gaming",
+        "chipset_name":"Dimensity 1200",
+        "compute_latency_ms":161
+    },
+    {
+        "device_name":"Huawei Mate 70 Pro",
+        "chipset_name":"Kirin 9020",
+        "compute_latency_ms":116
+    },
+    {
+        "device_name":"Honor 30S",
+        "chipset_name":"Kirin 820 5G",
+        "compute_latency_ms":175
+    },
+    {
+        "device_name":"Huawei Mate X6",
+        "chipset_name":"Kirin 9020",
+        "compute_latency_ms":125
+    },
+    {
+        "device_name":"Xiaomi 11T",
+        "chipset_name":"Dimensity 1200",
+        "compute_latency_ms":168
+    },
+    {
+        "device_name":"OnePlus Nord 2 5G",
+        "chipset_name":"Dimensity 1200-AI",
+        "compute_latency_ms":218
+    },
+    {
+        "device_name":"Asus ROG Phone II",
+        "chipset_name":"Snapdragon 855+",
+        "compute_latency_ms":159
+    },
+    {
+        "device_name":"Realme 11 Pro",
+        "chipset_name":"Dimensity 7050",
+        "compute_latency_ms":142
+    },
+    {
+        "device_name":"Realme 11 Pro+",
+        "chipset_name":"Dimensity 7050",
+        "compute_latency_ms":143
+    },
+    {
+        "device_name":"Hotwav Hyper 7 Pro",
+        "chipset_name":"Dimensity 7050",
+        "compute_latency_ms":225
+    },
+    {
+        "device_name":"Realme 12+",
+        "chipset_name":"Dimensity 7050",
+        "compute_latency_ms":148
+    },
+    {
+        "device_name":"Cubot KingKong X",
+        "chipset_name":"Dimensity 7050",
+        "compute_latency_ms":299
+    },
+    {
+        "device_name":"ZTE nubia Neo",
+        "chipset_name":"Unisoc T820",
+        "compute_latency_ms":174
+    },
+    {
+        "device_name":"Xiaomi Poco X3 Pro",
+        "chipset_name":"Snapdragon 860",
+        "compute_latency_ms":164
+    },
+    {
+        "device_name":"Motorola Edge 40 Neo",
+        "chipset_name":"Dimensity 7030",
+        "compute_latency_ms":168
+    },
+    {
+        "device_name":"Lenovo Z6 Pro",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":172
+    },
+    {
+        "device_name":"Samsung Galaxy Tab S6",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":176
+    },
+    {
+        "device_name":"Xiaomi Mi 9",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":166
+    },
+    {
+        "device_name":"LG G8 ThinQ",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":171
+    },
+    {
+        "device_name":"Xiaomi Redmi K20 Pro",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":173
+    },
+    {
+        "device_name":"OnePlus 7 Pro",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":184
+    },
+    {
+        "device_name":"Oppo Reno10",
+        "chipset_name":"Dimensity 7050",
+        "compute_latency_ms":198
+    },
+    {
+        "device_name":"Xiaomi Mi 9T Pro",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":169
+    },
+    {
+        "device_name":"Samsung Galaxy Note10+",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":247
+    },
+    {
+        "device_name":"Samsung Galaxy S10+",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":168
+    },
+    {
+        "device_name":"ZTE Voyage 40",
+        "chipset_name":"Unisoc T760",
+        "compute_latency_ms":199
+    },
+    {
+        "device_name":"ZTE nubia Neo 2",
+        "chipset_name":"Unisoc T820",
+        "compute_latency_ms":183
+    },
+    {
+        "device_name":"Sony Xperia 5",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":209
+    },
+    {
+        "device_name":"Google Pixel 4 XL",
+        "chipset_name":"SDM855 + Google TPU",
+        "compute_latency_ms":162
+    },
+    {
+        "device_name":"Microsoft Surface Duo",
+        "chipset_name":"Snapdragon 855",
+        "compute_latency_ms":177
+    },
+    {
+        "device_name":"Google Pixel 4",
+        "chipset_name":"SDM855 + Google TPU",
+        "compute_latency_ms":175
+    },
+    {
+        "device_name":"Samsung Galaxy A35",
+        "chipset_name":"Exynos 1380",
+        "compute_latency_ms":132
+    },
+    {
+        "device_name":"Samsung Galaxy A54",
+        "chipset_name":"Exynos 1380",
+        "compute_latency_ms":132
+    },
+    {
+        "device_name":"Samsung Galaxy Tab S9 FE",
+        "chipset_name":"Exynos 1380",
+        "compute_latency_ms":125
+    },
+    {
+        "device_name":"Huawei MatePad Pro 12.2",
+        "chipset_name":"Kirin T92A (Kirin 9020A)",
+        "compute_latency_ms":135
+    },
+    {
+        "device_name":"Samsung Galaxy A55",
+        "chipset_name":"Exynos 1480",
+        "compute_latency_ms":129
+    },
+    {
+        "device_name":"Infinix Note 30 VIP",
+        "chipset_name":"Dimensity 8050",
+        "compute_latency_ms":129
+    },
+    {
+        "device_name":"Oppo A92s",
+        "chipset_name":"Dimensity 800",
+        "compute_latency_ms":256
+    },
+    {
+        "device_name":"Huawei MatePad 11.5 S",
+        "chipset_name":"Kirin 9000W",
+        "compute_latency_ms":133
+    },
+    {
+        "device_name":"Oppo Reno4 Z 5G",
+        "chipset_name":"Dimensity 800",
+        "compute_latency_ms":245
+    },
+    {
+        "device_name":"Huawei Pura 70",
+        "chipset_name":"Kirin 9000S1",
+        "compute_latency_ms":137
+    },
+    {
+        "device_name":"Huawei Pura 70 Ultra",
+        "chipset_name":"Kirin 9010",
+        "compute_latency_ms":139
+    },
+    {
+        "device_name":"Huawei Mate 70",
+        "chipset_name":"Kirin 9010",
+        "compute_latency_ms":138
+    },
+    {
+        "device_name":"Huawei MatePad Pro 13.2",
+        "chipset_name":"Kirin 9000S",
+        "compute_latency_ms":154
+    },
+    {
+        "device_name":"Huawei Pura 70 Pro",
+        "chipset_name":"Kirin 9010",
+        "compute_latency_ms":142
+    },
+    {
+        "device_name":"Huawei Mate 60",
+        "chipset_name":"Kirin 9000S",
+        "compute_latency_ms":142
+    },
+    {
+        "device_name":"Huawei Mate 60 Pro",
+        "chipset_name":"Kirin 9000S",
+        "compute_latency_ms":141
+    },
+    {
+        "device_name":"Samsung Galaxy A56",
+        "chipset_name":"Exynos 1580",
+        "compute_latency_ms":176
+    },
+    {
+        "device_name":"Samsung Galaxy S9+",
+        "chipset_name":"Exynos 9810",
+        "compute_latency_ms":447
+    },
+    {
+        "device_name":"Honor X9a",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":175
+    },
+    {
+        "device_name":"Samsung Galaxy Note9",
+        "chipset_name":"Exynos 9810",
+        "compute_latency_ms":621
+    },
+    {
+        "device_name":"HMD Crest",
+        "chipset_name":"Unisoc T760",
+        "compute_latency_ms":220
+    },
+    {
+        "device_name":"Huawei P40 Lite",
+        "chipset_name":"Kirin 810",
+        "compute_latency_ms":217
+    },
+    {
+        "device_name":"Samsung Galaxy S9",
+        "chipset_name":"Exynos 9810",
+        "compute_latency_ms":448
+    },
+    {
+        "device_name":"Motorola Moto G45",
+        "chipset_name":"Snapdragon 6s Gen 3",
+        "compute_latency_ms":168
+    },
+    {
+        "device_name":"Motorola Moto G82",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":171
+    },
+    {
+        "device_name":"Xiaomi Poco X4 Pro",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":179
+    },
+    {
+        "device_name":"Huawei Mate 10 Pro",
+        "chipset_name":"Kirin 970",
+        "compute_latency_ms":389
+    },
+    {
+        "device_name":"Samsung Galaxy A52 5G",
+        "chipset_name":"Snapdragon 750G",
+        "compute_latency_ms":191
+    },
+    {
+        "device_name":"Realme 9 Pro",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":185
+    },
+    {
+        "device_name":"Motorola Edge 30 Neo",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":184
+    },
+    {
+        "device_name":"Motorola Moto G34",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":176
+    },
+    {
+        "device_name":"Oppo Reno8 T 5G",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":179
+    },
+    {
+        "device_name":"Motorola Moto G84",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":188
+    },
+    {
+        "device_name":"Huawei nova 13 Pro",
+        "chipset_name":"Kirin 8000",
+        "compute_latency_ms":167
+    },
+    {
+        "device_name":"Motorola Edge",
+        "chipset_name":"Snapdragon 765G",
+        "compute_latency_ms":241
+    },
+    {
+        "device_name":"OnePlus 6T",
+        "chipset_name":"Snapdragon 845",
+        "compute_latency_ms":312
+    },
+    {
+        "device_name":"Realme 8",
+        "chipset_name":"MediaTek Helio G95",
+        "compute_latency_ms":230
+    },
+    {
+        "device_name":"Motorola Moto G64",
+        "chipset_name":"Dimensity 7025",
+        "compute_latency_ms":170
+    },
+    {
+        "device_name":"Nokia 9 PureView",
+        "chipset_name":"Snapdragon 845",
+        "compute_latency_ms":299
+    },
+    {
+        "device_name":"LG Wing 5G",
+        "chipset_name":"Snapdragon 765G",
+        "compute_latency_ms":290
+    },
+    {
+        "device_name":"Xiaomi Mi 10T Lite 5G",
+        "chipset_name":"Snapdragon 750",
+        "compute_latency_ms":254
+    },
+    {
+        "device_name":"OnePlus Nord",
+        "chipset_name":"Snapdragon 765G",
+        "compute_latency_ms":249
+    },
+    {
+        "device_name":"OnePlus Nord CE 5G",
+        "chipset_name":"Snapdragon 750G",
+        "compute_latency_ms":268
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 11 Pro 5G",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":243
+    },
+    {
+        "device_name":"OnePlus Nord CE",
+        "chipset_name":"Snapdragon 750G",
+        "compute_latency_ms":269
+    },
+    {
+        "device_name":"Samsung Galaxy A25",
+        "chipset_name":"Exynos 1280",
+        "compute_latency_ms":300
+    },
+    {
+        "device_name":"TCL 10 5G",
+        "chipset_name":"Snapdragon 765G",
+        "compute_latency_ms":266
+    },
+    {
+        "device_name":"Xiaomi Poco M5s",
+        "chipset_name":"MediaTek Helio G95",
+        "compute_latency_ms":293
+    },
+    {
+        "device_name":"OnePlus Nord N20",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":250
+    },
+    {
+        "device_name":"Xiaomi Poco M6 Pro",
+        "chipset_name":"Snapdragon 4 Gen 2",
+        "compute_latency_ms":180
+    },
+    {
+        "device_name":"Xiaomi Poco X5",
+        "chipset_name":"Snapdragon 695",
+        "compute_latency_ms":252
+    },
+    {
+        "device_name":"Xiaomi Redmi K30 5G",
+        "chipset_name":"Snapdragon 765G",
+        "compute_latency_ms":294
+    },
+    {
+        "device_name":"Sony Xperia XZ2",
+        "chipset_name":"Snapdragon 845",
+        "compute_latency_ms":318
+    },
+    {
+        "device_name":"Samsung Galaxy Note9",
+        "chipset_name":"Snapdragon 845",
+        "compute_latency_ms":311
+    },
+    {
+        "device_name":"Samsung Galaxy Note8",
+        "chipset_name":"Exynos 8895",
+        "compute_latency_ms":572
+    },
+    {
+        "device_name":"Sony Xperia XZ3",
+        "chipset_name":"Snapdragon 845",
+        "compute_latency_ms":318
+    },
+    {
+        "device_name":"Xiaomi Poco X3 NFC",
+        "chipset_name":"Snapdragon 732G",
+        "compute_latency_ms":277
+    },
+    {
+        "device_name":"Samsung Galaxy S8+",
+        "chipset_name":"Exynos 8895",
+        "compute_latency_ms":427
+    },
+    {
+        "device_name":"Xiaomi Mi CC9 Pro",
+        "chipset_name":"Snapdragon 730G",
+        "compute_latency_ms":235
+    },
+    {
+        "device_name":"Oppo Find X2 Neo",
+        "chipset_name":"Snapdragon 765G",
+        "compute_latency_ms":253
+    },
+    {
+        "device_name":"Xiaomi Mi Mix 2S",
+        "chipset_name":"Snapdragon 845",
+        "compute_latency_ms":374
+    },
+    {
+        "device_name":"Xiaomi Mi 10 Lite 5G",
+        "chipset_name":"Snapdragon 765G",
+        "compute_latency_ms":290
+    },
+    {
+        "device_name":"Xiaomi Mi 10 Youth 5G",
+        "chipset_name":"Snapdragon 765G",
+        "compute_latency_ms":286
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 12 Pro 4G",
+        "chipset_name":"Snapdragon 732G",
+        "compute_latency_ms":290
+    },
+    {
+        "device_name":"Honor 200 Smart",
+        "chipset_name":"Snapdragon 4 Gen 2",
+        "compute_latency_ms":212
+    },
+    {
+        "device_name":"Oppo Reno5 5G",
+        "chipset_name":"Snapdragon 765G",
+        "compute_latency_ms":295
+    },
+    {
+        "device_name":"Samsung Galaxy S8",
+        "chipset_name":"Exynos 8895",
+        "compute_latency_ms":581
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 10 Pro",
+        "chipset_name":"Snapdragon 732G",
+        "compute_latency_ms":283
+    },
+    {
+        "device_name":"vivo Y200e",
+        "chipset_name":"Snapdragon 4 Gen 2",
+        "compute_latency_ms":211
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 12",
+        "chipset_name":"Snapdragon 4 Gen 1",
+        "compute_latency_ms":188
+    },
+    {
+        "device_name":"Motorola Moto G51",
+        "chipset_name":"Snapdragon 480+",
+        "compute_latency_ms":309
+    },
+    {
+        "device_name":"Xiaomi Pocophone F1",
+        "chipset_name":"Snapdragon 845",
+        "compute_latency_ms":372
+    },
+    {
+        "device_name":"Motorola Moto G",
+        "chipset_name":"Snapdragon 4 Gen 1",
+        "compute_latency_ms":195
+    },
+    {
+        "device_name":"Itel P55",
+        "chipset_name":"Dimensity 6080",
+        "compute_latency_ms":221
+    },
+    {
+        "device_name":"Tecno Camon 30",
+        "chipset_name":"MediaTek Helio G99 Ultimate",
+        "compute_latency_ms":221
+    },
+    {
+        "device_name":"Tecno Megapad 11",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":225
+    },
+    {
+        "device_name":"Infinix Hot 50 Pro+ 4G",
+        "chipset_name":"MediaTek Helio G100",
+        "compute_latency_ms":221
+    },
+    {
+        "device_name":"Infinix Note 30",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":218
+    },
+    {
+        "device_name":"Infinix Note 40 Pro 4G",
+        "chipset_name":"MediaTek Helio G99 Ultimate",
+        "compute_latency_ms":221
+    },
+    {
+        "device_name":"Infinix Zero 30 4G",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":221
+    },
+    {
+        "device_name":"Tecno Camon 30S",
+        "chipset_name":"MediaTek Helio G100",
+        "compute_latency_ms":221
+    },
+    {
+        "device_name":"Tecno Camon 30S Pro",
+        "chipset_name":"MediaTek Helio G100",
+        "compute_latency_ms":220
+    },
+    {
+        "device_name":"Tecno Pova 5",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":222
+    },
+    {
+        "device_name":"Tecno Spark 30 Pro",
+        "chipset_name":"MediaTek Helio G100",
+        "compute_latency_ms":221
+    },
+    {
+        "device_name":"HMD Fusion",
+        "chipset_name":"Snapdragon 4 Gen 2",
+        "compute_latency_ms":290
+    },
+    {
+        "device_name":"Realme 10",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":224
+    },
+    {
+        "device_name":"Samsung Galaxy A71",
+        "chipset_name":"Snapdragon 730",
+        "compute_latency_ms":298
+    },
+    {
+        "device_name":"Tecno Camon 20 Pro",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":223
+    },
+    {
+        "device_name":"Tecno Pova 6",
+        "chipset_name":"MediaTek Helio G99 Ultimate",
+        "compute_latency_ms":224
+    },
+    {
+        "device_name":"Tecno Pova 6 Neo",
+        "chipset_name":"MediaTek Helio G99 Ultimate",
+        "compute_latency_ms":221
+    },
+    {
+        "device_name":"Tecno Spark 20 Pro Plus",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":221
+    },
+    {
+        "device_name":"Infinix Note 40",
+        "chipset_name":"MediaTek Helio G99 Ultimate",
+        "compute_latency_ms":223
+    },
+    {
+        "device_name":"OnePlus Nord N10",
+        "chipset_name":"Snapdragon 690",
+        "compute_latency_ms":250
+    },
+    {
+        "device_name":"Doogee S96 GT",
+        "chipset_name":"MediaTek Helio G95",
+        "compute_latency_ms":323
+    },
+    {
+        "device_name":"Motorola Moto G60",
+        "chipset_name":"Snapdragon 732G",
+        "compute_latency_ms":319
+    },
+    {
+        "device_name":"Realme 6 Pro",
+        "chipset_name":"Snapdragon 720G",
+        "compute_latency_ms":240
+    },
+    {
+        "device_name":"Realme 8 Pro",
+        "chipset_name":"Snapdragon 720G",
+        "compute_latency_ms":234
+    },
+    {
+        "device_name":"Xiaomi Mi 8",
+        "chipset_name":"Snapdragon 845",
+        "compute_latency_ms":376
+    },
+    {
+        "device_name":"Infinix Hot 40 Pro",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":222
+    },
+    {
+        "device_name":"Infinix Note 30 Pro",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":230
+    },
+    {
+        "device_name":"Oppo A74 5G",
+        "chipset_name":"Snapdragon 480",
+        "compute_latency_ms":280
+    },
+    {
+        "device_name":"Samsung Galaxy A52",
+        "chipset_name":"Snapdragon 720G",
+        "compute_latency_ms":275
+    },
+    {
+        "device_name":"Tecno Pova 6 Pro",
+        "chipset_name":"Dimensity 6080",
+        "compute_latency_ms":228
+    },
+    {
+        "device_name":"Tecno Spark 20 Pro",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":223
+    },
+    {
+        "device_name":"Infinix Note 12 Pro",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":234
+    },
+    {
+        "device_name":"LG K92 5G",
+        "chipset_name":"Snapdragon 690",
+        "compute_latency_ms":267
+    },
+    {
+        "device_name":"Motorola G60S",
+        "chipset_name":"MediaTek Helio G95",
+        "compute_latency_ms":297
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 9 Pro",
+        "chipset_name":"Snapdragon 720G",
+        "compute_latency_ms":300
+    },
+    {
+        "device_name":"Blackview Mega 1",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":232
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 10S",
+        "chipset_name":"MediaTek Helio G95",
+        "compute_latency_ms":310
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 9S",
+        "chipset_name":"Snapdragon 720G",
+        "compute_latency_ms":301
+    },
+    {
+        "device_name":"Blackview Hero 10",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":241
+    },
+    {
+        "device_name":"Lenovo Tab Plus",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":241
+    },
+    {
+        "device_name":"Motorola One Fusion+",
+        "chipset_name":"Snapdragon 730G",
+        "compute_latency_ms":293
+    },
+    {
+        "device_name":"Tecno Spark 30C 5G",
+        "chipset_name":"Dimensity 6300",
+        "compute_latency_ms":217
+    },
+    {
+        "device_name":"Doogee T40 Pro",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":238
+    },
+    {
+        "device_name":"Honor 200 Lite",
+        "chipset_name":"Dimensity 6080",
+        "compute_latency_ms":261
+    },
+    {
+        "device_name":"LG Velvet",
+        "chipset_name":"Snapdragon 845",
+        "compute_latency_ms":429
+    },
+    {
+        "device_name":"Cubot X70",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":238
+    },
+    {
+        "device_name":"Realme X2",
+        "chipset_name":"Snapdragon 730G",
+        "compute_latency_ms":297
+    },
+    {
+        "device_name":"Unihertz Jelly Star",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":244
+    },
+    {
+        "device_name":"Motorola Moto G72",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":263
+    },
+    {
+        "device_name":"Xiaomi Poco M5",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":247
+    },
+    {
+        "device_name":"Xiaomi Poco M6 Pro",
+        "chipset_name":"MediaTek Helio G99 Ultra",
+        "compute_latency_ms":249
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 13 Pro 4G",
+        "chipset_name":"MediaTek Helio G99 Ultra",
+        "compute_latency_ms":253
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 14 Pro 4G",
+        "chipset_name":"MediaTek Helio G100 Ultra",
+        "compute_latency_ms":253
+    },
+    {
+        "device_name":"Xiaomi Redmi Pad",
+        "chipset_name":"MediaTek Helio G99",
+        "compute_latency_ms":249
+    },
+    {
+        "device_name":"Oppo A3x",
+        "chipset_name":"Dimensity 6300",
+        "compute_latency_ms":244
+    },
+    {
+        "device_name":"Oppo Reno12 F",
+        "chipset_name":"Dimensity 6300",
+        "compute_latency_ms":252
+    },
+    {
+        "device_name":"Xiaomi Mi 9T",
+        "chipset_name":"Snapdragon 730",
+        "compute_latency_ms":320
+    },
+    {
+        "device_name":"Tecno Camon 19 Pro",
+        "chipset_name":"MediaTek Helio G96",
+        "compute_latency_ms":245
+    },
+    {
+        "device_name":"Oppo A3 Pro",
+        "chipset_name":"Dimensity 6300",
+        "compute_latency_ms":253
+    },
+    {
+        "device_name":"Honor 90 Lite",
+        "chipset_name":"Dimensity 6020",
+        "compute_latency_ms":280
+    },
+    {
+        "device_name":"LG G7 ThinQ",
+        "chipset_name":"Snapdragon 845",
+        "compute_latency_ms":431
+    },
+    {
+        "device_name":"Lenovo Yoga Tab 11",
+        "chipset_name":"Mediatek Helio G90T",
+        "compute_latency_ms":319
+    },
+    {
+        "device_name":"Oppo A60 5G",
+        "chipset_name":"Dimensity 6300",
+        "compute_latency_ms":217
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 12S",
+        "chipset_name":"MediaTek Helio G96",
+        "compute_latency_ms":391
+    },
+    {
+        "device_name":"Razer Phone",
+        "chipset_name":"Snapdragon 835",
+        "compute_latency_ms":407
+    },
+    {
+        "device_name":"Xiaomi Poco M4 Pro",
+        "chipset_name":"MediaTek Helio G96",
+        "compute_latency_ms":353
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 8 Pro",
+        "chipset_name":"MediaTek Helio G90T",
+        "compute_latency_ms":316
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 10",
+        "chipset_name":"Snapdragon 678",
+        "compute_latency_ms":310
+    },
+    {
+        "device_name":"Nokia 8",
+        "chipset_name":"Snapdragon 835",
+        "compute_latency_ms":407
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 7 Pro",
+        "chipset_name":"Snapdragon 675",
+        "compute_latency_ms":311
+    },
+    {
+        "device_name":"Samsung Galaxy A70",
+        "chipset_name":"Snapdragon 675",
+        "compute_latency_ms":334
+    },
+    {
+        "device_name":"Samsung Galaxy S8",
+        "chipset_name":"Snapdragon 835",
+        "compute_latency_ms":429
+    },
+    {
+        "device_name":"LG V30",
+        "chipset_name":"Snapdragon 835",
+        "compute_latency_ms":432
+    },
+    {
+        "device_name":"Motorola One Action",
+        "chipset_name":"Exynos 9609",
+        "compute_latency_ms":544
+    },
+    {
+        "device_name":"Samsung Galaxy A50",
+        "chipset_name":"Exynos 9610",
+        "compute_latency_ms":500
+    },
+    {
+        "device_name":"Realme XT",
+        "chipset_name":"Snapdragon 712",
+        "compute_latency_ms":470
+    },
+    {
+        "device_name":"Motorola Razr",
+        "chipset_name":"Snapdragon 710",
+        "compute_latency_ms":542
+    },
+    {
+        "device_name":"Samsung Galaxy S7",
+        "chipset_name":"Snapdragon 820",
+        "compute_latency_ms":623
+    },
+    {
+        "device_name":"Motorola One Fusion",
+        "chipset_name":"Snapdragon 710",
+        "compute_latency_ms":546
+    },
+    {
+        "device_name":"Xiaomi Mi 5s",
+        "chipset_name":"Snapdragon 821",
+        "compute_latency_ms":471
+    },
+    {
+        "device_name":"Lenovo Xiaoxin Pad 2024",
+        "chipset_name":"Snapdragon 685",
+        "compute_latency_ms":338
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 13",
+        "chipset_name":"Snapdragon 685",
+        "compute_latency_ms":338
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 12 4G",
+        "chipset_name":"Snapdragon 685",
+        "compute_latency_ms":366
+    },
+    {
+        "device_name":"Huawei P Smart Z",
+        "chipset_name":"Kirin 710F",
+        "compute_latency_ms":440
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 11",
+        "chipset_name":"Snapdragon 680",
+        "compute_latency_ms":393
+    },
+    {
+        "device_name":"Honor X7c",
+        "chipset_name":"Snapdragon 685",
+        "compute_latency_ms":370
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 13 4G",
+        "chipset_name":"Snapdragon 685",
+        "compute_latency_ms":372
+    },
+    {
+        "device_name":"Honor 20 Lite",
+        "chipset_name":"Kirin 710",
+        "compute_latency_ms":484
+    },
+    {
+        "device_name":"vivo Y35",
+        "chipset_name":"Snapdragon 680",
+        "compute_latency_ms":423
+    },
+    {
+        "device_name":"OnePlus 3T",
+        "chipset_name":"Snapdragon 820",
+        "compute_latency_ms":646
+    },
+    {
+        "device_name":"Realme C55",
+        "chipset_name":"MediaTek Helio G88",
+        "compute_latency_ms":350
+    },
+    {
+        "device_name":"Xiaomi Redmi 10C",
+        "chipset_name":"Snapdragon 680",
+        "compute_latency_ms":420
+    },
+    {
+        "device_name":"Infinix Note 30i",
+        "chipset_name":"MediaTek Helio G85",
+        "compute_latency_ms":357
+    },
+    {
+        "device_name":"Samsung Galaxy A23",
+        "chipset_name":"Snapdragon 680",
+        "compute_latency_ms":422
+    },
+    {
+        "device_name":"Tecno Spark 20",
+        "chipset_name":"MediaTek Helio G85",
+        "compute_latency_ms":353
+    },
+    {
+        "device_name":"Tecno Camon 19 Neo",
+        "chipset_name":"MediaTek Helio G85",
+        "compute_latency_ms":352
+    },
+    {
+        "device_name":"Oppo A58 4G",
+        "chipset_name":"MediaTek Helio G85",
+        "compute_latency_ms":392
+    },
+    {
+        "device_name":"Realme C67 4G",
+        "chipset_name":"Snapdragon 685",
+        "compute_latency_ms":377
+    },
+    {
+        "device_name":"Realme C75",
+        "chipset_name":"MediaTek Helio G92 Max",
+        "compute_latency_ms":367
+    },
+    {
+        "device_name":"Ulefone Armor 8 Pro",
+        "chipset_name":"MediaTek Helio P60",
+        "compute_latency_ms":533
+    },
+    {
+        "device_name":"Motorola Moto G24",
+        "chipset_name":"MediaTek Helio G85",
+        "compute_latency_ms":376
+    },
+    {
+        "device_name":"Tecno Spark 30",
+        "chipset_name":"MediaTek Helio G91",
+        "compute_latency_ms":362
+    },
+    {
+        "device_name":"Tecno Spark 30C",
+        "chipset_name":"MediaTek Helio G81",
+        "compute_latency_ms":377
+    },
+    {
+        "device_name":"Infinix Hot 50i",
+        "chipset_name":"MediaTek Helio G81",
+        "compute_latency_ms":397
+    },
+    {
+        "device_name":"Honor X7b",
+        "chipset_name":"Snapdragon 680",
+        "compute_latency_ms":418
+    },
+    {
+        "device_name":"Honor X8b",
+        "chipset_name":"Snapdragon 680",
+        "compute_latency_ms":411
+    },
+    {
+        "device_name":"Realme C35",
+        "chipset_name":"Unisoc T616",
+        "compute_latency_ms":374
+    },
+    {
+        "device_name":"Oppo A91",
+        "chipset_name":"MediaTek Helio P70",
+        "compute_latency_ms":571
+    },
+    {
+        "device_name":"Realme C21Y",
+        "chipset_name":"Unisoc T610",
+        "compute_latency_ms":373
+    },
+    {
+        "device_name":"vivo S1",
+        "chipset_name":"MediaTek Helio P65",
+        "compute_latency_ms":440
+    },
+    {
+        "device_name":"Xiaomi Redmi 12",
+        "chipset_name":"MediaTek Helio G88",
+        "compute_latency_ms":362
+    },
+    {
+        "device_name":"Xiaomi Redmi 13",
+        "chipset_name":"MediaTek Helio G91 Ultra",
+        "compute_latency_ms":395
+    },
+    {
+        "device_name":"Motorola Moto G20",
+        "chipset_name":"Unisoc T700",
+        "compute_latency_ms":370
+    },
+    {
+        "device_name":"Xiaomi Redmi 13C",
+        "chipset_name":"MediaTek Helio G85",
+        "compute_latency_ms":377
+    },
+    {
+        "device_name":"Oppo Reno3 Pro",
+        "chipset_name":"MediaTek Helio P95",
+        "compute_latency_ms":377
+    },
+    {
+        "device_name":"Samsung Galaxy A9",
+        "chipset_name":"Snapdragon 660",
+        "compute_latency_ms":550
+    },
+    {
+        "device_name":"Xiaomi Redmi 10",
+        "chipset_name":"MediaTek Helio G88",
+        "compute_latency_ms":392
+    },
+    {
+        "device_name":"Realme Note 50",
+        "chipset_name":"Unisoc T612",
+        "compute_latency_ms":392
+    },
+    {
+        "device_name":"Samsung Galaxy Tab A8 10.5",
+        "chipset_name":"Unisoc T618",
+        "compute_latency_ms":386
+    },
+    {
+        "device_name":"Motorola G9 Power",
+        "chipset_name":"Snapdragon 662",
+        "compute_latency_ms":558
+    },
+    {
+        "device_name":"Honor X8a",
+        "chipset_name":"MediaTek Helio G88",
+        "compute_latency_ms":406
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 7",
+        "chipset_name":"Snapdragon 660",
+        "compute_latency_ms":602
+    },
+    {
+        "device_name":"Google Pixel 2",
+        "chipset_name":"Snapdragon 835",
+        "compute_latency_ms":557
+    },
+    {
+        "device_name":"Realme 6i",
+        "chipset_name":"MediaTek Helio G80",
+        "compute_latency_ms":433
+    },
+    {
+        "device_name":"Sony NW-ZX700",
+        "chipset_name":"Qualcomm QCM4290",
+        "compute_latency_ms":597
+    },
+    {
+        "device_name":"Xiaomi Poco M3",
+        "chipset_name":"Snapdragon 662",
+        "compute_latency_ms":486
+    },
+    {
+        "device_name":"Xiaomi Poco C71",
+        "chipset_name":"Unisoc T7250",
+        "compute_latency_ms":426
+    },
+    {
+        "device_name":"Oppo Reno5 Lite",
+        "chipset_name":"MediaTek Helio P95",
+        "compute_latency_ms":371
+    },
+    {
+        "device_name":"Blackview Tab 16 Pro",
+        "chipset_name":"Unisoc T616",
+        "compute_latency_ms":396
+    },
+    {
+        "device_name":"Lava Yuva 2",
+        "chipset_name":"Unisoc T606",
+        "compute_latency_ms":440
+    },
+    {
+        "device_name":"Tecno Spark Go",
+        "chipset_name":"Unisoc T606",
+        "compute_latency_ms":458
+    },
+    {
+        "device_name":"Xiaomi Redmi 9T",
+        "chipset_name":"Snapdragon 662",
+        "compute_latency_ms":525
+    },
+    {
+        "device_name":"Oppo A52",
+        "chipset_name":"Snapdragon 665",
+        "compute_latency_ms":640
+    },
+    {
+        "device_name":"Tecno Spark 8C",
+        "chipset_name":"Unisoc T606",
+        "compute_latency_ms":430
+    },
+    {
+        "device_name":"Doogee N55",
+        "chipset_name":"Unisoc T606",
+        "compute_latency_ms":450
+    },
+    {
+        "device_name":"Motorola Moto E32",
+        "chipset_name":"Unisoc T606",
+        "compute_latency_ms":437
+    },
+    {
+        "device_name":"Samsung Galaxy A03",
+        "chipset_name":"Unisoc T606",
+        "compute_latency_ms":432
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 8",
+        "chipset_name":"Snapdragon 665",
+        "compute_latency_ms":549
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 8T",
+        "chipset_name":"Snapdragon 665",
+        "compute_latency_ms":561
+    },
+    {
+        "device_name":"Samsung Galaxy A22",
+        "chipset_name":"MediaTek Helio G80",
+        "compute_latency_ms":513
+    },
+    {
+        "device_name":"Tecno Spark Go 1",
+        "chipset_name":"Unisoc T615",
+        "compute_latency_ms":423
+    },
+    {
+        "device_name":"Xiaomi Mi A2",
+        "chipset_name":"Snapdragon 660",
+        "compute_latency_ms":630
+    },
+    {
+        "device_name":"Xiaomi Mi Max 3",
+        "chipset_name":"Snapdragon 636",
+        "compute_latency_ms":458
+    },
+    {
+        "device_name":"Honor 8",
+        "chipset_name":"Kirin 950",
+        "compute_latency_ms":484
+    },
+    {
+        "device_name":"BlackBerry KEY2",
+        "chipset_name":"Snapdragon 660",
+        "compute_latency_ms":580
+    },
+    {
+        "device_name":"HMD Pulse Pro",
+        "chipset_name":"Unisoc T606",
+        "compute_latency_ms":459
+    },
+    {
+        "device_name":"Xiaomi Redmi Note 5 Pro",
+        "chipset_name":"Snapdragon 636",
+        "compute_latency_ms":542
+    },
+    {
+        "device_name":"Oppo A3x 4G",
+        "chipset_name":"Snapdragon 6s Gen 1",
+        "compute_latency_ms":471
+    },
+    {
+        "device_name":"Google Pixel XL",
+        "chipset_name":"Snapdragon 821",
+        "compute_latency_ms":707
+    },
+    {
+        "device_name":"Samsung Galaxy A51",
+        "chipset_name":"Exynos 9611",
+        "compute_latency_ms":527
+    },
+    {
+        "device_name":"Google Pixel C",
+        "chipset_name":"Nvidia Tegra X1",
+        "compute_latency_ms":581
+    },
+    {
+        "device_name":"Xiaomi Redmi 7",
+        "chipset_name":"Snapdragon 632",
+        "compute_latency_ms":543
+    },
+    {
+        "device_name":"Lava Yuva Star",
+        "chipset_name":"Unisoc SC9863A",
+        "compute_latency_ms":548
+    },
+    {
+        "device_name":"OnePlus Nord N100",
+        "chipset_name":"Snapdragon 460",
+        "compute_latency_ms":643
+    },
+    {
+        "device_name":"Hisense Touch Lite",
+        "chipset_name":"Snapdragon 460",
+        "compute_latency_ms":688
+    },
+    {
+        "device_name":"Umidigi G9A",
+        "chipset_name":"Unisoc SC9863A",
+        "compute_latency_ms":546
+    },
+    {
+        "device_name":"Xiaomi Redmi A3x",
+        "chipset_name":"Unisoc T603",
+        "compute_latency_ms":540
+    },
+    {
+        "device_name":"ZTE nubia Music",
+        "chipset_name":"Unisoc SC9863A",
+        "compute_latency_ms":553
+    },
+    {
+        "device_name":"itel A80",
+        "chipset_name":"Unisoc T603",
+        "compute_latency_ms":548
+    },
+    {
+        "device_name":"ZTE Blade V2020 Smart",
+        "chipset_name":"Unisoc SC9863A",
+        "compute_latency_ms":538
+    },
+    {
+        "device_name":"itel A50",
+        "chipset_name":"Unisoc T603",
+        "compute_latency_ms":553
+    },
+    {
+        "device_name":"ZTE Blade V30 Vita",
+        "chipset_name":"Unisoc SC9863A",
+        "compute_latency_ms":538
+    },
+    {
+        "device_name":"Nokia C22",
+        "chipset_name":"Unisoc SC9863A",
+        "compute_latency_ms":557
+    },
+    {
+        "device_name":"Samsung Galaxy A30s",
+        "chipset_name":"Exynos 7904",
+        "compute_latency_ms":713
+    },
+    {
+        "device_name":"Lenovo M10 Plus",
+        "chipset_name":"MediaTek Helio P22T",
+        "compute_latency_ms":715
+    },
+    {
+        "device_name":"Lava Blaze Pro",
+        "chipset_name":"MediaTek Helio G37",
+        "compute_latency_ms":730
+    },
+    {
+        "device_name":"Tecno Spark 10",
+        "chipset_name":"MediaTek Helio G37",
+        "compute_latency_ms":721
+    },
+    {
+        "device_name":"Huawei MediaPad T5",
+        "chipset_name":"Kirin 659",
+        "compute_latency_ms":738
+    },
+    {
+        "device_name":"OnePlus One",
+        "chipset_name":"Snapdragon 801",
+        "compute_latency_ms":696
+    },
+    {
+        "device_name":"Samsung Galaxy Note 3",
+        "chipset_name":"Snapdragon 800",
+        "compute_latency_ms":636
+    }
+]

@@ -25,8 +25,9 @@ from flwr.common import (
 from flwr.server import Grid
 from flwr.serverapp.strategy import Result, Strategy, strategy_utils
 
-from ..client_profile.typing import ClientState
+from ..client_profile.typing import ClientState, DeviceProfile
 from ..utils.metrics import compute_gini_coefficient, compute_jain_fairness_index
+from ..utils.timing import estimate_round_duration_s
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,8 @@ class BaseStrategy(Strategy):
         metric_name: str = "accuracy",  # accuracy, f1, perplexity
         is_higher_better: bool = True,
         evaluate_during_training: bool = False,
+        model_size_kb: float = 0.0,
+        heartbeat_timeout_s: float = 30.0,
         **kwargs: Any,
     ) -> None:
         self.client_states = client_states
@@ -62,6 +65,15 @@ class BaseStrategy(Strategy):
         self.metric_name = metric_name
         self.is_higher_better = is_higher_better
         self.evaluate_during_training = evaluate_during_training
+        # Used by strategies that estimate per-client durations server-side
+        # (FedCS, TiFL, Oort exploration).
+        self.model_size_kb = float(model_size_kb)
+        # Per-round heartbeat timeout. Heartbeat itself takes 0 *simulated*
+        # time and does not advance the virtual clock.
+        self.heartbeat_timeout_s = float(heartbeat_timeout_s)
+        # Last-round availability snapshot (filled by _check_availability).
+        self._last_available_pids: set[int] = set()
+        self._last_unavailable_pids: set[int] = set()
 
         # Built at start() by querying all nodes
         self._pid_to_nid: dict[int, int] = {}  # partition_id → node_id
@@ -144,6 +156,7 @@ class BaseStrategy(Strategy):
             else:
                 result.evaluate_metrics_serverapp[0] = res
                 logger.info("Initial evaluation metrics: %s", res)
+                self._log_pretrain_eval(res)
 
         # Step 4: Main training loop
         logger.info("Starting federated training (%d rounds)...", num_rounds)
@@ -151,8 +164,32 @@ class BaseStrategy(Strategy):
             logger.info("")
             logger.info("[ROUND %d/%d]", current_round, num_rounds)
 
+            # Heartbeat: filter unavailable clients before selection.
+            virtual_time_s = self._cumulative_wall_clock
+            self._check_availability(grid, virtual_time_s)
+            n_avail = len(self._last_available_pids)
+            n_total = len(self._pid_to_nid)
+            logger.info(
+                "[ROUND %d/%d] Heartbeat at t=%.1fs: %d/%d clients available",
+                current_round,
+                num_rounds,
+                virtual_time_s,
+                n_avail,
+                n_total,
+            )
+
+            if n_avail == 0:
+                logger.warning(
+                    "[ROUND %d/%d] No available clients — skipping round",
+                    current_round,
+                    num_rounds,
+                )
+                continue
+
             # configure_train: selection + build messages
-            selected_pids, messages = self.configure_train(current_round, arrays, grid)
+            selected_pids, messages = self.configure_train(
+                current_round, arrays, grid, timeout
+            )
 
             logger.info(
                 "[ROUND %d/%d] Selected %d clients, sending train messages...",
@@ -161,9 +198,8 @@ class BaseStrategy(Strategy):
                 len(selected_pids),
             )
 
-            # Send messages and collect replies
-            # TODO: somehow we need to get each actual duration for each client to properly track wall-clock time. But the `grid.send_and_receive()` API in Flower.ai currently only returns a list of replies without per-client timing info.
             replies = grid.send_and_receive(messages, timeout=timeout)
+            replies = self.filter_replies(replies) # Needed for strategies that account for straggler by filtering late replies. In real deployment, this equals to be dropped.
             logger.info(
                 "[ROUND %d/%d] Received %d/%d replies",
                 current_round,
@@ -172,26 +208,29 @@ class BaseStrategy(Strategy):
                 len(messages),
             )
 
-            # aggregate_train: FedAvg + metrics logging
-            new_arrays, train_metrics = self.aggregate_train(
-                current_round, replies, selected_pids
-            )
+            # aggregate_train: FedAvg
+            new_arrays, train_metrics = self.aggregate_train(current_round, replies)
             if new_arrays is not None:
                 arrays = new_arrays
             if train_metrics is not None:
                 result.train_metrics_clientapp[current_round] = train_metrics
 
+            # Depending on the strategy, we may want to extract client feedback and update states
             self.configure_post_training_round(current_round, replies, selected_pids)
 
-            # Log metrics
-            self.log_metrics(current_round, replies, selected_pids)
-
-            # Centralized evaluation
+            # Centralized evaluation 
+            eval_extra: dict[str, float] | None = None
             if evaluate_fn:
                 res = evaluate_fn(current_round, arrays)
                 if res is not None:
                     result.evaluate_metrics_serverapp[current_round] = res
                     self._update_best_metric(current_round, res)
+                    eval_extra = self._eval_metrics_for_wandb(res)
+
+            # Log metrics (eval scalars merged in)
+            self.log_metrics(
+                current_round, replies, selected_pids, extra_metrics=eval_extra
+            )
 
         result.arrays = arrays
         logger.info("")
@@ -324,6 +363,10 @@ class BaseStrategy(Strategy):
         """
         feedbacks: dict[int, dict[str, float]] = {}
         for msg in valid_replies:
+            if not msg.has_content():
+                logger.warning("Skipping a message with no content (likely a client crash/OOM).")
+                continue
+            
             m = (
                 msg.content["metrics"]
                 if "metrics" in msg.content
@@ -332,11 +375,9 @@ class BaseStrategy(Strategy):
             pid = int(m["partition_id"])
             feedbacks[pid] = {
                 "train_loss": m.get("train_loss"),
-                # TODO: duration should be tracked by server from send time to receive time, but currently assumed reported by client_app.py
-                "duration": None,
-                "compute_time": m.get("training_time"),
-                # TODO: should be inferred from duration - compute_time.
-                "communication_time": None,
+                "duration": float(m.get("simulated_duration_s", 0.0)),
+                "compute_time": float(m.get("simulated_compute_s", 0.0)),
+                "communication_time": float(m.get("simulated_comm_s", 0.0)),
                 "num_samples": float(m.get("num-examples", 0)),
             }
             if self.evaluate_during_training:
@@ -346,6 +387,11 @@ class BaseStrategy(Strategy):
                 feedbacks[pid]["val_num_examples"] = m.get("val_num_examples")
 
         return feedbacks
+    
+    def filter_replies(self, replies: list[Message]) -> list[Message]:
+        """Filter out late replies that arrived after the round deadline (for strategies that account for stragglers)."""
+        # By default, no filtering (all replies are considered valid).
+        return replies
 
     # ------------------------------------------------------------------
     # Strategy ABC stubs (centralized eval not used)
@@ -486,6 +532,82 @@ class BaseStrategy(Strategy):
         return list(self._construct_messages(record, node_ids, message_type))
 
     # ------------------------------------------------------------------
+    # Availability heartbeat (per-round)
+    # ------------------------------------------------------------------
+
+    def _check_availability(self, grid: Grid, virtual_time_s: float) -> set[int]:
+        """Send a heartbeat to every node and update ``ClientState.available``.
+
+        Clients that don't reply (timeout / error) are treated as unavailable.
+        Heartbeat takes zero *simulated* time and does not advance the virtual
+        clock. Returns the set of available partition_ids.
+        """
+        all_pids = list(self._pid_to_nid.keys())
+        if not all_pids:
+            self._last_available_pids = set()
+            self._last_unavailable_pids = set()
+            return set()
+
+        record = RecordDict(
+            {
+                self.configrecord_key: ConfigRecord(
+                    {"virtual_time_s": float(virtual_time_s)}
+                )
+            }
+        )
+        message_type = f"{MessageType.QUERY}.heartbeat"
+        messages = self._construct_messages(
+            record,
+            [self._pid_to_nid[p] for p in all_pids],
+            message_type,
+        )
+        replies = grid.send_and_receive(messages, timeout=self.heartbeat_timeout_s)
+
+        available: set[int] = set()
+        for reply in replies:
+            if reply.has_error():
+                continue
+            nid = reply.metadata.src_node_id
+            pid = self._nid_to_pid.get(nid)
+            if pid is None:
+                continue
+            cfg = reply.content.get(self.configrecord_key)
+            if cfg is None:
+                continue
+            if bool(cfg.get("available", False)):
+                available.add(pid)
+
+        # Anyone in client_states but not in `available` is unavailable
+        # (covers timeouts and explicit False replies alike).
+        for pid, state in self.client_states.items():
+            state.available = pid in available
+
+        self._last_available_pids = available
+        self._last_unavailable_pids = set(self.client_states.keys()) - available
+        return available
+
+    # ------------------------------------------------------------------
+    # Duration estimation (server-side; uses calibration constants)
+    # ------------------------------------------------------------------
+
+    def _estimate_duration(
+        self,
+        profile: DeviceProfile,
+        num_samples: int,
+        local_epochs: int,
+    ) -> tuple[float, float, float]:
+        """Estimate (compute_s, comm_s, total_s) for one client one round."""
+        return estimate_round_duration_s(
+            profile={
+                "computation": profile.computation,
+                "communication": profile.communication,
+            },
+            num_samples=num_samples,
+            local_epochs=local_epochs,
+            model_size_kb=self.model_size_kb,
+        )
+
+    # ------------------------------------------------------------------
     # Internal state helpers
     # ------------------------------------------------------------------
 
@@ -574,6 +696,8 @@ class BaseStrategy(Strategy):
                 "round/duration_std": dur_std,
                 "round/num_client_selected": len(selected_pids),
                 "round/num_client_completed": len(feedbacks),
+                "round/n_available": float(len(self._last_available_pids)),
+                "round/n_unavailable": float(len(self._last_unavailable_pids)),
                 "fairness/jain_index": jfi,
                 "fairness/gini_coefficient": gini,
                 "fairness/participation_std": p_std,
@@ -583,7 +707,7 @@ class BaseStrategy(Strategy):
             if extra_metrics:
                 log_dict.update(extra_metrics)
 
-            wandb.log(log_dict, commit=False)
+            wandb.log(log_dict)
             wandb.log({"client/raw_training_history": self._history_table})
 
         logger.info(
@@ -598,6 +722,27 @@ class BaseStrategy(Strategy):
             len(feedbacks),
             jfi,
         )
+
+    @staticmethod
+    def _eval_metrics_for_wandb(res: MetricRecord) -> dict[str, float]:
+        out: dict[str, float] = {}
+        for k, v in res.items():
+            if not isinstance(v, (int, float)):
+                continue
+            key = f"eval/{k[len('eval_'):]}" if k.startswith("eval_") else f"eval/{k}"
+            out[key] = float(v)
+        return out
+
+    def _log_pretrain_eval(self, res: MetricRecord) -> None:
+        """Log round-0 evaluation on the same x-axes used during the training loop."""
+        if not self.use_wandb:
+            return
+        log_dict: dict[str, float] = {
+            "round/server_round": 0,
+            "round/cumulative_wall_clock": 0.0,
+        }
+        log_dict.update(self._eval_metrics_for_wandb(res))
+        wandb.log(log_dict)
 
     def _log_summary(self, num_rounds: int, result: Result) -> None:
         """Log end-of-training summary metrics to W&B."""

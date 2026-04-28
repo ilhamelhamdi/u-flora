@@ -10,6 +10,7 @@ from typing import Any, Callable
 
 import evaluate
 import numpy as np
+import math
 import torch
 from omegaconf import DictConfig
 from peft import TaskType, get_peft_model
@@ -47,9 +48,20 @@ class TextClassificationAdapter(TaskAdapter):
             num_labels=num_labels,
             ignore_mismatched_sizes=True,
             torch_dtype=torch.float32,
+            use_safetensors=True,
         )
         lora_config = self.build_lora_config(model_cfg.lora)
         return get_peft_model(model, lora_config)
+
+    def get_lora_adapter_size_kb(self, model_cfg: DictConfig) -> int:
+        peft_model = self.get_model(model_cfg)
+        # Only count trainable parameters (the PEFT adapter)
+        total_size_bytes = sum(
+            p.numel() * p.element_size()
+            for p in peft_model.parameters()
+            if p.requires_grad
+        )
+        return math.ceil(total_size_bytes / 1024)
 
     # ---- Tokenization --------------------------------------------------------
 
@@ -78,13 +90,12 @@ class TextClassificationAdapter(TaskAdapter):
 
     def get_metric_name(self):
         return self.metric_name
-    
+
     def is_higher_metric_better(self):
         return True
 
     def compute_metrics(self, eval_pred: Any) -> dict[str, float]:
         predictions, labels = eval_pred
         predictions = np.argmax(predictions, axis=1)
-        acc = self._accuracy.compute(
-            predictions=predictions, references=labels)
+        acc = self._accuracy.compute(predictions=predictions, references=labels)
         return {self.metric_name: acc["accuracy"]}
