@@ -9,10 +9,10 @@ experiments:
   - { name: g1_tifl_boolq_s42, base: tifl_boolq, overrides: ["seed=42"] }
   - { name: g1_oort_boolq_s42, base: oort_boolq, overrides: ["seed=42"] }
 
-  - { name: g1_random_mnli_s42, base: random_mnli, overrides: ["seed=42"] }
-  - { name: g1_fedcs_mnli_s42, base: fedcs_mnli, overrides: ["seed=42"] }
-  - { name: g1_tifl_mnli_s42, base: tifl_mnli, overrides: ["seed=42"] }
-  - { name: g1_oort_mnli_s42, base: oort_mnli, overrides: ["seed=42"] }
+  # - { name: g1_random_mnli_s42, base: random_mnli, overrides: ["seed=42"] }
+  # - { name: g1_fedcs_mnli_s42, base: fedcs_mnli, overrides: ["seed=42"] }
+  # - { name: g1_tifl_mnli_s42, base: tifl_mnli, overrides: ["seed=42"] }
+  # - { name: g1_oort_mnli_s42, base: oort_mnli, overrides: ["seed=42"] }
 
   # ====================== seed = 123 (disabled) ====================
   # - { name: g1_random_boolq_s123, base: random_boolq, overrides: ["seed=123"] }
