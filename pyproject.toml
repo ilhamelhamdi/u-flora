@@ -120,8 +120,8 @@ train.warmup-rounds = 5          # linear warmup rounds before cosine decay (0 =
 train.fedprox.mu = 0           # FedProx proximal coefficient (0.0 = disabled)
 train.training-arguments.output-dir = ""
 train.training-arguments.learning-rate = ""               # Overridden by dynamic lr scheduler
-train.training-arguments.per-device-train-batch-size = 16
-train.training-arguments.per-device-eval-batch-size = 16
+train.training-arguments.per-device-train-batch-size = 32
+train.training-arguments.per-device-eval-batch-size = 32
 train.training-arguments.logging-steps = 32
 train.training-arguments.report-to = "none"
 train.training-arguments.num-train-epochs = 1
