@@ -207,7 +207,7 @@ class BaseStrategy(Strategy):
             )
 
             replies = grid.send_and_receive(messages, timeout=timeout)
-            # replies = self.filter_replies(replies) # Needed for strategies that account for straggler by filtering late replies. In real deployment, this equals to be dropped.
+           
             logger.info(
                 "[ROUND %d/%d] Received %d/%d replies",
                 current_round,

@@ -200,12 +200,6 @@ def train(msg: Message, context: Context):
         # -- Build response ------------------------------------------------
         model_record = ArrayRecord(get_peft_model_state_dict(model))
 
-        model.to("cpu")
-        del trainer, model
-        import gc
-        gc.collect()
-        torch.cuda.empty_cache()
-
         metrics = {
             "train_loss": results.training_loss,
             "num-examples": len(train_set),
@@ -226,15 +220,14 @@ def train(msg: Message, context: Context):
         content = RecordDict({"arrays": model_record, "metrics": metric_record})
         logger.debug("%s Response ready — simulated_duration=%.1fs", tag, sim_total_s)
         return Message(content=content, reply_to=msg)
-    except Exception as e:
+    
+    finally:
         # Cleanup
         if "model" in locals():
             model.to("cpu")
-        del trainer
-        if "model" in locals():
             del model
+        del trainer
         import gc
-
         gc.collect()
         torch.cuda.empty_cache()
 
