@@ -77,7 +77,7 @@ wandb.entity = "ilham-abdillah-alhamdi-universitas-indonesia"
 wandb.run-name = "beta-test"
 
 # -- Client selection strategy -------------------------------------------------
-# name: random | fedcs | tifl | oort
+# name: random | fedcs | tifl | oort | oort_fair | uflora
 strategy.name = "random"
 strategy.num-to-select = 5 # for fixed k strategies like random, tifl, oort
 
@@ -99,6 +99,18 @@ strategy.oort.initial-t = 120 # Initial developer-preferred deadline in seconds
 strategy.oort.cutoff-c = 0.95 # Percentage of utility cutoff from k-th ranked client to consider for selection
 strategy.oort.max-participation-rounds = 20 # Maximum rounds a client can participate
 strategy.oort.utility-clip-percentile = 95 # Percentile for clipping utility values to avoid outliers dominating selection
+
+# OortFair: convergence-driven fairness knobs (on top of Oort)
+strategy.oort_fair.lambda-max = 1.0      # Maximum fairness weight lambda_max
+strategy.oort_fair.dm-ema-beta = 0.3    # EMA smoothing factor for dM
+
+# U-Flora: mandatory-optional + async profiling + lambda(t)
+strategy.uflora.min-k = 5              # Size of mandatory set U
+strategy.uflora.d-max = 5              # Max optional candidates dispatched per round
+strategy.uflora.p-max = 5              # Max clients profiled via async query per round (0 = disabled)
+strategy.uflora.lambda-max = 1.0       # Maximum fairness weight lambda_max
+strategy.uflora.dm-ema-beta = 0.3      # EMA smoothing factor for dM
+strategy.uflora.alpha-ema = 0.3        # EMA factor for adaptive utility smoothing
 
 
 # -- Dataset selector & partitioning -------------------------------------------

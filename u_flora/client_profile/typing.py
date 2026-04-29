@@ -71,6 +71,10 @@ class ClientState:
     # Oort-specific: whether this client has been explored
     explored: bool = False
 
+    # Cumulative participation debt.
+    # Positive = under-represented, negative = over-represented relative to fair share.
+    participation_debt: float = 0.0
+
     def update_from_feedback(
         self,
         train_loss: float,
