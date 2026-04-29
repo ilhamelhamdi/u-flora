@@ -59,6 +59,7 @@ num-clients = 50    # Different dataset has different number of clients
 # -- Device-profile simulation -------------------------------------------------
 device-profile-path = "device_profiles/50/default/profiles.json"
 server.heartbeat-timeout-s = 30.0
+server.round-timeout-s = 600.0        # Per-round send_and_receive deadline; stuck clients are dropped after this
 
 # Execution-time jitter (applied client-side, after the deterministic estimate).
 simulation.jitter.enabled = true

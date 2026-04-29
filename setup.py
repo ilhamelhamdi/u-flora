@@ -168,6 +168,11 @@ def main() -> None:
         action="store_true",
         help="Run batch in background and exit immediately",
     )
+    p_batch.add_argument(
+        "--reset",
+        action="store_true",
+        help="Ignore any saved state and re-run all experiments from scratch",
+    )
 
     # --- profiles ---
     p_prof = sub.add_parser(
@@ -203,6 +208,11 @@ def main() -> None:
     elif args.command == "run":
         run_task(args.overrides)
     elif args.command == "batch":
+        if args.reset:
+            state_path = _batch_state_path(args.batch_config)
+            if state_path.exists():
+                state_path.unlink()
+                logger.info("Cleared batch state: %s", state_path)
         if args.detach:
             _detach_batch(args.batch_config)
         else:
@@ -476,8 +486,15 @@ def run_task(
     block: bool = False,
     name: str | None = None,
     superlink_connection: str = SUPERLINK_CONNECTION_NAME,
+    max_duration_s: float | None = None,
 ) -> int | None:
     """Run a single FL experiment via ``flwr run``.
+
+    Args:
+        max_duration_s: Hard wall-time limit for the experiment. If the
+            ``flwr run`` process is still alive after this many seconds it
+            is killed with SIGKILL and the return code is set to -1.
+            ``None`` means no limit (original behaviour).
 
     Example:
         run_task(["task=text_classification", "model=modernbert", "dataset=sst2",
@@ -529,19 +546,31 @@ def run_task(
 
     with open(log_path, "w") as log_file:
         if block:
-            result = subprocess.run(
+            proc = subprocess.Popen(
                 cmd,
                 stdout=log_file,
                 stderr=log_file,
                 text=True,
             )
-            if result.returncode != 0:
+            try:
+                proc.wait(timeout=max_duration_s)
+            except subprocess.TimeoutExpired:
+                logger.error(
+                    "Experiment %s exceeded max duration of %.0fs — killing.",
+                    name or "unknown",
+                    max_duration_s,
+                )
+                proc.kill()
+                proc.wait()
+                return -1
+            rc = proc.returncode
+            if rc != 0:
                 logger.error(
                     "Experiment failed (exit %d). See log file: %s",
-                    result.returncode,
+                    rc,
                     log_path,
                 )
-            return result.returncode
+            return rc
 
         subprocess.Popen(
             cmd,
@@ -553,6 +582,25 @@ def run_task(
 
     logger.info("Experiment started. See log file: %s", log_path)
     return None
+
+
+def _batch_state_path(batch_config_path: str) -> Path:
+    """Return path to the resume-state file for a given batch config."""
+    stem = Path(batch_config_path).stem
+    return Path(LOG_DIR) / f"batch-state-{stem}.json"
+
+
+def _load_batch_state(state_path: Path) -> dict:
+    if state_path.exists():
+        with open(state_path) as f:
+            return json.load(f)
+    return {"completed": [], "failed": []}
+
+
+def _save_batch_state(state_path: Path, state: dict) -> None:
+    os.makedirs(state_path.parent, exist_ok=True)
+    with open(state_path, "w") as f:
+        json.dump(state, f, indent=2)
 
 
 def run_batch(batch_config_path: str) -> None:
@@ -573,6 +621,11 @@ def run_batch(batch_config_path: str) -> None:
         overrides:
           - "num_server_rounds=100"
     ```
+
+    Resume behaviour: a state file is written to ``logs/batch-state-<name>.json``
+    after each experiment completes.  If the batch process is restarted, already-
+    completed experiments are skipped automatically.  Delete the state file to
+    force a full re-run.
     """
     import yaml
 
@@ -593,14 +646,37 @@ def run_batch(batch_config_path: str) -> None:
     superlink_connection_name = batch.get(
         "superlink-connection", SUPERLINK_CONNECTION_NAME
     )
+    # Hard wall-time limit per experiment (seconds). Kills a hung flwr run process.
+    # Default: 4 hours. Override in the batch YAML with: max-experiment-duration-s: 7200
+    max_experiment_duration_s: float | None = batch.get(
+        "max-experiment-duration-s", 4 * 3600
+    )
 
     experiments = batch.get("experiments", [])
     total = len(experiments)
 
+    state_path = _batch_state_path(batch_config_path)
+    state = _load_batch_state(state_path)
+    completed_set = set(state["completed"])
+
+    if completed_set:
+        logger.info(
+            "Resuming batch — %d/%d experiments already completed: %s",
+            len(completed_set),
+            total,
+            sorted(completed_set),
+        )
+
+    skipped = 0
     for idx, exp in enumerate(experiments, 1):
         name = exp.get("name", f"experiment_{idx}")
         base = exp.get("base")
         overrides = exp.get("overrides", [])
+
+        if name in completed_set:
+            logger.info("Experiment %d/%d (%s): already completed — skipping.", idx, total, name)
+            skipped += 1
+            continue
 
         base_overrides: list[str] = []
         if base:
@@ -615,7 +691,7 @@ def run_batch(batch_config_path: str) -> None:
         logger.info(
             "Experiment %d/%d (%s, base=%s): %s",
             idx,
-            len(experiments),
+            total,
             name,
             base or "none",
             merged_overrides,
@@ -625,13 +701,26 @@ def run_batch(batch_config_path: str) -> None:
             block=True,
             name=name,
             superlink_connection=superlink_connection_name,
+            max_duration_s=max_experiment_duration_s,
         )
         if rc not in (0, None):
             logger.error("Experiment %s failed (exit %d)", name, rc)
+            state["failed"].append({"name": name, "exit_code": rc})
+        else:
+            state["completed"].append(name)
+            completed_set.add(name)
 
+        _save_batch_state(state_path, state)
         time.sleep(5)
 
-    logger.info("Batch complete: %d/%d experiments run.", total, total)
+    done = len(completed_set) - skipped
+    logger.info(
+        "Batch complete: %d newly run, %d skipped (already done), %d total. State: %s",
+        done,
+        skipped,
+        total,
+        state_path,
+    )
 
 
 def _detach_batch(batch_config_path: str) -> None:

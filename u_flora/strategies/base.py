@@ -57,6 +57,7 @@ class BaseStrategy(Strategy):
         evaluate_during_training: bool = False,
         model_size_kb: float = 0.0,
         heartbeat_timeout_s: float = 30.0,
+        round_timeout_s: float = 600.0,
         history_log_every_n: int = 5,
         **kwargs: Any,
     ) -> None:
@@ -72,6 +73,7 @@ class BaseStrategy(Strategy):
         # Per-round heartbeat timeout. Heartbeat itself takes 0 *simulated*
         # time and does not advance the virtual clock.
         self.heartbeat_timeout_s = float(heartbeat_timeout_s)
+        self.round_timeout_s = float(round_timeout_s)
         self.history_log_every_n = max(1, int(history_log_every_n))
         # Last-round availability snapshot (filled by _check_availability).
         self._last_available_pids: set[int] = set()
@@ -115,7 +117,7 @@ class BaseStrategy(Strategy):
         grid: Grid,
         initial_arrays: ArrayRecord,
         num_rounds: int,
-        timeout: float = 3600.0,
+        timeout: float | None = None,
         train_config: ConfigRecord | None = None,
         evaluate_config: ConfigRecord | None = None,
         evaluate_fn: Callable[[int, ArrayRecord], MetricRecord | None] | None = None,
@@ -131,7 +133,11 @@ class BaseStrategy(Strategy):
             evaluate_config: Unused; kept for Strategy ABC compatibility.
             evaluate_fn: Optional centralized evaluation function called each round.
         """
-        logger.info("Starting %s", self.__class__.__name__)
+        if timeout is None:
+            timeout = self.round_timeout_s
+        logger.info(
+            "Starting %s — round_timeout=%.0fs", self.__class__.__name__, timeout
+        )
         strategy_utils.log_strategy_start_info(
             num_rounds, initial_arrays, train_config, evaluate_config
         )

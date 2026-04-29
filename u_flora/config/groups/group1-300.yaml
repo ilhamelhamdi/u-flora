@@ -3,6 +3,7 @@ description: >
   All four baselines (Random, FedCS-capped, TiFL, Oort-core) on MNLI under moderate non-IID (Dirichlet alpha=8) and realistic system heterogeneity. Three seeds per configuration.  FedCS is capped at K* = num-to-select to make the K-budget comparable across strategies (deadline acts as eligibility filter only).
   Total: 4 (strategy) x 1 (task) x 3 (seed) = 12 runs.
 superlink-connection: "local-300"
+max-experiment-duration-s: 28800   # 8 hours hard kill per experiment
 experiments:
   # ====================== seed = 42 ======================
   - { name: g1_random_mnli_s42, base: random_mnli, overrides: ["seed=42"] }
