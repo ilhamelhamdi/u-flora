@@ -117,7 +117,7 @@ train.save-every-round = 10
 train.learning-rate-max = 5e-4
 train.learning-rate-min = 1e-5
 train.warmup-rounds = 5          # linear warmup rounds before cosine decay (0 = disabled)
-train.fedprox.mu = 1e-4           # FedProx proximal coefficient (0.0 = disabled)
+train.fedprox.mu = 0           # FedProx proximal coefficient (0.0 = disabled)
 train.training-arguments.output-dir = ""
 train.training-arguments.learning-rate = ""               # Overridden by dynamic lr scheduler
 train.training-arguments.per-device-train-batch-size = 16
