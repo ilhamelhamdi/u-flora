@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import threading
 import time
 import warnings
 
@@ -309,6 +310,12 @@ def handle_resource_request(msg: Message, context: Context) -> Message:
 
 # -- Profile loading -----------------------------------------------------------
 
+# Process-level cache: all ClientApp workers in the same process share this,
+# so the profiles JSON is read from disk at most once regardless of how many
+# clients fire concurrently (fixes parallel I/O on the first round).
+_profile_file_cache: dict[str, dict] = {}
+_profile_file_cache_lock = threading.Lock()
+
 
 def _resolve_profile_path(context: Context) -> str | None:
     """Find the profile file path."""
@@ -330,7 +337,20 @@ def _resolve_profile_key(context: Context) -> str:
 
 
 def _load_device_profile(context: Context) -> dict | None:
-    """Resolve and load the FedScale-shaped device profile for this client."""
+    """Resolve and load the FedScale-shaped device profile for this client.
+
+    Two-layer cache:
+    1. context.state  — per-node, persists across rounds (avoids all I/O after
+                        the first round for each client node).
+    2. _profile_file_cache — process-level dict protected by a lock, so all
+                        worker threads share a single disk read on early rounds.
+    """
+    # Layer 1: check node state persisted from a previous round.
+    _STATE_KEY = "device-profile"
+    if _STATE_KEY in context.state:
+        return json.loads(str(context.state[_STATE_KEY]["profile_json"]))
+
+    # Layer 2: resolve path and read file at most once per process.
     profile_path = _resolve_profile_path(context)
     if not profile_path:
         logger.warning(
@@ -345,11 +365,15 @@ def _load_device_profile(context: Context) -> dict | None:
         )
         return None
 
-    with open(profile_path) as f:
-        profiles = json.load(f)
+    if profile_path not in _profile_file_cache:
+        with _profile_file_cache_lock:
+            if profile_path not in _profile_file_cache:  # double-checked
+                with open(profile_path) as f:
+                    _profile_file_cache[profile_path] = json.load(f)
+                logger.debug("Read device profiles from %s (cached)", profile_path)
 
     key = _resolve_profile_key(context)
-    profile = profiles.get(key)
+    profile = _profile_file_cache[profile_path].get(key)
     if profile is None:
         logger.warning(
             "Profile key '%s' not found in %s — simulated duration will be 0.",
@@ -357,6 +381,9 @@ def _load_device_profile(context: Context) -> dict | None:
             profile_path,
         )
         return None
+
+    # Persist to node state so subsequent rounds skip disk I/O entirely.
+    context.state[_STATE_KEY] = ConfigRecord({"profile_json": json.dumps(profile)})
     logger.debug("Loaded device profile %s from %s", key, profile_path)
     return profile
 
