@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "U-Flora: Efficient federated LoRA fine-tuning of large language models with Flower"
 license = "Apache-2.0"
 dependencies = [
-    "flwr[simulation]>=1.27.0",
+    "flwr[simulation]>=1.29.0",
     "flwr-datasets>=0.6.0",
     "torch==2.8.0",
     "bitsandbytes==0.49.1",
