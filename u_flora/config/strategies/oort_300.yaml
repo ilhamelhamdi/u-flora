@@ -1,0 +1,5 @@
+# Oort pool-tuned params for 300-client pool
+# Timing calibrated to MNLI round duration
+overrides:
+  - "strategy.oort.pacer-delta=75"
+  - "strategy.oort.initial-t=750"

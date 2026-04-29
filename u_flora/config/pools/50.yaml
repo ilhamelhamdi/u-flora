@@ -1,0 +1,5 @@
+# Client pool: 50 clients, K* = 5 (default selection budget = 10% of pool)
+overrides:
+  - "num-clients=50"
+  - "device-profile-path=device_profiles/50/default/profiles.json"
+  - "strategy.num-to-select=5"

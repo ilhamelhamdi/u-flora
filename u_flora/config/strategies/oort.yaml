@@ -1,0 +1,12 @@
+# Strategy: Oort — pool-independent hyperparams
+# Combine with oort_50.yaml or oort_300.yaml for pool-tuned timing params
+overrides:
+  - "strategy.name=oort"
+  - "strategy.oort.epsilon=0.9"
+  - "strategy.oort.epsilon-decay=0.98"
+  - "strategy.oort.epsilon-min=0.2"
+  - "strategy.oort.alpha=2.0"
+  - "strategy.oort.pacer-window=10"
+  - "strategy.oort.cutoff-c=0.95"
+  - "strategy.oort.max-participation-rounds=20"
+  - "strategy.oort.utility-clip-percentile=95"

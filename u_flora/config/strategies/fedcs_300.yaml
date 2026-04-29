@@ -1,0 +1,4 @@
+# FedCS pool-tuned params for 300-client pool
+# Deadline calibrated to MNLI round duration (~750 s for K*=30)
+overrides:
+  - "strategy.fedcs.round-deadline-s=750.0"

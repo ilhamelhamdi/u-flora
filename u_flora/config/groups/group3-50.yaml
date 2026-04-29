@@ -1,7 +1,7 @@
 description: >
   Group 3 — Algorithm Evaluation (RQ2) — BoolQ only (50 clients pool).
   Compares U-Flora variants against adaptive-K baselines and ablations:
-    - fedcs_uncapped : full FedCS deadline-filling (variable K).
+    - fedcs_overselect : FedCS with overselection capped at 2*K* (deadline-filling within cap).
     - oort_fair      : Oort + convergence-driven fairness lambda(t).
                        Isolates contribution of fairness mechanism alone.
     - uflora_noprofile : mandatory-optional structure, no async profiling.
@@ -10,25 +10,70 @@ description: >
   Random / TiFL / Oort-core are reused from group1-50 (no variable-K variants).
   Three seeds per configuration. Total: 4 (variant) x 1 (task) x 3 (seed) = 12 runs.
 
-  TODO: requires `oort_fair` and `uflora` strategies to be implemented in
-        u_flora/strategies/ and registered in factory.py.
-
 superlink-connection: "local-50"
 experiments:
   # ====================== seed = 42 ======================
-  - { name: g3_fedcs_uncapped_boolq_s42,  base: fedcs_uncapped_boolq,  overrides: ["seed=42"] }
-  - { name: g3_oort_fair_boolq_s42,       base: oort_fair_boolq,       overrides: ["seed=42"] }
-  - { name: g3_uflora_noprofile_boolq_s42, base: uflora_noprofile_boolq, overrides: ["seed=42"] }
-  - { name: g3_uflora_full_boolq_s42,     base: uflora_full_boolq,     overrides: ["seed=42"] }
+  - {
+      name: g3_fedcs_overselect_boolq_s42,
+      bases: [pools/50, datasets/boolq, strategies/fedcs_overselect_50],
+      overrides: ["seed=42"],
+    }
+  - {
+      name: g3_oort_fair_boolq_s42,
+      bases: [pools/50, datasets/boolq, strategies/oort_fair, strategies/oort_fair_50],
+      overrides: ["seed=42"],
+    }
+  - {
+      name: g3_uflora_noprofile_boolq_s42,
+      bases: [pools/50, datasets/boolq, strategies/uflora_noprofile_50],
+      overrides: ["seed=42"],
+    }
+  - {
+      name: g3_uflora_full_boolq_s42,
+      bases: [pools/50, datasets/boolq, strategies/uflora_full_50],
+      overrides: ["seed=42"],
+    }
 
-  # ====================== seed = 123 ======================
-  # - { name: g3_fedcs_uncapped_boolq_s123,  base: fedcs_uncapped_boolq,  overrides: ["seed=123"] }
-  # - { name: g3_oort_fair_boolq_s123,       base: oort_fair_boolq,       overrides: ["seed=123"] }
-  # - { name: g3_uflora_noprofile_boolq_s123, base: uflora_noprofile_boolq, overrides: ["seed=123"] }
-  # - { name: g3_uflora_full_boolq_s123,     base: uflora_full_boolq,     overrides: ["seed=123"] }
+  # # ====================== seed = 123 ======================
+  # - {
+  #     name: g3_fedcs_overselect_boolq_s123,
+  #     bases: [pools/50, datasets/boolq, strategies/fedcs_overselect_50],
+  #     overrides: ["seed=123"],
+  #   }
+  # - {
+  #     name: g3_oort_fair_boolq_s123,
+  #     bases: [pools/50, datasets/boolq, strategies/oort_fair, strategies/oort_fair_50],
+  #     overrides: ["seed=123"],
+  #   }
+  # - {
+  #     name: g3_uflora_noprofile_boolq_s123,
+  #     bases: [pools/50, datasets/boolq, strategies/uflora_noprofile_50],
+  #     overrides: ["seed=123"],
+  #   }
+  # - {
+  #     name: g3_uflora_full_boolq_s123,
+  #     bases: [pools/50, datasets/boolq, strategies/uflora_full_50],
+  #     overrides: ["seed=123"],
+  #   }
 
-  # ====================== seed = 456 ======================
-  # - { name: g3_fedcs_uncapped_boolq_s456,  base: fedcs_uncapped_boolq,  overrides: ["seed=456"] }
-  # - { name: g3_oort_fair_boolq_s456,       base: oort_fair_boolq,       overrides: ["seed=456"] }
-  # - { name: g3_uflora_noprofile_boolq_s456, base: uflora_noprofile_boolq, overrides: ["seed=456"] }
-  # - { name: g3_uflora_full_boolq_s456,     base: uflora_full_boolq,     overrides: ["seed=456"] }
+  # # ====================== seed = 456 ======================
+  # - {
+  #     name: g3_fedcs_overselect_boolq_s456,
+  #     bases: [pools/50, datasets/boolq, strategies/fedcs_overselect_50],
+  #     overrides: ["seed=456"],
+  #   }
+  # - {
+  #     name: g3_oort_fair_boolq_s456,
+  #     bases: [pools/50, datasets/boolq, strategies/oort_fair, strategies/oort_fair_50],
+  #     overrides: ["seed=456"],
+  #   }
+  # - {
+  #     name: g3_uflora_noprofile_boolq_s456,
+  #     bases: [pools/50, datasets/boolq, strategies/uflora_noprofile_50],
+  #     overrides: ["seed=456"],
+  #   }
+  # - {
+  #     name: g3_uflora_full_boolq_s456,
+  #     bases: [pools/50, datasets/boolq, strategies/uflora_full_50],
+  #     overrides: ["seed=456"],
+  #   }

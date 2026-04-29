@@ -1,0 +1,7 @@
+# Dataset: BoolQ (binary reading comprehension, text_classification task)
+# Partitioning: Dirichlet alpha=8 (moderate non-IID) — override per experiment for other alphas
+overrides:
+  - "task-name=text_classification"
+  - "dataset.name=boolq"
+  - "dataset.partition.strategy=dirichlet"
+  - "dataset.partition.dirichlet.alpha=8"

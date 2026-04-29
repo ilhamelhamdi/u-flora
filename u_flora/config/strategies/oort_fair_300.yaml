@@ -1,0 +1,4 @@
+# OortFair pool-tuned params for 300-client pool
+overrides:
+  - "strategy.oort.pacer-delta=75"
+  - "strategy.oort.initial-t=750"

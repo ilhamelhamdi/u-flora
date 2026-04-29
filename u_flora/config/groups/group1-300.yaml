@@ -3,22 +3,70 @@ description: >
   All four baselines (Random, FedCS-capped, TiFL, Oort-core) on MNLI under moderate non-IID (Dirichlet alpha=8) and realistic system heterogeneity. Three seeds per configuration.  FedCS is capped at K* = num-to-select to make the K-budget comparable across strategies (deadline acts as eligibility filter only).
   Total: 4 (strategy) x 1 (task) x 3 (seed) = 12 runs.
 superlink-connection: "local-300"
-max-experiment-duration-s: 28800   # 8 hours hard kill per experiment
+max-experiment-duration-s: 28800 # 8 hours hard kill per experiment
 experiments:
   # ====================== seed = 42 ======================
-  - { name: g1_random_mnli_s42, base: random_mnli, overrides: ["seed=42"] }
-  - { name: g1_fedcs_mnli_s42,  base: fedcs_mnli,  overrides: ["seed=42"] }
-  - { name: g1_tifl_mnli_s42,   base: tifl_mnli,   overrides: ["seed=42"] }
-  - { name: g1_oort_mnli_s42,   base: oort_mnli,   overrides: ["seed=42"] }
+  - {
+      name: g1_random_mnli_s42,
+      bases: [pools/300, datasets/mnli, strategies/random],
+      overrides: ["seed=42"],
+    }
+  - {
+      name: g1_fedcs_mnli_s42,
+      bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+      overrides: ["seed=42"],
+    }
+  - {
+      name: g1_tifl_mnli_s42,
+      bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
+      overrides: ["seed=42"],
+    }
+  - {
+      name: g1_oort_mnli_s42,
+      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+      overrides: ["seed=42"],
+    }
 
   # # ====================== seed = 123 ======================
-  # - { name: g1_random_mnli_s123, base: random_mnli, overrides: ["seed=123"] }
-  # - { name: g1_fedcs_mnli_s123,  base: fedcs_mnli,  overrides: ["seed=123"] }
-  # - { name: g1_tifl_mnli_s123,   base: tifl_mnli,   overrides: ["seed=123"] }
-  # - { name: g1_oort_mnli_s123,   base: oort_mnli,   overrides: ["seed=123"] }
+  # - {
+  #     name: g1_random_mnli_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/random],
+  #     overrides: ["seed=123"],
+  #   }
+  # - {
+  #     name: g1_fedcs_mnli_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+  #     overrides: ["seed=123"],
+  #   }
+  # - {
+  #     name: g1_tifl_mnli_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
+  #     overrides: ["seed=123"],
+  #   }
+  # - {
+  #     name: g1_oort_mnli_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     overrides: ["seed=123"],
+  #   }
 
   # # ====================== seed = 456 ======================
-  # - { name: g1_random_mnli_s456, base: random_mnli, overrides: ["seed=456"] }
-  # - { name: g1_fedcs_mnli_s456,  base: fedcs_mnli,  overrides: ["seed=456"] }
-  # - { name: g1_tifl_mnli_s456,   base: tifl_mnli,   overrides: ["seed=456"] }
-  # - { name: g1_oort_mnli_s456,   base: oort_mnli,   overrides: ["seed=456"] }
+  # - {
+  #     name: g1_random_mnli_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/random],
+  #     overrides: ["seed=456"],
+  #   }
+  # - {
+  #     name: g1_fedcs_mnli_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+  #     overrides: ["seed=456"],
+  #   }
+  # - {
+  #     name: g1_tifl_mnli_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
+  #     overrides: ["seed=456"],
+  #   }
+  # - {
+  #     name: g1_oort_mnli_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     overrides: ["seed=456"],
+  #   }

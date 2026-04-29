@@ -1,0 +1,4 @@
+# TiFL pool-tuned params for 300-client pool
+overrides:
+  - "strategy.tifl.num-tiers=6"
+  - "strategy.tifl.round-deadline-s=1500.0"

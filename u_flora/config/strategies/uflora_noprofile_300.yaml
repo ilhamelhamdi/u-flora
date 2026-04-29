@@ -1,0 +1,12 @@
+# U-Flora (no async profiling) for 300-client pool
+# min-k = K* = 30, d-max = K* = 30 → K_actual in [30, 60]
+overrides:
+  - "strategy.name=uflora"
+  - "strategy.uflora.min-k=30"
+  - "strategy.uflora.d-max=30"
+  - "strategy.uflora.p-max=0"
+  - "strategy.uflora.lambda-max=1.0"
+  - "strategy.uflora.dm-ema-beta=0.3"
+  - "strategy.uflora.alpha-ema=0.3"
+  - "strategy.oort.alpha=2.0"
+  - "strategy.oort.utility-clip-percentile=95"

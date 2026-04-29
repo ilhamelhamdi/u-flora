@@ -630,7 +630,7 @@ def run_batch(batch_config_path: str) -> None:
     import yaml
 
     groups_dir = Path(__file__).parent / "u_flora" / "config" / "groups"
-    defaults_dir = Path(__file__).parent / "u_flora" / "config" / "defaults"
+    config_root = Path(__file__).parent / "u_flora" / "config"
 
     config_path = Path(batch_config_path)
     if not config_path.exists():
@@ -647,9 +647,9 @@ def run_batch(batch_config_path: str) -> None:
         "superlink-connection", SUPERLINK_CONNECTION_NAME
     )
     # Hard wall-time limit per experiment (seconds). Kills a hung flwr run process.
-    # Default: 4 hours. Override in the batch YAML with: max-experiment-duration-s: 7200
+    # Default: 10 hours. Override in the batch YAML with: max-experiment-duration-s: 36000
     max_experiment_duration_s: float | None = batch.get(
-        "max-experiment-duration-s", 4 * 3600
+        "max-experiment-duration-s", 10 * 3600
     )
 
     experiments = batch.get("experiments", [])
@@ -670,30 +670,34 @@ def run_batch(batch_config_path: str) -> None:
     skipped = 0
     for idx, exp in enumerate(experiments, 1):
         name = exp.get("name", f"experiment_{idx}")
-        base = exp.get("base")
         overrides = exp.get("overrides", [])
 
         if name in completed_set:
-            logger.info("Experiment %d/%d (%s): already completed — skipping.", idx, total, name)
+            logger.info(
+                "Experiment %d/%d (%s): already completed — skipping.", idx, total, name
+            )
             skipped += 1
             continue
 
         base_overrides: list[str] = []
-        if base:
-            base_path = defaults_dir / f"{base}.yaml"
+
+        for base_name in exp["bases"]:
+            base_path = config_root / f"{base_name}.yaml"
             if not base_path.exists():
-                raise FileNotFoundError(f"Base config not found: {base} ({base_path})")
+                raise FileNotFoundError(f"Base config not found: {base_name!r} ")
             with open(base_path) as base_f:
-                base_cfg = yaml.safe_load(base_f) or {}
-            base_overrides = base_cfg.get("overrides", [])
+                base_overrides.extend(
+                    (yaml.safe_load(base_f) or {}).get("overrides", [])
+                )
 
         merged_overrides = [*base_overrides, *overrides]
+        bases_label = exp.get("bases")
         logger.info(
-            "Experiment %d/%d (%s, base=%s): %s",
+            "Experiment %d/%d (%s, bases=%s): %s",
             idx,
             total,
             name,
-            base or "none",
+            bases_label,
             merged_overrides,
         )
         rc = run_task(

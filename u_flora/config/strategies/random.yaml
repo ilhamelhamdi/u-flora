@@ -1,0 +1,4 @@
+# Strategy: Random client selection
+# No pool-varying parameters — single file covers all pools
+overrides:
+  - "strategy.name=random"

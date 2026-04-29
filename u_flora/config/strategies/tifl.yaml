@@ -1,0 +1,6 @@
+# Strategy: TiFL — pool-independent hyperparams
+# Combine with tifl_50.yaml or tifl_300.yaml for pool-tuned tier count and deadline
+overrides:
+  - "strategy.name=tifl"
+  - "strategy.tifl.sync-rounds=2"
+  - "strategy.tifl.prob-update-interval=5"

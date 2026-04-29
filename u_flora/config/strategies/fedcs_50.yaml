@@ -1,0 +1,4 @@
+# FedCS pool-tuned params for 50-client pool
+# Deadline calibrated to BoolQ round duration (~120 s for K*=5)
+overrides:
+  - "strategy.fedcs.round-deadline-s=120.0"

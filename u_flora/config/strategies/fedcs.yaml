@@ -1,0 +1,5 @@
+# Strategy: FedCS — pool-independent hyperparams
+# Combine with fedcs_50.yaml or fedcs_300.yaml for the pool-tuned deadline
+overrides:
+  - "strategy.name=fedcs"
+  - "strategy.fedcs.c-fraction=0.5"

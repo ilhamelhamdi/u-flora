@@ -10,35 +10,131 @@ superlink-connection: "local-300"
 experiments:
   # ====================== seed = 42 ======================
   # alpha = 2.0 (high non-IID)
-  - { name: g2_random_mnli_a2_s42, base: random_mnli, overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
-  - { name: g2_fedcs_mnli_a2_s42,  base: fedcs_mnli,  overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
-  - { name: g2_tifl_mnli_a2_s42,   base: tifl_mnli,   overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
-  - { name: g2_oort_mnli_a2_s42,   base: oort_mnli,   overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"] }
+  - {
+      name: g2_random_mnli_a2_s42,
+      bases: [pools/300, datasets/mnli, strategies/random],
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
+  - {
+      name: g2_fedcs_mnli_a2_s42,
+      bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
+  - {
+      name: g2_tifl_mnli_a2_s42,
+      bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
+  - {
+      name: g2_oort_mnli_a2_s42,
+      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
 
   # IID
-  - { name: g2_random_mnli_iid_s42, base: random_mnli, overrides: ["seed=42", "dataset.partition.strategy=iid"] }
-  - { name: g2_fedcs_mnli_iid_s42,  base: fedcs_mnli,  overrides: ["seed=42", "dataset.partition.strategy=iid"] }
-  - { name: g2_tifl_mnli_iid_s42,   base: tifl_mnli,   overrides: ["seed=42", "dataset.partition.strategy=iid"] }
-  - { name: g2_oort_mnli_iid_s42,   base: oort_mnli,   overrides: ["seed=42", "dataset.partition.strategy=iid"] }
+  - {
+      name: g2_random_mnli_iid_s42,
+      bases: [pools/300, datasets/mnli, strategies/random],
+      overrides: ["seed=42", "dataset.partition.strategy=iid"],
+    }
+  - {
+      name: g2_fedcs_mnli_iid_s42,
+      bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+      overrides: ["seed=42", "dataset.partition.strategy=iid"],
+    }
+  - {
+      name: g2_tifl_mnli_iid_s42,
+      bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
+      overrides: ["seed=42", "dataset.partition.strategy=iid"],
+    }
+  - {
+      name: g2_oort_mnli_iid_s42,
+      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+      overrides: ["seed=42", "dataset.partition.strategy=iid"],
+    }
 
-  # ====================== seed = 123 ======================
-  # - { name: g2_random_mnli_a2_s123,  base: random_mnli, overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"] }
-  # - { name: g2_fedcs_mnli_a2_s123,   base: fedcs_mnli,  overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"] }
-  # - { name: g2_tifl_mnli_a2_s123,    base: tifl_mnli,   overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"] }
-  # - { name: g2_oort_mnli_a2_s123,    base: oort_mnli,   overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"] }
+  # # ====================== seed = 123 ======================
+  # - {
+  #     name: g2_random_mnli_a2_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/random],
+  #     overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"],
+  #   }
+  # - {
+  #     name: g2_fedcs_mnli_a2_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+  #     overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"],
+  #   }
+  # - {
+  #     name: g2_tifl_mnli_a2_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
+  #     overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"],
+  #   }
+  # - {
+  #     name: g2_oort_mnli_a2_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"],
+  #   }
 
-  # - { name: g2_random_mnli_iid_s123, base: random_mnli, overrides: ["seed=123", "dataset.partition.strategy=iid"] }
-  # - { name: g2_fedcs_mnli_iid_s123,  base: fedcs_mnli,  overrides: ["seed=123", "dataset.partition.strategy=iid"] }
-  # - { name: g2_tifl_mnli_iid_s123,   base: tifl_mnli,   overrides: ["seed=123", "dataset.partition.strategy=iid"] }
-  # - { name: g2_oort_mnli_iid_s123,   base: oort_mnli,   overrides: ["seed=123", "dataset.partition.strategy=iid"] }
+  # - {
+  #     name: g2_random_mnli_iid_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/random],
+  #     overrides: ["seed=123", "dataset.partition.strategy=iid"],
+  #   }
+  # - {
+  #     name: g2_fedcs_mnli_iid_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+  #     overrides: ["seed=123", "dataset.partition.strategy=iid"],
+  #   }
+  # - {
+  #     name: g2_tifl_mnli_iid_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
+  #     overrides: ["seed=123", "dataset.partition.strategy=iid"],
+  #   }
+  # - {
+  #     name: g2_oort_mnli_iid_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     overrides: ["seed=123", "dataset.partition.strategy=iid"],
+  #   }
 
-  # ====================== seed = 456 ======================
-  # - { name: g2_random_mnli_a2_s456,  base: random_mnli, overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"] }
-  # - { name: g2_fedcs_mnli_a2_s456,   base: fedcs_mnli,  overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"] }
-  # - { name: g2_tifl_mnli_a2_s456,    base: tifl_mnli,   overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"] }
-  # - { name: g2_oort_mnli_a2_s456,    base: oort_mnli,   overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"] }
+  # # ====================== seed = 456 ======================
+  # - {
+  #     name: g2_random_mnli_a2_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/random],
+  #     overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"],
+  #   }
+  # - {
+  #     name: g2_fedcs_mnli_a2_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+  #     overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"],
+  #   }
+  # - {
+  #     name: g2_tifl_mnli_a2_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
+  #     overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"],
+  #   }
+  # - {
+  #     name: g2_oort_mnli_a2_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     overrides: ["seed=456", "dataset.partition.dirichlet.alpha=2"],
+  #   }
 
-  # - { name: g2_random_mnli_iid_s456, base: random_mnli, overrides: ["seed=456", "dataset.partition.strategy=iid"] }
-  # - { name: g2_fedcs_mnli_iid_s456,  base: fedcs_mnli,  overrides: ["seed=456", "dataset.partition.strategy=iid"] }
-  # - { name: g2_tifl_mnli_iid_s456,   base: tifl_mnli,   overrides: ["seed=456", "dataset.partition.strategy=iid"] }
-  # - { name: g2_oort_mnli_iid_s456,   base: oort_mnli,   overrides: ["seed=456", "dataset.partition.strategy=iid"] }
+  # - {
+  #     name: g2_random_mnli_iid_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/random],
+  #     overrides: ["seed=456", "dataset.partition.strategy=iid"],
+  #   }
+  # - {
+  #     name: g2_fedcs_mnli_iid_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+  #     overrides: ["seed=456", "dataset.partition.strategy=iid"],
+  #   }
+  # - {
+  #     name: g2_tifl_mnli_iid_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
+  #     overrides: ["seed=456", "dataset.partition.strategy=iid"],
+  #   }
+  # - {
+  #     name: g2_oort_mnli_iid_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     overrides: ["seed=456", "dataset.partition.strategy=iid"],
+  #   }
