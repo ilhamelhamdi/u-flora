@@ -5,3 +5,4 @@ overrides:
   - "dataset.name=boolq"
   - "dataset.partition.strategy=dirichlet"
   - "dataset.partition.dirichlet.alpha=8"
+  - "train.training-arguments.num-train-epochs=2"
