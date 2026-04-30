@@ -3,3 +3,4 @@ overrides:
   - "num-clients=300"
   - "device-profile-path=device_profiles/300/default/profiles.json"
   - "strategy.num-to-select=30"
+  - "server.round-timeout-s=900"
