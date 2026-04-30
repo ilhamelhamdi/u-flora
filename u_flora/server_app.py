@@ -127,7 +127,7 @@ def _get_validation_set(cfg, adapter):
     raw_val = load_data_centralized(dataset_config)
 
     encoding_fn = adapter.get_encoding_fn(cfg.model.name, dataset_config)
-    data_collator = adapter.get_data_collator(cfg.model.name)
+    data_collator = adapter.get_data_collator(model_cfg=cfg.model)
     val_set = raw_val.map(encoding_fn, batched=True)
     return val_set, data_collator
 
@@ -146,6 +146,7 @@ def _get_evaluate_fn(
         logger.info("[Eval %s] Running centralized evaluation...", label)
 
         import gc
+
         gc.collect()
         torch.cuda.empty_cache()
 
@@ -163,7 +164,7 @@ def _get_evaluate_fn(
 
         # Optionally cap eval number
         eval_set = validation_set
-        max_samples = cfg.eval.get("max_samples", -1) 
+        max_samples = cfg.eval.get("max_samples", -1)
         if max_samples > 0:
             limit = min(len(validation_set), max_samples)
             eval_set = validation_set.select(range(limit))
@@ -184,10 +185,10 @@ def _get_evaluate_fn(
         )
         metrics = trainer.evaluate()
 
-
         model.to("cpu")
         del trainer
         import gc
+
         gc.collect()
         torch.cuda.empty_cache()
 

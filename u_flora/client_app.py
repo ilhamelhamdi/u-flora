@@ -24,7 +24,12 @@ from transformers import Trainer, TrainingArguments
 
 from .tasks.registry import get_task_adapter
 from .dataset import load_data
-from .utils import replace_keys, cosine_annealing, warmup_then_cosine, FedProxTrainer, configure_logging
+from .utils import (
+    replace_keys,
+    warmup_then_cosine,
+    FedProxTrainer,
+    configure_logging,
+)
 from .utils.availability import is_available
 from .utils.timing import apply_duration_jitter, estimate_round_duration_s
 
@@ -87,7 +92,7 @@ def train(msg: Message, context: Context):
         "%s Loading dataset partition %d/%d...", tag, partition_id, num_partitions
     )
     encoding_func = adapter.get_encoding_fn(cfg.model.name, dataset_config)
-    data_collator = adapter.get_data_collator(cfg.model.name)
+    data_collator = adapter.get_data_collator(model_cfg=cfg.model)
 
     train_set, val_set = load_data(partition_id, num_partitions, cfg)
     train_set = train_set.map(encoding_func, batched=True)
@@ -104,6 +109,10 @@ def train(msg: Message, context: Context):
 
     # -- Training arguments --------------------------------------------
     train_args_dict = dict(cfg.train.training_arguments)
+    requested_dtype = str(getattr(cfg.model, "torch_dtype", "")).strip().lower()
+    wants_bf16 = requested_dtype in {"bf16", "bfloat16", "auto"}
+    if wants_bf16 and torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+        train_args_dict.setdefault("bf16", True)
     training_arguments = TrainingArguments(**train_args_dict)
 
     # Learning rate schedule: linear warmup then cosine annealing.
@@ -120,9 +129,7 @@ def train(msg: Message, context: Context):
     training_arguments.report_to = "none"
 
     # FedProx: use proximal regularization when mu > 0.
-    fedprox_mu = float(
-        getattr(getattr(cfg.train, "fedprox", None), "mu", 0.0) or 0.0
-    )
+    fedprox_mu = float(cfg.train.fedprox.mu or 0.0)
     trainer_kwargs: dict = dict(
         model=model,
         args=training_arguments,
@@ -220,7 +227,7 @@ def train(msg: Message, context: Context):
         content = RecordDict({"arrays": model_record, "metrics": metric_record})
         logger.debug("%s Response ready — simulated_duration=%.1fs", tag, sim_total_s)
         return Message(content=content, reply_to=msg)
-    
+
     finally:
         # Cleanup
         if "model" in locals():
@@ -228,6 +235,7 @@ def train(msg: Message, context: Context):
             del model
         del trainer
         import gc
+
         gc.collect()
         torch.cuda.empty_cache()
 

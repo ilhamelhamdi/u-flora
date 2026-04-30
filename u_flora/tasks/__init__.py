@@ -62,7 +62,10 @@ class TaskAdapter(ABC):
         ...
 
     @abstractmethod
-    def get_data_collator(self, model_name: str) -> Any:
+    def get_data_collator(
+        self,
+        model_cfg: DictConfig | None = None,
+    ) -> Any:
         """Return a data collator for the Trainer."""
         ...
 

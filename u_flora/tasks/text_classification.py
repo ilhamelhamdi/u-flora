@@ -9,8 +9,8 @@ from __future__ import annotations
 from typing import Any, Callable
 
 import evaluate
-import numpy as np
 import math
+import numpy as np
 import torch
 from omegaconf import DictConfig
 from peft import TaskType, get_peft_model
@@ -21,6 +21,11 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizerBase,
 )
+
+try:
+    from transformers import DataCollatorWithFlattening
+except ImportError:  # pragma: no cover - older Transformers versions
+    DataCollatorWithFlattening = None
 
 from . import TaskAdapter
 
@@ -43,15 +48,49 @@ class TextClassificationAdapter(TaskAdapter):
 
     def get_model(self, model_cfg: DictConfig) -> PreTrainedModel:
         num_labels = int(getattr(model_cfg, "num_labels", 2))
+        attn_implementation = self._resolve_attn_implementation(model_cfg)
+        torch_dtype = self._resolve_torch_dtype(model_cfg)
         model = AutoModelForSequenceClassification.from_pretrained(
             model_cfg.name,
             num_labels=num_labels,
             ignore_mismatched_sizes=True,
-            torch_dtype=torch.float32,
+            torch_dtype=torch_dtype,
             use_safetensors=True,
+            attn_implementation=attn_implementation or None,
         )
         lora_config = self.build_lora_config(model_cfg.lora)
         return get_peft_model(model, lora_config)
+
+    def _resolve_attn_implementation(self, model_cfg: DictConfig) -> str | None:
+        attn_impl = getattr(model_cfg, "attn_implementation", None)
+        if attn_impl:
+            return attn_impl
+        needs_flash = bool(getattr(model_cfg, "padding_free", False))
+        if needs_flash and torch.cuda.is_available():
+            return "flash_attention_2"
+        return None
+
+    def _resolve_torch_dtype(self, model_cfg: DictConfig) -> torch.dtype:
+        raw_dtype = getattr(model_cfg, "torch_dtype", None)
+        if raw_dtype is None:
+            return torch.float32
+        if isinstance(raw_dtype, torch.dtype):
+            return raw_dtype
+        if isinstance(raw_dtype, str):
+            dtype_key = raw_dtype.strip().lower()
+            if dtype_key == "auto":
+                if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+                    return torch.bfloat16
+                return torch.float32
+            if dtype_key in {"bf16", "bfloat16"}:
+                if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+                    return torch.bfloat16
+                return torch.float32
+            if dtype_key in {"fp16", "float16"}:
+                return torch.float16
+            if dtype_key in {"fp32", "float32"}:
+                return torch.float32
+        return torch.float32
 
     def get_lora_adapter_size_kb(self, model_cfg: DictConfig) -> int:
         peft_model = self.get_model(model_cfg)
@@ -82,8 +121,17 @@ class TextClassificationAdapter(TaskAdapter):
 
         return _encode
 
-    def get_data_collator(self, model_name: str) -> Any:
-        tokenizer = self.get_tokenizer(model_name)
+    def get_data_collator(
+        self,
+        model_cfg: DictConfig | None = None,
+    ) -> Any:
+        tokenizer = self.get_tokenizer(model_cfg.name)
+        padding_free = bool(getattr(model_cfg, "padding_free", False))
+        if padding_free and DataCollatorWithFlattening is not None:
+            return DataCollatorWithFlattening(
+                tokenizer=tokenizer,
+                return_flash_attn_kwargs=True,
+            )
         return DataCollatorWithPadding(tokenizer=tokenizer)
 
     # ---- Evaluation ----------------------------------------------------------

@@ -120,6 +120,9 @@ dataset.partition.dirichlet.alpha = 8
 
 # -- Model ---------------------------------------------------------------------
 model.name = "answerdotai/ModernBERT-base"
+model.attn-implementation = "flash_attention_2" # "auto", "torch", or "flash_attention_2" (modernbert-specific)
+model.torch-dtype = "bfloat16" # "auto", "float16"/"fp16", or "bfloat16"/"bf16"
+model.padding-free = true # ModernBERT can use padding-free attention
 model.lora.peft-lora-r = 8
 model.lora.peft-lora-alpha = 16
 model.lora.peft-lora-dropout = 0.05
