@@ -4,9 +4,9 @@
     "beta": 0.0,
     "seed": 42,
     "num_clients": 300,
-    "num_samples": 200,
+    "num_samples": 1300,
     "local_epochs": 1,
-    "model_size_kb": 3174.0,
+    "model_size_kb": 6607.0,
     "pool_path": "D:\\COOLYEAH\\SKRIPSI\\u-flora\\traces\\client_device_capacity.json",
     "pool_size": 107749
   }

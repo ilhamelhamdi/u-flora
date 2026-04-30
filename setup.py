@@ -95,8 +95,8 @@ TOXIPROXY_API_PORT = 8474  # Default ToxiProxy API port
 # Command to check:
 # `ss -tlnp | awk 'NR>1 {print $4}' | grep -oP '(?<=:)\d+' | awk -v lo=15000 -v hi=16200 '$1>=lo && $1<=hi' | sort -n`
 
-AVG_NUM_SAMPLES = 200
-ESTIMATED_MODEL_SIZE_KB = 3174.0  # ModernBERT; r=8; target_modules=["Wqkv", "attn.Wo"]
+AVG_NUM_SAMPLES = 1300
+ESTIMATED_MODEL_SIZE_KB = 6607.0  # ModernBERT; r=8; target_modules=["Wqkv", "attn.Wo", "mlp.Wi", "mlp.Wo"]
 
 # ── Process Registry ───────────────────────────────────────────────────────────
 
