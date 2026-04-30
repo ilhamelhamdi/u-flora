@@ -96,7 +96,9 @@ TOXIPROXY_API_PORT = 8474  # Default ToxiProxy API port
 # `ss -tlnp | awk 'NR>1 {print $4}' | grep -oP '(?<=:)\d+' | awk -v lo=15000 -v hi=16200 '$1>=lo && $1<=hi' | sort -n`
 
 AVG_NUM_SAMPLES = 1300
-ESTIMATED_MODEL_SIZE_KB = 6607.0  # ModernBERT; r=8; target_modules=["Wqkv", "attn.Wo", "mlp.Wi", "mlp.Wo"]
+ESTIMATED_MODEL_SIZE_KB = (
+    6607.0  # ModernBERT; r=8; target_modules=["Wqkv", "attn.Wo", "mlp.Wi", "mlp.Wo"]
+)
 
 # ── Process Registry ───────────────────────────────────────────────────────────
 
@@ -208,11 +210,6 @@ def main() -> None:
     elif args.command == "run":
         run_task(args.overrides)
     elif args.command == "batch":
-        if args.reset:
-            state_path = _batch_state_path(args.batch_config)
-            if state_path.exists():
-                state_path.unlink()
-                logger.info("Cleared batch state: %s", state_path)
         if args.detach:
             _detach_batch(args.batch_config)
         else:
@@ -584,25 +581,6 @@ def run_task(
     return None
 
 
-def _batch_state_path(batch_config_path: str) -> Path:
-    """Return path to the resume-state file for a given batch config."""
-    stem = Path(batch_config_path).stem
-    return Path(LOG_DIR) / f"batch-state-{stem}.json"
-
-
-def _load_batch_state(state_path: Path) -> dict:
-    if state_path.exists():
-        with open(state_path) as f:
-            return json.load(f)
-    return {"completed": [], "failed": []}
-
-
-def _save_batch_state(state_path: Path, state: dict) -> None:
-    os.makedirs(state_path.parent, exist_ok=True)
-    with open(state_path, "w") as f:
-        json.dump(state, f, indent=2)
-
-
 def run_batch(batch_config_path: str) -> None:
     """Run a batch of experiments sequentially.
 
@@ -655,29 +633,9 @@ def run_batch(batch_config_path: str) -> None:
     experiments = batch.get("experiments", [])
     total = len(experiments)
 
-    state_path = _batch_state_path(batch_config_path)
-    state = _load_batch_state(state_path)
-    completed_set = set(state["completed"])
-
-    if completed_set:
-        logger.info(
-            "Resuming batch — %d/%d experiments already completed: %s",
-            len(completed_set),
-            total,
-            sorted(completed_set),
-        )
-
-    skipped = 0
     for idx, exp in enumerate(experiments, 1):
         name = exp.get("name", f"experiment_{idx}")
         overrides = exp.get("overrides", [])
-
-        if name in completed_set:
-            logger.info(
-                "Experiment %d/%d (%s): already completed — skipping.", idx, total, name
-            )
-            skipped += 1
-            continue
 
         base_overrides: list[str] = []
 
@@ -709,21 +667,12 @@ def run_batch(batch_config_path: str) -> None:
         )
         if rc not in (0, None):
             logger.error("Experiment %s failed (exit %d)", name, rc)
-            state["failed"].append({"name": name, "exit_code": rc})
-        else:
-            state["completed"].append(name)
-            completed_set.add(name)
-
-        _save_batch_state(state_path, state)
         time.sleep(5)
 
-    done = len(completed_set) - skipped
     logger.info(
-        "Batch complete: %d newly run, %d skipped (already done), %d total. State: %s",
-        done,
-        skipped,
+        "Batch complete: %d experiments run. See individual experiment logs in %s.",
         total,
-        state_path,
+        LOG_DIR,
     )
 
 
