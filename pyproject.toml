@@ -63,13 +63,13 @@ server.round-timeout-s = 600.0        # Per-round send_and_receive deadline; stu
 
 # Execution-time jitter (applied client-side, after the deterministic estimate).
 simulation.jitter.enabled = true
-simulation.jitter.compute-cv = 0.20            # log-normal CV for compute jitter
-simulation.jitter.comm-cv = 0.50               # log-normal CV for comm jitter (heavier tail)
+simulation.jitter.compute-cv = 0.10            # log-normal CV for compute jitter
+simulation.jitter.comm-cv = 0.25               # log-normal CV for comm jitter (heavier tail)
 simulation.jitter.compute-min-factor = 0.7     # clip floor on compute multiplier
 simulation.jitter.comm-min-factor = 0.5        # clip floor on comm multiplier
-simulation.jitter.comm-stall-prob = 0.05       # P(heavy stall) per round
-simulation.jitter.comm-stall-factor-min = 5.0  # stall multiplier range
-simulation.jitter.comm-stall-factor-max = 10.0
+simulation.jitter.comm-stall-prob = 0.01       # P(heavy stall) per round
+simulation.jitter.comm-stall-factor-min = 1.0  # stall multiplier range
+simulation.jitter.comm-stall-factor-max = 3.0
 
 # -- Experiment tracking -------------------------------------------------------
 wandb.project = "u-flora-experiments"
@@ -123,7 +123,7 @@ model.name = "answerdotai/ModernBERT-base"
 model.lora.peft-lora-r = 8
 model.lora.peft-lora-alpha = 16
 model.lora.peft-lora-dropout = 0.05
-model.lora.peft-target-modules = "Wqkv,attn.Wo"
+model.lora.peft-target-modules = "Wqkv,attn.Wo,mlp.Wi,mlp.Wo"
 
 # -- Training ------------------------------------------------------------------
 train.save-every-round = 10
