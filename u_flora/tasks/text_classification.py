@@ -147,7 +147,27 @@ class TextClassificationAdapter(TaskAdapter):
         tokenizer = self.get_tokenizer(model_cfg.name)
         padding_free = bool(getattr(model_cfg, "padding_free", False))
         if padding_free and DataCollatorWithFlattening is not None:
-            return DataCollatorWithFlattening(return_flash_attn_kwargs=True)
+            base_collator = DataCollatorWithFlattening(return_flash_attn_kwargs=True)
+
+            def _collate_padding_free(features: list[dict]) -> dict:
+                stripped = []
+                for feat in features:
+                    input_ids = feat["input_ids"]
+                    mask = feat.get("attention_mask")
+                    if mask is None:
+                        mask = [1] * len(input_ids)
+                    filtered_ids = [tok for tok, keep in zip(input_ids, mask) if keep]
+                    item = {"input_ids": filtered_ids}
+                    if "labels" in feat:
+                        item["labels"] = feat["labels"]
+                    stripped.append(item)
+
+                batch = base_collator(stripped)
+                if batch.get("attention_mask") is None and "input_ids" in batch:
+                    batch["attention_mask"] = torch.ones_like(batch["input_ids"])
+                return batch
+
+            return _collate_padding_free
         return DataCollatorWithPadding(tokenizer=tokenizer)
 
     # ---- Evaluation ----------------------------------------------------------
