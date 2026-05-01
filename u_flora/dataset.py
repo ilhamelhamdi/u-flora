@@ -37,7 +37,8 @@ def _get_partitioner(num_partitions: int, config: DictConfig):
                 partition_by="label",
                 alpha=partition_config.dirichlet.alpha,
                 seed=config.seed,
-                min_partition_size=1,
+                min_partition_size=partition_config.dirichlet.min_partition_size,
+                self_balancing=True,
             )
         except ImportError:
             logger.warning("DirichletPartitioner not available, falling back to IID")
