@@ -147,10 +147,7 @@ class TextClassificationAdapter(TaskAdapter):
         tokenizer = self.get_tokenizer(model_cfg.name)
         padding_free = bool(getattr(model_cfg, "padding_free", False))
         if padding_free and DataCollatorWithFlattening is not None:
-            return DataCollatorWithFlattening(
-                tokenizer=tokenizer,
-                return_flash_attn_kwargs=True,
-            )
+            return DataCollatorWithFlattening(return_flash_attn_kwargs=True)
         return DataCollatorWithPadding(tokenizer=tokenizer)
 
     # ---- Evaluation ----------------------------------------------------------

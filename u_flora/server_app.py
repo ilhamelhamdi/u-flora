@@ -120,7 +120,7 @@ def main(grid: Grid, context: Context) -> None:
 # -- Evaluation ----------------------------------------------------------------
 
 
-def _get_validation_set(cfg, adapter):
+def _get_validation_set(cfg, adapter: TaskAdapter) -> tuple[Dataset, Any]:
     """Load validation set using the task adapter."""
     dataset_name = cfg.dataset.name
     dataset_config = cfg.datasets[dataset_name]
