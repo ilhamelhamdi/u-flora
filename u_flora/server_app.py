@@ -19,7 +19,7 @@ from datasets import Dataset
 from .tasks import TaskAdapter
 from .tasks.registry import get_task_adapter
 from .dataset import load_data_centralized
-from .utils import replace_keys, configure_logging
+from .utils import replace_keys, configure_logging, cast_state_dict_for_arrayrecord
 from .client_profile.typing import ClientState
 from .strategies.factory import build_strategy
 
@@ -71,7 +71,8 @@ def main(grid: Grid, context: Context) -> None:
     # Get initial model weights
     logger.info("Initializing model: %s", cfg.model.name)
     init_model = task_adapter.get_model(cfg.model)
-    arrays = ArrayRecord(get_peft_model_state_dict(init_model))
+    init_state = get_peft_model_state_dict(init_model)
+    arrays = ArrayRecord(cast_state_dict_for_arrayrecord(init_state))
     logger.debug("Model initialized — LoRA state dict keys: %d", len(arrays))
 
     # Prepare validation set

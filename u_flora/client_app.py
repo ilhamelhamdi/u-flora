@@ -29,6 +29,7 @@ from .utils import (
     warmup_then_cosine,
     FedProxTrainer,
     configure_logging,
+    cast_state_dict_for_arrayrecord,
 )
 from .utils.availability import is_available
 from .utils.timing import apply_duration_jitter, estimate_round_duration_s
@@ -205,7 +206,8 @@ def train(msg: Message, context: Context):
         )
 
         # -- Build response ------------------------------------------------
-        model_record = ArrayRecord(get_peft_model_state_dict(model))
+        model_state = get_peft_model_state_dict(model)
+        model_record = ArrayRecord(cast_state_dict_for_arrayrecord(model_state))
 
         metrics = {
             "train_loss": results.training_loss,
