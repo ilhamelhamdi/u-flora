@@ -22,8 +22,15 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install torch --index-url https://download.pytorch.org/whl/cu124
 
-# Install project + CUDA extra
+# Install project + CUDA extra (pip)
 pip install ".[cuda]" --no-build-isolation
+```
+
+If you prefer `uv`, run:
+
+```bash
+uv pip install hatchling
+uv pip install "[cuda]" --no-build-isolation
 ```
 
 ## Run
