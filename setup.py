@@ -582,7 +582,7 @@ def run_task(
 
 
 def run_batch(batch_config_path: str) -> None:
-    """Dispatch a batch of experiments without blocking.
+    """Run a batch of experiments sequentially.
 
     The batch config is a YAML file under ``u_flora/config/groups`` and
     lists experiments with a base config name (from ``u_flora/config/defaults``)
@@ -600,8 +600,10 @@ def run_batch(batch_config_path: str) -> None:
           - "num_server_rounds=100"
     ```
 
-    Each experiment is started via ``flwr run`` and this function returns after
-    all runs have been dispatched. ``flwr`` handles any internal queuing.
+    Resume behaviour: a state file is written to ``logs/batch-state-<name>.json``
+    after each experiment completes.  If the batch process is restarted, already-
+    completed experiments are skipped automatically.  Delete the state file to
+    force a full re-run.
     """
     import yaml
 
@@ -656,16 +658,19 @@ def run_batch(batch_config_path: str) -> None:
             bases_label,
             merged_overrides,
         )
-        run_task(
+        rc = run_task(
             merged_overrides,
-            block=False,
+            block=True,
             name=name,
             superlink_connection=superlink_connection_name,
             max_duration_s=max_experiment_duration_s,
         )
+        if rc not in (0, None):
+            logger.error("Experiment %s failed (exit %d)", name, rc)
+        time.sleep(5)
 
     logger.info(
-        "Batch dispatch complete: %d experiments started. See logs in %s.",
+        "Batch complete: %d experiments run. See individual experiment logs in %s.",
         total,
         LOG_DIR,
     )
