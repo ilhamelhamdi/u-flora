@@ -11,11 +11,11 @@ experiments:
   #     bases: [pools/300, datasets/mnli, strategies/random],
   #     overrides: ["seed=42"],
   #   }
-  - {
-      name: g1_oort_mnli_s42,
-      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
-      overrides: ["seed=42"],
-    }
+  # - {
+  #     name: g1_oort_mnli_s42,
+  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     overrides: ["seed=42"],
+  #   }
   - {
       name: g1_fedcs_mnli_s42,
       bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
