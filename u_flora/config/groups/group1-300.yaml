@@ -6,9 +6,14 @@ superlink-connection: "local-300"
 max-experiment-duration-s: 28800 # 8 hours hard kill per experiment
 experiments:
   # ====================== seed = 42 ======================
+  # - {
+  #     name: g1_random_mnli_s42,
+  #     bases: [pools/300, datasets/mnli, strategies/random],
+  #     overrides: ["seed=42"],
+  #   }
   - {
-      name: g1_random_mnli_s42,
-      bases: [pools/300, datasets/mnli, strategies/random],
+      name: g1_oort_mnli_s42,
+      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
       overrides: ["seed=42"],
     }
   - {
@@ -19,11 +24,6 @@ experiments:
   - {
       name: g1_tifl_mnli_s42,
       bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
-      overrides: ["seed=42"],
-    }
-  - {
-      name: g1_oort_mnli_s42,
-      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
       overrides: ["seed=42"],
     }
 
