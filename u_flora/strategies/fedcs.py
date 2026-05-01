@@ -230,16 +230,15 @@ class FedCSStrategy(BaseStrategy):
 
         return list(selected)
 
-
     def _estimate_distribution_to_client_i(self, state: ClientState) -> float:
         """Estimate time to download the global model in second(s)."""
-        comm = max(1.0, state.profile.communication)
-        return self.model_size_kb / comm
+        _, comm_s, _ = self._estimate_duration(state.profile)
+        return comm_s / 2.0
 
     def _estimate_upload_from_client_i(self, state: ClientState) -> float:
         """Estimate time to upload the model update in second(s)."""
-        comm = max(1.0, state.profile.communication)
-        return self.model_size_kb / comm
+        _, comm_s, _ = self._estimate_duration(state.profile)
+        return comm_s / 2.0
 
     def _estimate_training_time_on_client_i(self, state: ClientState) -> float:
         """Estimate local training time on client i in second(s).

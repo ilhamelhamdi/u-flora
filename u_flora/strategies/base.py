@@ -601,8 +601,8 @@ class BaseStrategy(Strategy):
     def _estimate_duration(
         self,
         profile: DeviceProfile,
-        num_samples: int,
-        local_epochs: int,
+        num_samples: int = 0,
+        local_epochs: int = 0,
     ) -> tuple[float, float, float]:
         """Estimate (compute_s, comm_s, total_s) for one client one round."""
         return estimate_round_duration_s(

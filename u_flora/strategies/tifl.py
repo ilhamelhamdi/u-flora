@@ -28,7 +28,7 @@ import random
 from typing import Any
 
 import numpy as np
-from flwr.common import ArrayRecord, Message, MetricRecord
+from flwr.common import ArrayRecord, Message
 from flwr.server import Grid
 
 from .base import BaseStrategy
