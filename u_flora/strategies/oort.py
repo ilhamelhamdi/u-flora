@@ -201,7 +201,7 @@ class OortStrategy(BaseStrategy):
 
         if extra_metrics:
             oort_extras.update(extra_metrics)
-        return super().log_metrics(round_num, replies, selected_pids, extra_metrics)
+        return super().log_metrics(round_num, replies, selected_pids, oort_extras)
 
     def _observed_client_utility(
         self, pid: int, fb: dict[str, float], round_num: int

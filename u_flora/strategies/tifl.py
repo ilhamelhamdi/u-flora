@@ -325,7 +325,7 @@ class TiFLStrategy(BaseStrategy):
         if extra_metrics:
             tifl_extras.update(extra_metrics)
 
-        return super().log_metrics(round_num, replies, selected_pids, extra_metrics)
+        return super().log_metrics(round_num, replies, selected_pids, tifl_extras)
 
     def _build_tiers(self, latency_by_pid: dict[int, float]) -> None:
         sorted_items = sorted(latency_by_pid.items(), key=lambda x: x[1])
