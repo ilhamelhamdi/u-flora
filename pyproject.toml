@@ -7,6 +7,7 @@ name = "u-flora"
 version = "1.0.0"
 description = "U-Flora: Efficient federated LoRA fine-tuning of large language models with Flower"
 license = "Apache-2.0"
+requires-python = ">=3.12"
 dependencies = [
     "flwr[simulation]>=1.29.0",
     "flwr-datasets>=0.6.0",
@@ -24,8 +25,16 @@ dependencies = [
     "requests>=2.32.0",
 ]
 
+[project.optional-dependencies]
+cuda = [
+    "flash-attn>=2.5.9",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["."]
+
+[tool.uv.extra-build-dependencies]
+flash-attn = ["torch"]
 
 [tool.flwr.app]
 publisher = "flwrlabs"

@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 import evaluate
+import logging
 import math
 import numpy as np
 import torch
@@ -23,11 +24,18 @@ from transformers import (
 )
 
 try:
+    from transformers.utils import is_flash_attn_2_available
+except ImportError:  # pragma: no cover - older Transformers versions
+    is_flash_attn_2_available = None
+
+try:
     from transformers import DataCollatorWithFlattening
 except ImportError:  # pragma: no cover - older Transformers versions
     DataCollatorWithFlattening = None
 
 from . import TaskAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class TextClassificationAdapter(TaskAdapter):
@@ -64,11 +72,22 @@ class TextClassificationAdapter(TaskAdapter):
     def _resolve_attn_implementation(self, model_cfg: DictConfig) -> str | None:
         attn_impl = getattr(model_cfg, "attn_implementation", None)
         if attn_impl:
+            if attn_impl == "flash_attention_2" and not self._flash_attn_available():
+                logger.warning(
+                    "Requested flash_attention_2 but flash_attn is not installed; "
+                    "falling back to default attention."
+                )
+                return None
             return attn_impl
         needs_flash = bool(getattr(model_cfg, "padding_free", False))
-        if needs_flash and torch.cuda.is_available():
+        if needs_flash and torch.cuda.is_available() and self._flash_attn_available():
             return "flash_attention_2"
         return None
+
+    def _flash_attn_available(self) -> bool:
+        if is_flash_attn_2_available is None:
+            return False
+        return bool(is_flash_attn_2_available())
 
     def _resolve_torch_dtype(self, model_cfg: DictConfig) -> torch.dtype:
         raw_dtype = getattr(model_cfg, "torch_dtype", None)
