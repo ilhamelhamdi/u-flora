@@ -152,6 +152,8 @@ def _get_evaluate_fn(
         torch.cuda.empty_cache()
 
         model = task_adapter.get_model(cfg.model)
+        if torch.cuda.is_available():
+            model.to("cuda")
         set_peft_model_state_dict(model, arrays.to_torch_state_dict())
 
         # Periodically save model

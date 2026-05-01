@@ -103,6 +103,8 @@ def train(msg: Message, context: Context):
     # -- Model ---------------------------------------------------------
     logger.debug("%s Loading model weights...", tag)
     model = adapter.get_model(cfg.model)
+    if torch.cuda.is_available():
+        model.to("cuda")
     set_peft_model_state_dict(model, msg.content["arrays"].to_torch_state_dict())
 
     # Capture global params before any local updates (used by FedProx).
