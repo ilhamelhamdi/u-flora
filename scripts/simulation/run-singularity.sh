@@ -40,7 +40,8 @@ singularity exec --nv \
         chmod +x $SETUP_ENV_SCRIPT && $SETUP_ENV_SCRIPT && \
 
         source .venv/bin/activate && \
-        flwr config list \
+        flwr config list && \
+        python setup.py batch --batch-config group1-300.yaml\"
     "
 
 # echo "Stopping Singularity instance..."
