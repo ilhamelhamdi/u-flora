@@ -68,6 +68,8 @@ class OortStrategy(BaseStrategy):
         self._round_utility_history: list[float] = []
         self._last_utility_clip_cap: float = 0.0
         self._last_participation_excluded: int = 0
+        self._last_exploit_k: int = 0
+        self._last_explore_k: int = 0
 
     def configure_train(
         self,
@@ -80,7 +82,7 @@ class OortStrategy(BaseStrategy):
         all_pids = [p for p, s in self.client_states.items() if s.available]
         if not all_pids:
             return [], []
-        
+
         self._update_epsilon(num_rounds=round_num)  # Decay epsilon per round
 
         # Filter out clients which are selected more than `max_participation_rounds`
@@ -99,6 +101,9 @@ class OortStrategy(BaseStrategy):
         k = min(self.num_to_select, len(eligible_pids))
         exploit_k = min(k, max(0, int(round(self.epsilon * k))))
         explore_k = k - exploit_k
+
+        self._last_exploit_k = exploit_k
+        self._last_explore_k = explore_k
 
         selected: list[int] = []
 
@@ -173,7 +178,8 @@ class OortStrategy(BaseStrategy):
                 self._last_participation_excluded
             ),
             "strategy/oort_utility_clip_cap": float(self._last_utility_clip_cap),
-
+            "strategy/oort_exploit_k": float(self._last_exploit_k),
+            "strategy/oort_explore_k": float(self._last_explore_k),
             # --- Redundant but OK for easier analysis ---
             "strategy/oort_explored_clients": float(
                 len(
