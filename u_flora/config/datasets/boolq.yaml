@@ -4,7 +4,7 @@ overrides:
   - "task-name=text_classification"
   - "dataset.name=boolq"
   - "dataset.partition.strategy=dirichlet"
-  - "dataset.partition.dirichlet.alpha=2"
+  - "dataset.partition.dirichlet.alpha=0.5"
   - "dataset.partition.dirichlet.min-partition-size=16"
   - "train.training-arguments.num-train-epochs=1"
   - "num-server-rounds=100"
