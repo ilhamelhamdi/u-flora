@@ -389,13 +389,12 @@ class TiFLStrategy(BaseStrategy):
                 round(tier.probability, 4),
             )
 
-        wandb.log({"tifl/tier_structure": tier_table}, commit=False)
-
         tifl_one_time_metadata = {
+            "tifl/tier_structure": tier_table,
             "tifl/active_clients": float(len(self._state.active_clients)),
             "tifl/dropouts": float(len(self._state.dropout_clients)),
         }
-        wandb.log(tifl_one_time_metadata)
+        wandb.log(tifl_one_time_metadata, commit=False)
 
     def _weighted_choose_tier(self, available_tiers: list[int]) -> int:
         probs = [
