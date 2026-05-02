@@ -59,7 +59,7 @@ class TiFLTierState:
 
     tier_id: int
     clients: list[int] = field(default_factory=list)
-    avg_latency: float = 0.0
+    client_latencies: dict[int, float] = field(default_factory=dict)  # pid -> latency
     credits: int = 0
     probability: float = 0.0
     accuracy: float = 0.0
@@ -91,7 +91,9 @@ class TiFLStrategy(BaseStrategy):
         seed: int = 42,
         **kwargs: Any,
     ) -> None:
-        super().__init__(**kwargs, evaluate_during_training=True) # TiFL needs post-round feedback for tier accuracy updates
+        super().__init__(
+            **kwargs, evaluate_during_training=True
+        )  # TiFL needs post-round feedback for tier accuracy updates
         self.num_to_select = num_to_select
         self.num_tiers = max(1, num_tiers)
         self.sync_rounds = max(1, sync_rounds)
@@ -199,6 +201,7 @@ class TiFLStrategy(BaseStrategy):
 
         self._build_tiers(avg_latency_profiling)
         self._initialize_tier_controls()
+        self._log_tier_structure()
 
         logger.info(
             "TiFL profiling complete: active=%d dropouts=%d tiers=%d",
@@ -224,8 +227,7 @@ class TiFLStrategy(BaseStrategy):
         round_clients_by_tier: dict[int, list[int]] = {}
         for tier_id, tier in self._state.tiers.items():
             avail_in_tier = [
-                pid for pid in tier.clients
-                if self.client_states[pid].available
+                pid for pid in tier.clients if self.client_states[pid].available
             ]
             round_clients_by_tier[tier_id] = avail_in_tier
 
@@ -235,7 +237,9 @@ class TiFLStrategy(BaseStrategy):
             if tier.credits > 0 and round_clients_by_tier[tier_id]
         ]
         if not available_tiers:
-            logger.warning("TiFL: no tiers with remaining credits and available clients")
+            logger.warning(
+                "TiFL: no tiers with remaining credits and available clients"
+            )
             self._state.last_selected_tier = None
             return [], []
 
@@ -296,38 +300,21 @@ class TiFLStrategy(BaseStrategy):
             selected_tier_state.accuracy = tier_acc
 
     def log_metrics(self, round_num, replies, selected_pids, extra_metrics=None):
-        selected_tier_idx = self._state.last_selected_tier
-        selected_tier_state = (
-            self._state.tiers.get(selected_tier_idx, None)
-            if selected_tier_idx is not None
-            else None
-        )
-
         tifl_extras = {
             "strategy/tifl_selected_tier": self._state.last_selected_tier,
-            "strategy/tifl_active_clients": float(len(self._state.active_clients)),
-            "strategy/tifl_dropouts": float(len(self._state.dropout_clients)),
-            "strategy/tifl_available_tiers": float(
-                len([tier for tier in self._state.tiers.values() if tier.credits > 0])
-            ),
         }
-        if selected_tier_state is not None:
-            tifl_extras["strategy/tifl_tier_accuracy"] = float(
-                selected_tier_state.accuracy
-            )
-            tifl_extras["strategy/tifl_tier_credit_left"] = float(
-                selected_tier_state.credits
-            )
-            tifl_extras["strategy/tifl_tier_prob"] = float(
-                selected_tier_state.probability
-            )
-            
+
         tier_probs = [t.probability for t in self._state.tiers.values()]
         if len(tier_probs) > 1:
             import math
+
             entropy = -sum(p * math.log(p + 1e-9) for p in tier_probs)
             tifl_extras["strategy/tifl_tier_prob_entropy"] = entropy
 
+        for tier_idx, tier in self._state.tiers.items():
+            tifl_extras[f"strategy/tifl_tier{tier_idx}/prob"] = float(tier.probability)
+            tifl_extras[f"strategy/tifl_tier{tier_idx}/credits"] = float(tier.credits)
+            tifl_extras[f"strategy/tifl_tier{tier_idx}/accuracy"] = float(tier.accuracy)
 
         if extra_metrics:
             tifl_extras.update(extra_metrics)
@@ -345,13 +332,10 @@ class TiFLStrategy(BaseStrategy):
             if chunk.size == 0:
                 continue
             clients = [int(pid) for pid in chunk.tolist()]
-            avg_tier_latency = float(
-                np.mean([latency_by_pid[int(pid)] for pid in chunk.tolist()])
-            )
             self._state.tiers[tier_idx] = TiFLTierState(
                 tier_id=tier_idx,
                 clients=clients,
-                avg_latency=avg_tier_latency,
+                client_latencies={pid: latency_by_pid[pid] for pid in clients},
             )
 
         self.num_tiers = max(1, len(self._state.tiers))
@@ -370,6 +354,48 @@ class TiFLStrategy(BaseStrategy):
             tier.probability = uniform_prob
             tier.accuracy = 0.0
             tier.last_checked_accuracy = 0.0
+
+    def _log_tier_structure(self) -> None:
+        """Log tier composition and latency statistics once after tier construction."""
+        if not self.use_wandb:
+            return
+
+        import statistics
+        import wandb
+
+        tier_table = wandb.Table(
+            columns=[
+                "tier_id",
+                "n_clients",
+                "latency_mean",
+                "latency_std",
+                "latency_min",
+                "latency_max",
+                "credits",
+                "probability",
+            ]
+        )
+
+        for tier_idx, tier in self._state.tiers.items():
+            latencies = tier.client_latencies.values()
+            tier_table.add_data(
+                tier_idx,
+                len(tier.clients),
+                round(statistics.mean(latencies), 3),
+                round(statistics.stdev(latencies) if len(latencies) > 1 else 0.0, 3),
+                round(min(latencies), 3),
+                round(max(latencies), 3),
+                tier.credits,
+                round(tier.probability, 4),
+            )
+
+        wandb.log({"tifl/tier_structure": tier_table}, commit=False)
+
+        tifl_one_time_metadata = {
+            "tifl/tifl_active_clients": float(len(self._state.active_clients)),
+            "tifl/tifl_dropouts": float(len(self._state.dropout_clients)),
+        }
+        wandb.log(tifl_one_time_metadata)
 
     def _weighted_choose_tier(self, available_tiers: list[int]) -> int:
         probs = [
