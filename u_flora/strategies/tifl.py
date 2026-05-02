@@ -392,8 +392,8 @@ class TiFLStrategy(BaseStrategy):
         wandb.log({"tifl/tier_structure": tier_table}, commit=False)
 
         tifl_one_time_metadata = {
-            "tifl/tifl_active_clients": float(len(self._state.active_clients)),
-            "tifl/tifl_dropouts": float(len(self._state.dropout_clients)),
+            "tifl/active_clients": float(len(self._state.active_clients)),
+            "tifl/dropouts": float(len(self._state.dropout_clients)),
         }
         wandb.log(tifl_one_time_metadata)
 
