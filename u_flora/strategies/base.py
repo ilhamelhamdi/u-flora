@@ -93,6 +93,9 @@ class BaseStrategy(Strategy):
         # How many times each partition_id has been selected (for fairness metrics)
         self._participation_counts: dict[int, int] = defaultdict(int)
 
+        # Set of clients that have ever been selected or explored
+        self._explored_clients: set[int] = set()
+
         if use_wandb:
             self._history_table = wandb.Table(
                 columns=[
@@ -207,7 +210,7 @@ class BaseStrategy(Strategy):
             )
 
             replies = grid.send_and_receive(messages, timeout=timeout)
-           
+
             logger.info(
                 "[ROUND %d/%d] Received %d/%d replies",
                 current_round,
@@ -226,7 +229,7 @@ class BaseStrategy(Strategy):
             # Depending on the strategy, we may want to extract client feedback and update states
             self.configure_post_training_round(current_round, replies, selected_pids)
 
-            # Centralized evaluation 
+            # Centralized evaluation
             eval_extra: dict[str, float] | None = None
             if evaluate_fn:
                 res = evaluate_fn(current_round, arrays)
@@ -372,9 +375,11 @@ class BaseStrategy(Strategy):
         feedbacks: dict[int, dict[str, float]] = {}
         for msg in valid_replies:
             if not msg.has_content():
-                logger.warning("Skipping a message with no content (likely a client crash/OOM).")
+                logger.warning(
+                    "Skipping a message with no content (likely a client crash/OOM)."
+                )
                 continue
-            
+
             m = (
                 msg.content["metrics"]
                 if "metrics" in msg.content
@@ -395,7 +400,7 @@ class BaseStrategy(Strategy):
                 feedbacks[pid]["val_num_examples"] = m.get("val_num_examples")
 
         return feedbacks
-    
+
     # def filter_replies(self, replies: list[Message]) -> list[Message]:
     #     """Filter out late replies that arrived after the round deadline (for strategies that account for stragglers)."""
     #     # By default, no filtering (all replies are considered valid).
@@ -626,6 +631,7 @@ class BaseStrategy(Strategy):
         selected_pids: list[int],
     ) -> None:
         """Update ClientState from training feedback and participation counts."""
+        self._explored_clients.update(feedbacks.keys())
         for pid, fb in feedbacks.items():
             if pid not in self.client_states:
                 continue
@@ -681,6 +687,21 @@ class BaseStrategy(Strategy):
         jfi = compute_jain_fairness_index(all_counts)
         gini = compute_gini_coefficient(all_counts)
         p_std = statistics.stdev(all_counts) if len(all_counts) > 1 else 0.0
+        unique_clients_explored = len(self._explored_clients)
+        exploration_ratio = unique_clients_explored / max(1, len(self.client_states))
+
+        # Utility metrics (Client-losses)
+        all_known_losses = [
+            state.last_train_loss
+            for state in self.client_states.values()
+            if state.last_train_loss is not None
+        ]
+        loss_mean = loss_std = loss_cv = n_clients_with_known_loss = 0.0
+        if len(all_known_losses) > 1:
+            loss_mean = statistics.mean(all_known_losses)
+            loss_std = statistics.stdev(all_known_losses)
+            loss_cv = loss_std / loss_mean if loss_mean > 0 else 0.0
+            n_clients_with_known_loss = len(all_known_losses)
 
         # Log per-client details
         if self.use_wandb:
@@ -711,6 +732,12 @@ class BaseStrategy(Strategy):
                 "fairness/participation_std": p_std,
                 "fairness/participation_min": float(min(all_counts)),
                 "fairness/participation_max": float(max(all_counts)),
+                "fairness/unique_clients_explored": unique_clients_explored,
+                "fairness/exploration_ratio": exploration_ratio,
+                "utility/loss_mean": loss_mean,
+                "utility/loss_std": loss_std,
+                "utility/loss_cv": loss_cv,
+                "utility/n_clients_with_known_loss": n_clients_with_known_loss,
             }
             if extra_metrics:
                 log_dict.update(extra_metrics)
@@ -767,14 +794,24 @@ class BaseStrategy(Strategy):
             final_metric = float(m.get(f"eval_{self.metric_name}", 0.0))
 
         if self.use_wandb:
-            wandb.log({"client/raw_training_history": self._history_table}, commit=False)
+            wandb.log(
+                {"client/raw_training_history": self._history_table}, commit=False
+            )
             summary: dict[str, float] = {
+                # --- Performance metrics ---
                 "summary/total_wall_clock": self._cumulative_wall_clock,
                 "summary/total_rounds": num_rounds,
                 "summary/best_metric_round": float(self._best_metric_round),
                 "summary/best_metric": self._best_metric,
                 "summary/final_metric": (
                     final_metric if final_metric is not None else float("nan")
+                ),
+                "summary/stability_drop": self._best_metric - final_metric,
+                # --- Fairness metrics ---
+                "summary/selection_count_histogram": wandb.Histogram(all_counts),
+                "summary/clients_never_selected": sum(1 for c in all_counts if c == 0),
+                "summary/clients_selected_at_least_once": sum(
+                    1 for c in all_counts if c > 0
                 ),
                 "summary/final_jain_index": jfi,
                 "summary/participation_gini": gini,
