@@ -84,7 +84,7 @@ simulation.jitter.comm-stall-factor-max = 3.0
 # -- Experiment tracking -------------------------------------------------------
 wandb.project = "u-flora-experiments"
 wandb.entity = "ilham-abdillah-alhamdi-universitas-indonesia"
-wandb.run-name = "g1-v1"
+wandb.run-name = "a0.5-v1"
 
 # -- Client selection strategy -------------------------------------------------
 # name: random | fedcs | tifl | oort | oort_fair | uflora
