@@ -15,6 +15,7 @@ import logging
 from typing import Any
 
 from flwr.common import MetricRecord
+import statistics
 
 from .oort import OortStrategy
 from ._fairness import ConvergenceFairnessTracker
@@ -78,11 +79,17 @@ class OortFairStrategy(OortStrategy):
         all_debts = [
             self.client_states[pid].participation_debt for pid in self.client_states
         ]
-        mean_debt = sum(all_debts) / max(1, len(all_debts))
+        mean_debt = statistics.mean(all_debts) if all_debts else 0.0
+        std_debt = statistics.stdev(all_debts) if len(all_debts) > 1 else 0.0
+        max_debt = max(all_debts) if all_debts else 0.0
+        min_debt = min(all_debts) if all_debts else 0.0
         oort_fair_extras = {
             "strategy/oort_fair_lambda_t": self._fairness.lambda_t(),
             "strategy/oort_fair_running_max_dm": self._fairness.running_max_dm,
             "strategy/oort_fair_mean_debt": mean_debt,
+            "strategy/oort_fair_std_debt": std_debt,
+            "strategy/oort_fair_max_debt": max_debt,
+            "strategy/oort_fair_min_debt": min_debt,
         }
         if extra_metrics:
             oort_fair_extras.update(extra_metrics)

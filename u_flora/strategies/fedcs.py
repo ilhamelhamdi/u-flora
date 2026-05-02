@@ -67,6 +67,11 @@ class FedCSStrategy(BaseStrategy):
         self.num_to_select = num_to_select
         self._rng = random.Random(seed)
 
+        # For logging extra metrics related to FedCS strategy.
+        self._last_deadline_eligible: int = 0
+        self._last_deadline_excluded: int = 0
+        self._last_deadline_exclusion_rate: float = 0.0
+
     def start(
         self,
         grid,
@@ -162,6 +167,9 @@ class FedCSStrategy(BaseStrategy):
     def log_metrics(self, round_num, replies, selected_pids, extra_metrics=None):
         fedcs_extras = {
             "strategy/deadline": self.round_deadline_s,
+            "strategy/fedcs_deadline_eligible": float(self._last_deadline_eligible),
+            "strategy/fedcs_deadline_excluded": float(self._last_deadline_excluded),
+            "strategy/fedcs_exclusion_rate": float(self._last_deadline_exclusion_rate),
         }
 
         if extra_metrics:
@@ -174,7 +182,8 @@ class FedCSStrategy(BaseStrategy):
     # ------------------------------------------------------------------
 
     def _greedy_select(self, candidate_states: dict[int, ClientState]) -> list[int]:
-        selected: set[int] = set()  # S
+        selected: list[int] = []  # S
+        eligible_clients: list[int] = []
         distribution_time: float = 0.0  # T_dist
         theta: float = (
             0.0  # Θ_i : estimated elapsed time from the beginning of the Scheduled Update and Upload step until the ki-th client completes the update and upload procedures
@@ -197,15 +206,16 @@ class FedCSStrategy(BaseStrategy):
             for cid in candidate_states
         }
 
-        while len(candidate_states) > 0:
+        candidates = dict(candidate_states)
+        while len(candidates) > 0:
             costs = {
                 cid: max(distribution_time, t_dist[cid])
                 + t_upload[cid]
                 + max(0, t_update[cid] - theta)
-                for cid in candidate_states
+                for cid in candidates
             }
             selected_cid = min(costs, key=costs.get)
-            candidate_states.pop(selected_cid)  # Remove from candidates
+            candidates.pop(selected_cid)  # Remove from candidates
             theta_prime = (
                 theta + t_upload[selected_cid] + max(0, t_update[selected_cid] - theta)
             )
@@ -217,18 +227,31 @@ class FedCSStrategy(BaseStrategy):
             )
 
             if t <= self.round_deadline_s:
-                selected.add(selected_cid)
+                eligible_clients.append(selected_cid)
                 distribution_time = max(distribution_time, t_dist[selected_cid])
                 theta = theta_prime
 
-            # Stop if we have selected enough clients (if num_to_select is set).
-            if self.num_to_select is not None and len(selected) >= self.num_to_select:
-                logger.info(
-                    "Reached num_to_select=%d, stopping selection.", self.num_to_select
-                )
-                break
+            # # Stop if we have selected enough clients (if num_to_select is set).
+            # if self.num_to_select is not None and len(selected) >= self.num_to_select:
+            #     logger.info(
+            #         "Reached num_to_select=%d, stopping selection.", self.num_to_select
+            #     )
+            #     break
 
-        return list(selected)
+        selected = (
+            eligible_clients[: self.num_to_select]
+            if self.num_to_select is not None
+            else eligible_clients
+        )
+
+        # Log extra metrics about deadline eligibility for this round.
+        self._last_deadline_eligible = len(eligible_clients)
+        self._last_deadline_excluded = len(candidate_states) - len(eligible_clients)
+        self._last_deadline_exclusion_rate = (
+            self._last_deadline_excluded / max(1, len(candidate_states))
+        )
+
+        return selected
 
     def _estimate_distribution_to_client_i(self, state: ClientState) -> float:
         """Estimate time to download the global model in second(s)."""

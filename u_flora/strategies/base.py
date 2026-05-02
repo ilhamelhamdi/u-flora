@@ -806,7 +806,11 @@ class BaseStrategy(Strategy):
                 "summary/final_metric": (
                     final_metric if final_metric is not None else float("nan")
                 ),
-                "summary/stability_drop": self._best_metric - final_metric,
+                "summary/stability_drop": (
+                    self._best_metric - final_metric
+                    if final_metric is not None
+                    else float("nan")
+                ),
                 # --- Fairness metrics ---
                 "summary/selection_count_histogram": wandb.Histogram(all_counts),
                 "summary/clients_never_selected": sum(1 for c in all_counts if c == 0),

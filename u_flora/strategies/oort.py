@@ -167,6 +167,14 @@ class OortStrategy(BaseStrategy):
         )
         oort_extras = {
             "strategy/oort_round_utility": float(round_utility),
+            "strategy/oort_preferred_t": float(self._preferred_t or 0.0),
+            "strategy/oort_epsilon": float(self.epsilon),
+            "strategy/oort_excluded_by_participation": float(
+                self._last_participation_excluded
+            ),
+            "strategy/oort_utility_clip_cap": float(self._last_utility_clip_cap),
+
+            # --- Redundant but OK for easier analysis ---
             "strategy/oort_explored_clients": float(
                 len(
                     [
@@ -185,16 +193,6 @@ class OortStrategy(BaseStrategy):
                     ]
                 )
             ),
-            "strategy/oort_preferred_t": float(self._preferred_t or 0.0),
-            "strategy/oort_epsilon": float(self.epsilon),
-            "strategy/oort_participation_cap": float(self.max_participation_rounds),
-            "strategy/oort_excluded_by_participation": float(
-                self._last_participation_excluded
-            ),
-            "strategy/oort_utility_clip_percentile": float(
-                self.utility_clip_percentile
-            ),
-            "strategy/oort_utility_clip_cap": float(self._last_utility_clip_cap),
         }
         if self.pacer_delta is not None:
             oort_extras["strategy/oort_pacer_delta"] = float(self.pacer_delta)

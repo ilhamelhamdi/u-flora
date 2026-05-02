@@ -321,6 +321,13 @@ class TiFLStrategy(BaseStrategy):
             tifl_extras["strategy/tifl_tier_prob"] = float(
                 selected_tier_state.probability
             )
+            
+        tier_probs = [t.probability for t in self._state.tiers.values()]
+        if len(tier_probs) > 1:
+            import math
+            entropy = -sum(p * math.log(p + 1e-9) for p in tier_probs)
+            tifl_extras["strategy/tifl_tier_prob_entropy"] = entropy
+
 
         if extra_metrics:
             tifl_extras.update(extra_metrics)
