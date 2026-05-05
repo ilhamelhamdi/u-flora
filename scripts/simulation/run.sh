@@ -36,6 +36,14 @@ uv pip install "${WHEELS_PATH}/flash_attn-2.8.3-cp312-cp312-linux_x86_64.whl"
 # 5. Install project dependencies
 uv pip install -e .
 
+
+if [ -f .env ]; then
+    echo "Loading environment variables..."
+    set -a            # Automatically export all variables
+    source .env
+    set +a            # Turn off automatic exporting
+fi
+
 # 6. Run the workload
 echo "Starting Flower Simulation..."
 flwr config list
