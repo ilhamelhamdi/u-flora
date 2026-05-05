@@ -11,40 +11,32 @@
 #SBATCH --mail-user=ilham.abdillah.alhamdi@gmail.com
 #SBATCH --mail-type=ALL
 
-# Variables
-SIF_PATH=/srv/images/python_3.12.9.sif
-INSTANCE_NAME=uflora-testbed      
+
+# 1. Load Host Modules (If your cluster uses 'module load')
+# module load cuda/12.x  # Only if needed for runtime libraries
 PROJECT_ROOT=$(pwd)
-SETUP_ENV_SCRIPT=${PROJECT_ROOT}/scripts/setup-env.sh
+WHEELS_PATH=${HOME}/wheels
 
-export SINGULARITYENV_FLWR_HOME=${PROJECT_ROOT}/.flwr
+# 2. Ensure uv is available
+export PATH="$HOME/.local/bin:$PATH"
+if ! command -v uv &> /dev/null; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
 
-# Set environment variables for Singularity to use the local Python user base
-export SINGULARITYENV_PYTHONUSERBASE=${PROJECT_ROOT}/.local
-export SINGULARITYENV_PATH=$(pwd)/.local/bin:$PATH
+# 3. Environment Setup
+echo "Syncing environment..."
+# uv python install 3.12 # Ensures the correct python version is used
+uv venv .venv --python 3.12
+source .venv/bin/activate
 
+# 4. Install pre-built flash-attn (Bypasses lack of nvcc)
+echo "Installing pre-built wheels..."
+uv pip install "${WHEELS_PATH}/flash_attn-2.8.3-cp312-cp312-linux_x86_64.whl"
 
-echo "Starting Singularity instance..."
-singularity instance start --nv \
-    --env-file .env \
-    --bind ${PROJECT_ROOT}:/root \
-    $SIF_PATH \
-    $INSTANCE_NAME
+# 5. Install project dependencies
+uv pip install -e .
 
-
-singularity exec --nv \
-    --cwd /root \
-    --env-file .env \
-    instance://$INSTANCE_NAME \
-    bash -c "
-        chmod +x $SETUP_ENV_SCRIPT && $SETUP_ENV_SCRIPT && \
-
-        source .venv/bin/activate && \
-        flwr config list \
-    "
-
-# echo "Stopping Singularity instance..."
-# singularity instance stop $INSTANCE_NAME
-
-# Wait indefinitely until timeout
-while true; do sleep 1; done
+# 6. Run the workload
+echo "Starting Flower Simulation..."
+flwr config list
+python setup.py batch --batch-config group1-300.yaml
