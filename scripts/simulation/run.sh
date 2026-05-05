@@ -39,4 +39,4 @@ uv pip install -e .
 # 6. Run the workload
 echo "Starting Flower Simulation..."
 flwr config list
-python setup.py batch --batch-config group1-300.yaml
+python setup.py batch --batch-config group2.yaml

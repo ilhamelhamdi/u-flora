@@ -1,12 +1,13 @@
 description: >
   Group 2 — Statistical Heterogeneity Sensitivity (RQ1). MNLI only, all four
-  baselines, two new Dirichlet conditions. alpha=8 is reused from
+  baselines, two new Dirichlet conditions. alpha=2 is reused from
   group1-300, so this group only contributes the new alpha values.
-    - alpha=2  (high non-IID, strong label concentration)
+    - alpha=0.5  (high non-IID, strong label concentration)
     - iid     (uniform partition; dataset.partition.strategy=iid)
   Three seeds per configuration. Total: 4 (strategy) x 2 (alpha) x 3 (seed) = 24 runs.
 
 superlink-connection: "local-300"
+max-experiment-duration-s: 28800
 experiments:
   # ====================== seed = 42 ======================
   # alpha = 0.5 (high non-IID)
