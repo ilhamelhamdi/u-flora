@@ -58,17 +58,17 @@ experiments:
   - {
       name: g2_random_mnli_iid_s42,
       bases: [pools/300, datasets/mnli, strategies/random],
-      overrides: ["seed=42", "dataset.partition.strategy=iid"],
+      overrides: ["seed=42", "dataset.partition.strategy=iid", "wandb.run-name=g2-iid-v1"],
     }
   - {
       name: g2_fedcs_mnli_iid_s42,
       bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
-      overrides: ["seed=42", "dataset.partition.strategy=iid"],
+      overrides: ["seed=42", "dataset.partition.strategy=iid", "wandb.run-name=g2-iid-v1"],
     }
   - {
       name: g2_tifl_mnli_iid_s42,
       bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
-      overrides: ["seed=42", "dataset.partition.strategy=iid"],
+      overrides: ["seed=42", "dataset.partition.strategy=iid", "wandb.run-name=g2-iid-v1"],
     }
   # - {
   #     name: g2_oort_mnli_iid_s42,

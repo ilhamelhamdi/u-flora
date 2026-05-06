@@ -46,12 +46,12 @@ experiments:
   - {
       name: g2_tifl_mnli_a05_s42,
       bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
-      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=0.5"],
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=0.5", "wandb.run-name=g2-a0.5-v1"],
     }
   - {
       name: g2_oort_mnli_a05_s42,
       bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
-      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=0.5"],
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=0.5", "wandb.run-name=g2-a0.5-v1"],
     }
 
   # # IID
@@ -73,7 +73,7 @@ experiments:
   - {
       name: g2_oort_mnli_iid_s42,
       bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
-      overrides: ["seed=42", "dataset.partition.strategy=iid"],
+      overrides: ["seed=42", "dataset.partition.strategy=iid", "wandb.run-name=g2-iid-v1"],
     }
 
   # # ====================== seed = 123 ======================
