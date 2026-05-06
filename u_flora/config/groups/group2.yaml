@@ -10,6 +10,28 @@ superlink-connection: "local-300"
 max-experiment-duration-s: 28800
 experiments:
   # ====================== seed = 42 ======================
+  # alpha = 2 (high non-IID)
+  - {
+      name: g2_random_mnli_a2_s42,
+      bases: [pools/300, datasets/mnli, strategies/random],
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
+  - {
+      name: g2_fedcs_mnli_a2_s42,
+      bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
+  - {
+      name: g2_tifl_mnli_a2_s42,
+      bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
+  - {
+      name: g2_oort_mnli_a2_s42,
+      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=2"],
+    }
+
   # alpha = 0.5 (high non-IID)
   - {
       name: g2_random_mnli_a05_s42,

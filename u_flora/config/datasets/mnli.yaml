@@ -7,4 +7,4 @@ overrides:
   - "dataset.partition.dirichlet.alpha=2"
   - "dataset.partition.dirichlet.min-partition-size=32"
   - "train.training-arguments.num-train-epochs=1"
-  - "num-server-rounds=50"
+  - "num-server-rounds=100"
