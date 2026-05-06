@@ -519,14 +519,19 @@ def run_task(
         escaped = value.replace('"', '\\"')
         return f'"{escaped}"'
 
-    parsed_overrides = []
+    deduped_overrides: dict[str, str] = {}
     for override in overrides:
         if "=" not in override:
             raise ValueError(
                 f"Invalid override format: {override!r}. Expected <key>=<value>."
             )
         key, raw_value = override.split("=", 1)
-        parsed_overrides.append(f"{key}={_format_override_value(raw_value)}")
+        deduped_overrides[key] = raw_value
+
+    parsed_overrides = [
+        f"{key}={_format_override_value(raw_value)}"
+        for key, raw_value in deduped_overrides.items()
+    ]
 
     formatted_overrides = " ".join(parsed_overrides)
     if formatted_overrides:
