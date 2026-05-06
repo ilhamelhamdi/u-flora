@@ -33,16 +33,16 @@ experiments:
   #   }
 
   # # alpha = 0.5 (high non-IID)
-  - {
-      name: g2_random_mnli_a05_s42,
-      bases: [pools/300, datasets/mnli, strategies/random],
-      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=0.5"],
-    }
-  - {
-      name: g2_fedcs_mnli_a05_s42,
-      bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
-      overrides: ["seed=42", "dataset.partition.dirichlet.alpha=0.5"],
-    }
+  # - {
+  #     name: g2_random_mnli_a05_s42,
+  #     bases: [pools/300, datasets/mnli, strategies/random],
+  #     overrides: ["seed=42", "dataset.partition.dirichlet.alpha=0.5"],
+  #   }
+  # - {
+  #     name: g2_fedcs_mnli_a05_s42,
+  #     bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
+  #     overrides: ["seed=42", "dataset.partition.dirichlet.alpha=0.5"],
+  #   }
   - {
       name: g2_tifl_mnli_a05_s42,
       bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
@@ -70,11 +70,11 @@ experiments:
   #     bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
   #     overrides: ["seed=42", "dataset.partition.strategy=iid"],
   #   }
-  # - {
-  #     name: g2_oort_mnli_iid_s42,
-  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
-  #     overrides: ["seed=42", "dataset.partition.strategy=iid"],
-  #   }
+  - {
+      name: g2_oort_mnli_iid_s42,
+      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+      overrides: ["seed=42", "dataset.partition.strategy=iid"],
+    }
 
   # # ====================== seed = 123 ======================
   # - {
