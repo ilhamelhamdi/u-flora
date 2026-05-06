@@ -77,11 +77,11 @@ experiments:
   #   }
 
   # # ====================== seed = 123 ======================
-  - {
-      name: g2_random_mnli_a2_s123,
-      bases: [pools/300, datasets/mnli, strategies/random],
-      overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"],
-    }
+  # - {
+  #     name: g2_random_mnli_a2_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/random],
+  #     overrides: ["seed=123", "dataset.partition.dirichlet.alpha=2"],
+  #   }
   - {
       name: g2_fedcs_mnli_a2_s123,
       bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
