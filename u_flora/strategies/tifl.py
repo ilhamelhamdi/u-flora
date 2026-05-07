@@ -405,7 +405,7 @@ class TiFLStrategy(BaseStrategy):
 
         if tier_state.accuracy <= tier_state.last_checked_accuracy:
             self._change_probs()
-            
+
         for tier in self._state.tiers.values():
             tier.last_checked_accuracy = tier.accuracy
 
@@ -433,12 +433,16 @@ class TiFLStrategy(BaseStrategy):
             return
 
         new_probs: dict[int, float] = {}
-        for rank, tier in enumerate(ranked_by_acc, start=1):
+        for rank, tier in enumerate(ranked_by_acc):
             new_probs[tier.tier_id] = (n - rank) / d
 
         total = sum(new_probs.values())
 
+        # Fallback
         if total <= 0:
+            logger.warning(
+                "TiFL ChangeProbs: all eligible tiers have zero total score, resetting to uniform"
+            )
             uniform = 1.0 / n
             for tier in eligible_tiers:
                 tier.probability = uniform
