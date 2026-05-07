@@ -92,8 +92,9 @@ class TiFLStrategy(BaseStrategy):
         **kwargs: Any,
     ) -> None:
         super().__init__(
-            **kwargs, evaluate_during_training=True
-        )  # TiFL needs post-round feedback for tier accuracy updates
+            **kwargs,
+            # evaluate_during_training=True # No need to evaluate during training for TiFL since it uses training loss as a proxy for accuracy. This also avoids extra evaluation overhead.
+        )
         self.num_to_select = num_to_select
         self.num_tiers = max(1, num_tiers)
         self.sync_rounds = max(1, sync_rounds)
@@ -270,34 +271,18 @@ class TiFLStrategy(BaseStrategy):
     def configure_post_training_round(self, round_num, replies, selected_pids):
         super().configure_post_training_round(round_num, replies, selected_pids)
 
-        valid_replies = [msg for msg in replies if not msg.has_error()]
-        feedbacks_preview = self.extract_feedback(valid_replies)
-
-        if self._state.last_selected_tier is None:
-            return
-
-        # Update tier accuracy for the selected tier
-        selected_tier_state = self._state.tiers.get(self._state.last_selected_tier)
-        numer = 0.0
-        denom = 0.0
-        for pid in selected_pids:
-            fb = feedbacks_preview.get(pid)
-            if not fb:
-                continue
-            # TODO: should not be hardcoded key names, parameterize them instead. Also, how to handle other metrics like perplexity?
-            val_acc = fb.get("val_accuracy")
-            val_weight = fb.get("val_num_examples", 0.0)
-            if val_acc is None or val_weight <= 0:
-                continue
-            numer += float(val_acc) * float(val_weight)
-            denom += float(val_weight)
-
-        if denom <= 0:
-            return
-
-        tier_acc = numer / denom
-        if selected_tier_state is not None:
-            selected_tier_state.accuracy = tier_acc
+        # Recompute accuracy proxy for ALL tiers from ClientState.last_train_loss.
+        # super() has already updated client_states from this round's feedback.
+        # accuracy = -mean_loss: higher (less negative) = lower loss = well represented.
+        # Clients with no loss yet (last_train_loss is None) are excluded from the mean.
+        for tier in self._state.tiers.values():
+            known_losses = [
+                self.client_states[pid].last_train_loss
+                for pid in tier.clients
+                if self.client_states[pid].last_train_loss is not None
+            ]
+            if known_losses:
+                tier.accuracy = -sum(known_losses) / len(known_losses)
 
     def log_metrics(self, round_num, replies, selected_pids, extra_metrics=None):
         tifl_extras = {
@@ -409,9 +394,6 @@ class TiFLStrategy(BaseStrategy):
         return self._rng.choices(available_tiers, weights=probs, k=1)[0]
 
     def _maybe_update_probs(self) -> None:
-        if self._state.last_selected_tier is None:
-            return
-
         tier_state = self._state.tiers.get(self._state.last_selected_tier)
         if tier_state is None:
             return
