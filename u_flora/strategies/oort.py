@@ -83,8 +83,6 @@ class OortStrategy(BaseStrategy):
         if not all_pids:
             return [], []
 
-        self._update_epsilon(num_rounds=round_num)  # Decay epsilon per round
-
         # Filter out clients which are selected more than `max_participation_rounds`
         eligible_pids = self._filter_by_participation_cap(all_pids)
         if not eligible_pids:
@@ -153,7 +151,7 @@ class OortStrategy(BaseStrategy):
             duration = float(fb.get("duration", 0.0))
             if duration > 0:
                 self._observed_durations.append(duration)
-            round_utility += self._observed_client_stat_utility(pid, fb, round_num)
+            round_utility += self._observed_client_stat_utility(pid, fb)
 
         self._round_utility_history.append(round_utility)
 
@@ -161,6 +159,8 @@ class OortStrategy(BaseStrategy):
             self._preferred_t = float(median(self._observed_durations))
             if self.pacer_delta is None:
                 self.pacer_delta = 0.05 * self._preferred_t
+
+        self._update_epsilon(num_rounds=round_num)  # Decay epsilon per round
 
         self._update_pacer_if_needed(round_num)
 
@@ -207,9 +207,7 @@ class OortStrategy(BaseStrategy):
             oort_extras.update(extra_metrics)
         return super().log_metrics(round_num, replies, selected_pids, oort_extras)
 
-    def _observed_client_stat_utility(
-        self, pid: int, fb: dict[str, float], round_num: int
-    ) -> float:
+    def _observed_client_stat_utility(self, pid: int, fb: dict[str, float]) -> float:
         train_loss_rms = float(fb.get("train_loss_rms", 0.0))
         num_examples = float(fb.get("num_samples", 0.0))
         stat_utility = num_examples * abs(train_loss_rms)
