@@ -36,6 +36,9 @@ uv pip install "${WHEELS_PATH}/flash_attn-2.8.3-cp312-cp312-linux_x86_64.whl"
 # 5. Install project dependencies
 uv pip install -e .
 
+# Check flash attn installation
+uv pip show flash-attn
+
 
 if [ -f .env ]; then
     echo "Loading environment variables..."
