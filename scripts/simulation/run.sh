@@ -47,4 +47,7 @@ fi
 # 6. Run the workload
 echo "Starting Flower Simulation..."
 flwr config list
-python setup.py batch --batch-config group2.yaml
+python setup.py batch --batch-config oort-tifl-mnli.yaml --detach
+
+# Wait indefinitely until timeout
+while true; do sleep 1; done
