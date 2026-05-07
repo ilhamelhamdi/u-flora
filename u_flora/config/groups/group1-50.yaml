@@ -5,67 +5,67 @@ description: >
 superlink-connection: "local-50"
 experiments:
   # ====================== seed = 42 ======================
+  # - {
+  #     name: g1_random_boolq_s42,
+  #     bases: [pools/50, datasets/boolq, strategies/random],
+  #     overrides: ["seed=42"],
+  #   }
+  # - {
+  #     name: g1_fedcs_boolq_s42,
+  #     bases: [pools/50, datasets/boolq, strategies/fedcs, strategies/fedcs_50],
+  #     overrides: ["seed=42"],
+  #   }
+  # - {
+  #     name: g1_tifl_boolq_s42,
+  #     bases: [pools/50, datasets/boolq, strategies/tifl, strategies/tifl_50],
+  #     overrides: ["seed=42"],
+  #   }
+  # - {
+  #     name: g1_oort_boolq_s42,
+  #     bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
+  #     overrides: ["seed=42"],
+  #   }
+
+  # ====================== seed = 123 ======================
   - {
-      name: g1_random_boolq_s42,
+      name: g1_random_boolq_s123,
       bases: [pools/50, datasets/boolq, strategies/random],
-      overrides: ["seed=42"],
+      overrides: ["seed=123", "wandb.run-name=g1-v1"],
     }
   - {
-      name: g1_fedcs_boolq_s42,
+      name: g1_fedcs_boolq_s123,
       bases: [pools/50, datasets/boolq, strategies/fedcs, strategies/fedcs_50],
-      overrides: ["seed=42"],
+      overrides: ["seed=123", "wandb.run-name=g1-v1"],
     }
   - {
-      name: g1_tifl_boolq_s42,
+      name: g1_tifl_boolq_s123,
       bases: [pools/50, datasets/boolq, strategies/tifl, strategies/tifl_50],
-      overrides: ["seed=42"],
+      overrides: ["seed=123", "wandb.run-name=g1-v1"],
     }
   - {
-      name: g1_oort_boolq_s42,
+      name: g1_oort_boolq_s123,
       bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
-      overrides: ["seed=42"],
+      overrides: ["seed=123", "wandb.run-name=g1-v1"],
     }
 
-  # # ====================== seed = 123 ======================
-  # - {
-  #     name: g1_random_boolq_s123,
-  #     bases: [pools/50, datasets/boolq, strategies/random],
-  #     overrides: ["seed=123"],
-  #   }
-  # - {
-  #     name: g1_fedcs_boolq_s123,
-  #     bases: [pools/50, datasets/boolq, strategies/fedcs, strategies/fedcs_50],
-  #     overrides: ["seed=123"],
-  #   }
-  # - {
-  #     name: g1_tifl_boolq_s123,
-  #     bases: [pools/50, datasets/boolq, strategies/tifl, strategies/tifl_50],
-  #     overrides: ["seed=123"],
-  #   }
-  # - {
-  #     name: g1_oort_boolq_s123,
-  #     bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
-  #     overrides: ["seed=123"],
-  #   }
-
-  # # ====================== seed = 456 ======================
-  # - {
-  #     name: g1_random_boolq_s456,
-  #     bases: [pools/50, datasets/boolq, strategies/random],
-  #     overrides: ["seed=456"],
-  #   }
-  # - {
-  #     name: g1_fedcs_boolq_s456,
-  #     bases: [pools/50, datasets/boolq, strategies/fedcs, strategies/fedcs_50],
-  #     overrides: ["seed=456"],
-  #   }
-  # - {
-  #     name: g1_tifl_boolq_s456,
-  #     bases: [pools/50, datasets/boolq, strategies/tifl, strategies/tifl_50],
-  #     overrides: ["seed=456"],
-  #   }
-  # - {
-  #     name: g1_oort_boolq_s456,
-  #     bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
-  #     overrides: ["seed=456"],
-  #   }
+  # ====================== seed = 456 ======================
+  - {
+      name: g1_random_boolq_s456,
+      bases: [pools/50, datasets/boolq, strategies/random],
+      overrides: ["seed=456", "wandb.run-name=g1-v1"],
+    }
+  - {
+      name: g1_fedcs_boolq_s456,
+      bases: [pools/50, datasets/boolq, strategies/fedcs, strategies/fedcs_50],
+      overrides: ["seed=456", "wandb.run-name=g1-v1"],
+    }
+  - {
+      name: g1_tifl_boolq_s456,
+      bases: [pools/50, datasets/boolq, strategies/tifl, strategies/tifl_50],
+      overrides: ["seed=456", "wandb.run-name=g1-v1"],
+    }
+  - {
+      name: g1_oort_boolq_s456,
+      bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
+      overrides: ["seed=456", "wandb.run-name=g1-v1"],
+    }
