@@ -4,7 +4,7 @@ Reference: Lai et al., "Oort: Efficient Federated Learning via Guided
 Participant Selection".
 
 Signals used from client feedback:
-- ``train_loss`` as statistical utility input
+- ``train_loss_rms`` as statistical utility input
 - ``duration`` as system-speed signal (D(i))
 - ``num-examples`` as local batch cardinality proxy (|B_i|)
 """
@@ -37,8 +37,8 @@ class OortStrategy(BaseStrategy):
         epsilon_decay: float = 0.98,  # per-round decay factor for epsilon
         epsilon_min: float = 0.2,  # minimum epsilon for exploration
         alpha: float = 2.0,
-        pacer_window: int = 10,
-        pacer_delta: float | None = None,
+        pacer_window: int = 10,  # W
+        pacer_delta: float | None = None,  # ∆
         initial_t: float | None = None,
         cutoff_c: float = 0.95,
         max_participation_rounds: int = 20,
@@ -99,8 +99,8 @@ class OortStrategy(BaseStrategy):
         ]
 
         k = min(self.num_to_select, len(eligible_pids))
-        exploit_k = min(k, max(0, int(round(self.epsilon * k))))
-        explore_k = k - exploit_k
+        explore_k = min(k, max(0, int(round(self.epsilon * k))))
+        exploit_k = k - explore_k
 
         self._last_exploit_k = exploit_k
         self._last_explore_k = explore_k
@@ -153,7 +153,7 @@ class OortStrategy(BaseStrategy):
             duration = float(fb.get("duration", 0.0))
             if duration > 0:
                 self._observed_durations.append(duration)
-            round_utility += self._observed_client_utility(pid, fb, round_num)
+            round_utility += self._observed_client_stat_utility(pid, fb, round_num)
 
         self._round_utility_history.append(round_utility)
 
@@ -162,7 +162,7 @@ class OortStrategy(BaseStrategy):
             if self.pacer_delta is None:
                 self.pacer_delta = 0.05 * self._preferred_t
 
-        self._update_pacer_if_needed()
+        self._update_pacer_if_needed(round_num)
 
     def log_metrics(self, round_num, replies, selected_pids, extra_metrics=None):
         round_utility = (
@@ -207,25 +207,21 @@ class OortStrategy(BaseStrategy):
             oort_extras.update(extra_metrics)
         return super().log_metrics(round_num, replies, selected_pids, oort_extras)
 
-    def _observed_client_utility(
+    def _observed_client_stat_utility(
         self, pid: int, fb: dict[str, float], round_num: int
     ) -> float:
-        train_loss = float(fb.get("train_loss", 0.0))
+        train_loss_rms = float(fb.get("train_loss_rms", 0.0))
         num_examples = float(fb.get("num_samples", 0.0))
-        duration = float(fb.get("duration", 0.0))
-
-        stat_utility = num_examples * abs(train_loss)
-        staleness_bonus = self._staleness_bonus(pid, round_num)
-        penalty = self._system_penalty(duration)
-        return (stat_utility + staleness_bonus) * penalty
+        stat_utility = num_examples * abs(train_loss_rms)
+        return stat_utility
 
     def _client_final_utility(self, pid: int, round_num: int) -> float:
         state = self.client_states[pid]
 
-        loss = (
-            state.last_train_loss if state.last_train_loss is not None else 0.0
+        loss_rms = (
+            state.last_train_loss_rms if state.last_train_loss_rms is not None else 0.0
         )  # if no feedback yet or in initial round, assume 0 loss (could also use a default or skip)
-        stat_utility = state.num_samples * abs(loss)
+        stat_utility = state.num_samples * abs(loss_rms)
         staleness_bonus = self._staleness_bonus(pid, round_num)
         system_penalty = self._system_penalty(state.last_duration_s)
         return (stat_utility + staleness_bonus) * system_penalty
@@ -246,8 +242,10 @@ class OortStrategy(BaseStrategy):
             return 1.0
         return (self._preferred_t / duration) ** self.alpha
 
-    def _update_pacer_if_needed(self) -> None:
+    def _update_pacer_if_needed(self, round_num: int) -> None:
         if len(self._round_utility_history) < 2 * self.pacer_window:
+            return
+        if round_num % self.pacer_window != 0:
             return
         if self._preferred_t is None:
             return

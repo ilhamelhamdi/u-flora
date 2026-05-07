@@ -140,13 +140,10 @@ def train(msg: Message, context: Context):
         eval_dataset=val_set,
         data_collator=data_collator,
         compute_metrics=adapter.compute_metrics,
+        global_params=global_params,
+        mu=fedprox_mu,
     )
-    if fedprox_mu > 0.0:
-        trainer_kwargs["global_params"] = global_params
-        trainer_kwargs["mu"] = fedprox_mu
-        trainer = FedProxTrainer(**trainer_kwargs)
-    else:
-        trainer = Trainer(**trainer_kwargs)
+    trainer = FedProxTrainer(**trainer_kwargs)
 
     try:
         # -- Train ---------------------------------------------------------
@@ -213,6 +210,7 @@ def train(msg: Message, context: Context):
 
         metrics = {
             "train_loss": results.training_loss,
+            "train_loss_rms": trainer.loss_rms,
             "num-examples": len(train_set),
             "simulated_duration_s": sim_total_s,
             "simulated_compute_s": sim_compute_s,

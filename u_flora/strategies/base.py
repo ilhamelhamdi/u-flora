@@ -388,6 +388,7 @@ class BaseStrategy(Strategy):
             pid = int(m["partition_id"])
             feedbacks[pid] = {
                 "train_loss": m.get("train_loss"),
+                "train_loss_rms": m.get("train_loss_rms"),
                 "duration": float(m.get("simulated_duration_s", 0.0)),
                 "compute_time": float(m.get("simulated_compute_s", 0.0)),
                 "communication_time": float(m.get("simulated_comm_s", 0.0)),
@@ -639,6 +640,7 @@ class BaseStrategy(Strategy):
                 train_loss=fb.get("train_loss", 0.0),
                 duration_s=fb.get("duration", 0.0),
                 current_round=round_num,
+                train_loss_rms=fb.get("train_loss_rms", 0.0),
             )
             self._participation_counts[pid] += 1
 
@@ -692,15 +694,23 @@ class BaseStrategy(Strategy):
 
         # Utility metrics (Client-losses)
         all_known_losses = [
-            state.last_train_loss
+            (state.last_train_loss, state.last_train_loss_rms)
             for state in self.client_states.values()
             if state.last_train_loss is not None
+            and state.last_train_loss_rms is not None
         ]
-        loss_mean = loss_std = loss_cv = n_clients_with_known_loss = 0.0
+        loss_mean = loss_std = loss_cv = n_clients_with_known_loss = 0.0 # Default loss
+        loss_rms_mean = loss_rms_std = loss_rms_cv = 0.0 # RMS loss metrics
         if len(all_known_losses) > 1:
-            loss_mean = statistics.mean(all_known_losses)
-            loss_std = statistics.stdev(all_known_losses)
+            losses = [l for l, _ in all_known_losses]
+            losses_rms = [l_rms for _, l_rms in all_known_losses]
+
+            loss_mean = statistics.mean(losses)
+            loss_std = statistics.stdev(losses)
             loss_cv = loss_std / loss_mean if loss_mean > 0 else 0.0
+            loss_rms_mean = statistics.mean(losses_rms)
+            loss_rms_std = statistics.stdev(losses_rms)
+            loss_rms_cv = loss_rms_std / loss_rms_mean if loss_rms_mean > 0 else 0.0
             n_clients_with_known_loss = len(all_known_losses)
 
         # Log per-client details
@@ -737,6 +747,9 @@ class BaseStrategy(Strategy):
                 "utility/loss_mean": loss_mean,
                 "utility/loss_std": loss_std,
                 "utility/loss_cv": loss_cv,
+                "utility/loss_rms_mean": loss_rms_mean,
+                "utility/loss_rms_std": loss_rms_std,
+                "utility/loss_rms_cv": loss_rms_cv,
                 "utility/n_clients_with_known_loss": n_clients_with_known_loss,
             }
             if extra_metrics:

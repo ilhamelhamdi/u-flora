@@ -55,8 +55,8 @@ class ClientState:
     num_samples: int = 0
 
     # Statistical utility tracking (from training feedback)
-    last_train_loss: float | None = None
-    cumulative_loss: float = 0.0
+    last_train_loss: float | None = None # Mean loss - Trainer default loss
+    last_train_loss_rms: float | None = None # RMS loss - For Oort
 
     # System performance tracking
     last_duration_s: float | None = None
@@ -80,10 +80,11 @@ class ClientState:
         train_loss: float,
         duration_s: float,
         current_round: int,
+        train_loss_rms: float | None = None,
     ) -> None:
         """Update state from a completed training round."""
         self.last_train_loss = train_loss
-        self.cumulative_loss += train_loss
+        self.last_train_loss_rms = train_loss_rms
         self.last_duration_s = duration_s
         self.last_selected_round = current_round
         self.times_selected += 1
