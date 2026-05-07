@@ -244,7 +244,10 @@ class TiFLStrategy(BaseStrategy):
             self._state.last_selected_tier = None
             return [], []
 
-        if round_num % self.prob_update_interval == 0:
+        if (
+            round_num % self.prob_update_interval == 0
+            and round_num >= self.prob_update_interval
+        ):
             self._maybe_update_probs()
 
         chosen_tier = self._weighted_choose_tier(available_tiers)
@@ -394,13 +397,17 @@ class TiFLStrategy(BaseStrategy):
         return self._rng.choices(available_tiers, weights=probs, k=1)[0]
 
     def _maybe_update_probs(self) -> None:
+        if self._state.last_selected_tier is None:
+            return
         tier_state = self._state.tiers.get(self._state.last_selected_tier)
         if tier_state is None:
             return
 
         if tier_state.accuracy <= tier_state.last_checked_accuracy:
             self._change_probs()
-        tier_state.last_checked_accuracy = tier_state.accuracy
+            
+        for tier in self._state.tiers.values():
+            tier.last_checked_accuracy = tier.accuracy
 
     def _change_probs(self) -> None:
         eligible_tiers = [
@@ -408,6 +415,14 @@ class TiFLStrategy(BaseStrategy):
             for tier in self._state.tiers.values()
             if tier.credits > 0 and tier.clients
         ]
+
+        # Set probability to 0 for ineligible tiers (no credits or no clients) and exclude them from the ranking and probability update.
+        non_eligible_tiers = [
+            tier for tier in self._state.tiers.values() if tier not in eligible_tiers
+        ]
+        for tier in non_eligible_tiers:
+            tier.probability = 0.0
+
         n = len(eligible_tiers)
         if n <= 1:
             return
