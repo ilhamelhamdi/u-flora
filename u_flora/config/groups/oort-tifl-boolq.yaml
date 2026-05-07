@@ -4,23 +4,23 @@ superlink-connection: "local-50"
 experiments:
   # ====================== Mainly for alpha = 2 ===========
   # ====================== seed = 42 ======================
-  - {
-      name: a2_tifl_boolq_s42,
-      bases: [pools/50, datasets/boolq, strategies/tifl, strategies/tifl_50],
-      overrides: ["seed=42", "wandb.run-name=a2-v2"],
-    }
-  - {
-      name: a2_oort_boolq_s42,
-      bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
-      overrides: ["seed=42", "wandb.run-name=a2-v2"],
-    }
+  # - {
+  #     name: a2_tifl_boolq_s42,
+  #     bases: [pools/50, datasets/boolq, strategies/tifl, strategies/tifl_50],
+  #     overrides: ["seed=42", "wandb.run-name=a2-v2"],
+  #   }
+  # - {
+  #     name: a2_oort_boolq_s42,
+  #     bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
+  #     overrides: ["seed=42", "wandb.run-name=a2-v2"],
+  #   }
 
   # ====================== seed = 123 ======================
-  - {
-      name: a2_tifl_boolq_s123,
-      bases: [pools/50, datasets/boolq, strategies/tifl, strategies/tifl_50],
-      overrides: ["seed=123", "wandb.run-name=a2-v2"],
-    }
+  # - {
+  #     name: a2_tifl_boolq_s123,
+  #     bases: [pools/50, datasets/boolq, strategies/tifl, strategies/tifl_50],
+  #     overrides: ["seed=123", "wandb.run-name=a2-v2"],
+  #   }
   - {
       name: a2_oort_boolq_s123,
       bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
