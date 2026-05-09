@@ -2,5 +2,5 @@
 overrides:
   - "num-clients=50"
   - "device-profile-path=device_profiles/50/default/profiles.json"
-  - "strategy.num-to-select=5"
+  - "strategy.num-to-select=10"
   - "server.round-timeout-s=600"

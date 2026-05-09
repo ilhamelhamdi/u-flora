@@ -8,3 +8,6 @@ overrides:
   - "dataset.partition.dirichlet.min-partition-size=16"
   - "train.training-arguments.num-train-epochs=1"
   - "num-server-rounds=100"
+  - "train.learning-rate-max=3e-5"
+  - "train.learning-rate-min=3e-5"
+  - "train.warmup-rounds=0"
