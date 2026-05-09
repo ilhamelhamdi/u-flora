@@ -505,10 +505,15 @@ def run_task(
             return '""'
 
         lower = value.lower()
-        if (
-            lower in {"true", "false", "null", "none"}
-            or value.replace(".", "", 1).lstrip("-").isdigit()
-        ):
+
+        def is_number(v: str) -> bool:
+            try:
+                float(v)
+                return True
+            except ValueError:
+                return False
+
+        if lower in {"true", "false", "null", "none"} or is_number(value):
             return value
 
         if (value.startswith('"') and value.endswith('"')) or (
@@ -539,50 +544,50 @@ def run_task(
 
     logger.info("Running: %s", " ".join(cmd))
 
-    if name:
-        log_dir = f"{LOG_DIR}/{name}"
-        os.makedirs(log_dir, exist_ok=True)
-        log_path = f"{log_dir}/flower-task.log"
-    else:
-        log_path = f"{LOG_DIR}/flower-task.log"
+    # if name:
+    #     log_dir = f"{LOG_DIR}/{name}"
+    #     os.makedirs(log_dir, exist_ok=True)
+    #     log_path = f"{log_dir}/flower-task.log"
+    # else:
+    #     log_path = f"{LOG_DIR}/flower-task.log"
 
-    with open(log_path, "w") as log_file:
-        if block:
-            proc = subprocess.Popen(
-                cmd,
-                stdout=log_file,
-                stderr=log_file,
-                text=True,
-            )
-            try:
-                proc.wait(timeout=max_duration_s)
-            except subprocess.TimeoutExpired:
-                logger.error(
-                    "Experiment %s exceeded max duration of %.0fs — killing.",
-                    name or "unknown",
-                    max_duration_s,
-                )
-                proc.kill()
-                proc.wait()
-                return -1
-            rc = proc.returncode
-            if rc != 0:
-                logger.error(
-                    "Experiment failed (exit %d). See log file: %s",
-                    rc,
-                    log_path,
-                )
-            return rc
+    # with open(log_path, "w") as log_file:
+    #     if block:
+    #         proc = subprocess.Popen(
+    #             cmd,
+    #             stdout=log_file,
+    #             stderr=log_file,
+    #             text=True,
+    #         )
+    #         try:
+    #             proc.wait(timeout=max_duration_s)
+    #         except subprocess.TimeoutExpired:
+    #             logger.error(
+    #                 "Experiment %s exceeded max duration of %.0fs — killing.",
+    #                 name or "unknown",
+    #                 max_duration_s,
+    #             )
+    #             proc.kill()
+    #             proc.wait()
+    #             return -1
+    #         rc = proc.returncode
+    #         if rc != 0:
+    #             logger.error(
+    #                 "Experiment failed (exit %d). See log file: %s",
+    #                 rc,
+    #                 log_path,
+    #             )
+    #         return rc
 
-        subprocess.Popen(
-            cmd,
-            stdout=log_file,
-            stderr=log_file,
-            text=True,
-            start_new_session=True,
-        )
+    #     subprocess.Popen(
+    #         cmd,
+    #         stdout=log_file,
+    #         stderr=log_file,
+    #         text=True,
+    #         start_new_session=True,
+    #     )
 
-    logger.info("Experiment started. See log file: %s", log_path)
+    # logger.info("Experiment started. See log file: %s", log_path)
     return None
 
 
