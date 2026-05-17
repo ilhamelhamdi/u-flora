@@ -56,11 +56,11 @@ experiments:
 
  
   # # ====================== seed = 123 ======================
-  - {
-      name: g2_random_mnli_a05_s123,
-      bases: [pools/300, datasets/mnli, strategies/random],
-      overrides: ["seed=123", "dataset.partition.dirichlet.alpha=0.5", "wandb.run-name=a0.5-v1"],
-    }
+  # - {
+  #     name: g2_random_mnli_a05_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/random],
+  #     overrides: ["seed=123", "dataset.partition.dirichlet.alpha=0.5", "wandb.run-name=a0.5-v1"],
+  #   }
   - {
       name: g2_fedcs_mnli_a05_s123,
       bases: [pools/300, datasets/mnli, strategies/fedcs, strategies/fedcs_300],
@@ -71,11 +71,11 @@ experiments:
       bases: [pools/300, datasets/mnli, strategies/tifl, strategies/tifl_300],
       overrides: ["seed=123", "dataset.partition.dirichlet.alpha=0.5", "wandb.run-name=a0.5-v1"],
     }
-  - {
-      name: g2_oort_mnli_a05_s123,
-      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
-      overrides: ["seed=123", "dataset.partition.dirichlet.alpha=0.5", "wandb.run-name=a0.5-v1"],
-    }
+  # - {
+  #     name: g2_oort_mnli_a05_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     overrides: ["seed=123", "dataset.partition.dirichlet.alpha=0.5", "wandb.run-name=a0.5-v1"],
+  #   }
 
   # ====================== seed = 456 ======================
   - {
