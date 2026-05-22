@@ -56,7 +56,6 @@ class OortStrategy(BaseStrategy):
         self.epsilon_min = min(max(float(epsilon_min), 0.0), 1.0)
         self.alpha = float(alpha)
         self.pacer_window = max(1, int(pacer_window))
-        self.pacer_delta = pacer_delta
         self.cutoff_c = min(max(float(cutoff_c), 0.0), 1.0)
         self.max_participation_rounds = max(0, int(max_participation_rounds))
         self.utility_clip_percentile = min(
@@ -86,6 +85,10 @@ class OortStrategy(BaseStrategy):
         self._last_participation_excluded: int = 0
         self._last_exploit_k: int = 0
         self._last_explore_k: int = 0
+
+    # ======================================================================
+    # Selection
+    # ======================================================================
 
     def configure_train(
         self,
@@ -332,7 +335,6 @@ class OortStrategy(BaseStrategy):
                     self._rng.sample(remaining, min(k - len(chosen), len(remaining)))
                 )
                 break
-
             r = self._rng.random() * total_w
             acc = 0.0
             idx = 0
