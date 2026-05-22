@@ -9,20 +9,20 @@ experiments:
 
   - {
       name: g1_oort_mnli_s42,
-      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+      bases: [pools/300, datasets/mnli, strategies/oort],
       overrides: ["seed=42", "wandb.run-name=a2-v3"],
     }
 
   # ====================== seed = 123 ======================
   - {
       name: g1_oort_mnli_s123,
-      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+      bases: [pools/300, datasets/mnli, strategies/oort],
       overrides: ["seed=123", "wandb.run-name=a2-v3"],
     }
 
   # ====================== seed = 456 ======================
   - {
       name: g1_oort_mnli_s456,
-      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+      bases: [pools/300, datasets/mnli, strategies/oort],
       overrides: ["seed=456", "wandb.run-name=a2-v3"],
     }

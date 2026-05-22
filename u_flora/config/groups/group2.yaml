@@ -28,7 +28,7 @@ experiments:
   #   }
   # - {
   #     name: g2_oort_mnli_a05_s42,
-  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     bases: [pools/300, datasets/mnli, strategies/oort],
   #     overrides: ["seed=42", "dataset.partition.dirichlet.alpha=0.5"],
   #   }
 
@@ -50,7 +50,7 @@ experiments:
   #   }
   # - {
   #     name: g2_oort_mnli_iid_s42,
-  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     bases: [pools/300, datasets/mnli, strategies/oort],
   #     overrides: ["seed=42", "dataset.partition.strategy=iid"],
   #   }
 
@@ -73,7 +73,7 @@ experiments:
     }
   # - {
   #     name: g2_oort_mnli_a05_s123,
-  #     bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+  #     bases: [pools/300, datasets/mnli, strategies/oort],
   #     overrides: ["seed=123", "dataset.partition.dirichlet.alpha=0.5", "wandb.run-name=a0.5-v1"],
   #   }
 
@@ -95,6 +95,6 @@ experiments:
     }
   - {
       name: g2_oort_mnli_a05_s456,
-      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_300],
+      bases: [pools/300, datasets/mnli, strategies/oort],
       overrides: ["seed=456", "dataset.partition.dirichlet.alpha=0.5", "wandb.run-name=a0.5-v1"],
     }

@@ -22,7 +22,7 @@ experiments:
   #   }
   # - {
   #     name: g1_oort_boolq_s42,
-  #     bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
+  #     bases: [pools/50, datasets/boolq, strategies/oort],
   #     overrides: ["seed=42"],
   #   }
 
@@ -44,7 +44,7 @@ experiments:
   #   }
   # - {
   #     name: g1_oort_boolq_s123,
-  #     bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
+  #     bases: [pools/50, datasets/boolq, strategies/oort],
   #     overrides: ["seed=123", "wandb.run-name=g1-v1"],
   #   }
 
@@ -66,6 +66,6 @@ experiments:
   #   }
   # - {
   #     name: g1_oort_boolq_s456,
-  #     bases: [pools/50, datasets/boolq, strategies/oort, strategies/oort_50],
+  #     bases: [pools/50, datasets/boolq, strategies/oort],
   #     overrides: ["seed=456", "wandb.run-name=g1-v1"],
   #   }
