@@ -1,5 +1,6 @@
 # Oort pool-tuned params for 50-client pool
 # Timing calibrated to BoolQ round duration
+# Note: not used because Oort's timing use percentile-based timing, configured in oort.yaml
 overrides:
-  - "strategy.oort.pacer-delta=15"
-  - "strategy.oort.initial-t=120"
+  # - "strategy.oort.pacer-delta=15"
+  # - "strategy.oort.initial-t=120"

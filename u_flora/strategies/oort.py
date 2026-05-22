@@ -39,7 +39,9 @@ class OortStrategy(BaseStrategy):
         alpha: float = 2.0,
         pacer_window: int = 10,  # W
         pacer_delta: float | None = None,  # ∆
-        initial_t: float | None = None,
+        t_mode: str = "percentile",  # "percentile" (Oort codebase) | "fixed" (Oort paper)
+        round_threshold_init: float = 20.0,  # percentile in [0,100]; percentile mode
+        initial_t: float | None = None,  # absolute seconds; fixed mode only
         cutoff_c: float = 0.95,
         max_participation_rounds: int = 20,
         utility_clip_percentile: float = 95.0,
@@ -63,7 +65,21 @@ class OortStrategy(BaseStrategy):
 
         self._rng = random.Random(seed)
 
-        self._preferred_t: float | None = initial_t
+        if t_mode not in ("percentile", "fixed"):
+            raise ValueError(f"t_mode must be 'percentile' or 'fixed', got {t_mode!r}")
+        self.t_mode = t_mode
+        self._round_threshold = min(max(float(round_threshold_init), 0.0), 100.0)
+        self._preferred_t: float | None = (
+            float(initial_t) if (t_mode == "fixed" and initial_t is not None) else None
+        )
+        if t_mode == "fixed" and self._preferred_t is None:
+            raise ValueError("t_mode='fixed' requires initial_t to be set")
+        self.pacer_delta = (
+            float(pacer_delta)
+            if pacer_delta is not None
+            else (5.0 if t_mode == "percentile" else 0.0)
+        )
+
         self._observed_durations: list[float] = []
         self._round_utility_history: list[float] = []
         self._last_utility_clip_cap: float = 0.0
@@ -82,6 +98,9 @@ class OortStrategy(BaseStrategy):
         all_pids = [p for p, s in self.client_states.items() if s.available]
         if not all_pids:
             return [], []
+
+        # Refresh the percentile-derived deadline from the current duration distribution (no-op in fixed mode).
+        self._refresh_preferred_t()
 
         # Filter out clients which are selected more than `max_participation_rounds`
         eligible_pids = self._filter_by_participation_cap(all_pids)
@@ -105,30 +124,24 @@ class OortStrategy(BaseStrategy):
 
         selected: list[int] = []
 
-        # Exploit non-deterministically
+        # ---- Exploitation: normalized utility + staleness + system penalty ----
         if explored and exploit_k > 0:
-            utilities = {
-                pid: self._client_final_utility(pid, round_num) for pid in explored
-            }
-            utilities, clip_cap = self._clip_utilities(utilities)
-            self._last_utility_clip_cap = clip_cap
+            utilities = self._compute_exploit_utilities(explored, round_num)
 
-            # Sort utils
             ranked_utils = sorted(utilities.items(), key=lambda x: x[1], reverse=True)
 
-            # Cut-off
             kth_idx = min(len(ranked_utils), max(1, exploit_k)) - 1
             kth_utility = ranked_utils[kth_idx][1]
             threshold = self.cutoff_c * kth_utility
             pool = [(pid, u) for pid, u in ranked_utils if u >= threshold]
 
-            # Sampling
             selected.extend(self._weighted_sample_without_replacement(pool, exploit_k))
 
-        # Explore unexplored clients
+        # ---- Exploration: sample unexplored by speed --------------------------
         if explore_k > 0:
             selected.extend(self._sample_unexplored(unexplored, explore_k))
 
+        # ---- Top-up if short --------------------------------------------------
         if len(selected) < k:
             remaining = [pid for pid in eligible_pids if pid not in set(selected)]
             if remaining:
@@ -140,6 +153,48 @@ class OortStrategy(BaseStrategy):
         messages = self._make_train_messages(selected, arrays, round_num)
         return selected, messages
 
+    def _compute_exploit_utilities(
+        self, explored: list[int], round_num: int
+    ) -> dict[int, float]:
+        """Paper line 10-12 / codebase getTopK utility pipeline.
+
+        raw stat-utility -> clip at 95th pct -> min-max normalize ->
+        + staleness (temporal uncertainty) -> * system penalty.
+        """
+        raw: dict[int, float] = {}
+        for pid in explored:
+            s = self.client_states[pid]
+            loss_rms = (
+                s.last_train_loss_rms if s.last_train_loss_rms is not None else 0.0
+            )
+            raw[pid] = float(s.num_samples) * abs(float(loss_rms))
+
+        if not raw:
+            return {}
+
+        # Clip raw statistical utility at the 95th percentile.
+        vals = np.array(list(raw.values()), dtype=float)
+        clip_cap = float(np.percentile(vals, self.utility_clip_percentile))
+        self._last_utility_clip_cap = clip_cap
+        clipped = {pid: min(v, clip_cap) for pid, v in raw.items()}
+
+        # Min-max normalize to ~[0,1] so the staleness term is on the same scale.
+        cvals = list(clipped.values())
+        cmin = min(cvals)
+        crange = max(max(cvals) - cmin, 1e-4)
+
+        util: dict[int, float] = {}
+        for pid, v in clipped.items():
+            score = (v - cmin) / crange
+            score += self._staleness_bonus(pid, round_num)  # temporal uncertainty
+            score *= self._system_penalty(self.client_states[pid].last_duration_s)
+            util[pid] = score
+        return util
+
+    # ======================================================================
+    # Post-round bookkeeping + pacer
+    # ======================================================================
+
     def configure_post_training_round(self, round_num, replies, selected_pids):
         super().configure_post_training_round(round_num, replies, selected_pids)
 
@@ -148,64 +203,58 @@ class OortStrategy(BaseStrategy):
 
         round_utility = 0.0
         for pid, fb in feedbacks_preview.items():
-            duration = float(fb.get("duration", 0.0))
-            if duration > 0:
-                self._observed_durations.append(duration)
             round_utility += self._observed_client_stat_utility(pid, fb)
-
         self._round_utility_history.append(round_utility)
 
-        if self._preferred_t is None and len(self._observed_durations) >= 3:
-            self._preferred_t = float(median(self._observed_durations))
-            if self.pacer_delta is None:
-                self.pacer_delta = 0.05 * self._preferred_t
-
         self._update_epsilon(num_rounds=round_num)  # Decay epsilon per round
-
         self._update_pacer_if_needed(round_num)
 
-    def log_metrics(self, round_num, replies, selected_pids, extra_metrics=None):
-        round_utility = (
-            self._round_utility_history[-1]
-            if self._round_utility_history
-            else float("nan")
+    def _refresh_preferred_t(self) -> None:
+        """Recompute T as the round_threshold percentile of live durations."""
+        if self.t_mode == "fixed":
+            return  # constant T = initial_t
+        durations = sorted(
+            float(s.last_duration_s)
+            for s in self.client_states.values()
+            if s.last_duration_s is not None and s.last_duration_s > 0
         )
-        oort_extras = {
-            "strategy/oort_round_utility": float(round_utility),
-            "strategy/oort_preferred_t": float(self._preferred_t or 0.0),
-            "strategy/oort_epsilon": float(self.epsilon),
-            "strategy/oort_excluded_by_participation": float(
-                self._last_participation_excluded
-            ),
-            "strategy/oort_utility_clip_cap": float(self._last_utility_clip_cap),
-            "strategy/oort_exploit_k": float(self._last_exploit_k),
-            "strategy/oort_explore_k": float(self._last_explore_k),
-            # --- Redundant but OK for easier analysis ---
-            "strategy/oort_explored_clients": float(
-                len(
-                    [
-                        pid
-                        for pid in self.client_states
-                        if self.client_states[pid].explored
-                    ]
-                )
-            ),
-            "strategy/oort_unexplored_clients": float(
-                len(
-                    [
-                        pid
-                        for pid in self.client_states
-                        if not self.client_states[pid].explored
-                    ]
-                )
-            ),
-        }
-        if self.pacer_delta is not None:
-            oort_extras["strategy/oort_pacer_delta"] = float(self.pacer_delta)
+        if not durations:
+            self._preferred_t = None  # no penalty until we observe durations
+            return
+        if self._round_threshold >= 100.0:
+            self._preferred_t = float("inf")  # penalty disabled
+            return
+        idx = min(
+            int(len(durations) * self._round_threshold / 100.0), len(durations) - 1
+        )
+        self._preferred_t = float(durations[idx])
 
-        if extra_metrics:
-            oort_extras.update(extra_metrics)
-        return super().log_metrics(round_num, replies, selected_pids, oort_extras)
+    def _update_pacer_if_needed(self, round_num: int) -> None:
+        """Relax the deadline when statistical utility stops improving."""
+        if self.t_mode == "fixed":
+            return
+        if len(self._round_utility_history) < 2 * self.pacer_window:
+            return
+        if round_num % self.pacer_window != 0:
+            return
+
+        recent = sum(self._round_utility_history[-self.pacer_window :])
+        previous = sum(
+            self._round_utility_history[-2 * self.pacer_window : -self.pacer_window]
+        )
+
+        # One-sided relaxation (paper direction).
+        if recent <= previous:
+            self._round_threshold = min(100.0, self._round_threshold + self.pacer_delta)
+        # --- Optional codebase two-sided variant (re-tighten on sharp gains) ---
+        # elif recent >= previous * 6.0:  # |Δ| >= 5x previous
+        #     self._round_threshold = max(
+        #         self.pacer_delta, self._round_threshold - self.pacer_delta
+        #     )
+
+    # ======================================================================
+    # Utility components
+    # ======================================================================
 
     def _observed_client_stat_utility(self, pid: int, fb: dict[str, float]) -> float:
         train_loss_rms = float(fb.get("train_loss_rms", 0.0))
@@ -213,52 +262,23 @@ class OortStrategy(BaseStrategy):
         stat_utility = num_examples * abs(train_loss_rms)
         return stat_utility
 
-    def _client_final_utility(self, pid: int, round_num: int) -> float:
-        state = self.client_states[pid]
-
-        loss_rms = (
-            state.last_train_loss_rms if state.last_train_loss_rms is not None else 0.0
-        )  # if no feedback yet or in initial round, assume 0 loss (could also use a default or skip)
-        stat_utility = state.num_samples * abs(loss_rms)
-        staleness_bonus = self._staleness_bonus(pid, round_num)
-        system_penalty = self._system_penalty(state.last_duration_s)
-        return (stat_utility + staleness_bonus) * system_penalty
-
     def _staleness_bonus(self, pid: int, round_num: int) -> float:
         if round_num <= 1:
             return 0.0
-
         state = self.client_states[pid]
         last_round = max(1, state.last_selected_round)
-
         return math.sqrt(max(0.0, 0.1 * math.log(max(2, round_num)) / last_round))
 
-    def _system_penalty(self, duration: float) -> float:
-        if duration <= 0:
+    def _system_penalty(self, duration: float | None) -> float:
+        if duration is None or duration <= 0:
             return 1.0
         if self._preferred_t is None or duration <= self._preferred_t:
             return 1.0
         return (self._preferred_t / duration) ** self.alpha
 
-    def _update_pacer_if_needed(self, round_num: int) -> None:
-        if len(self._round_utility_history) < 2 * self.pacer_window:
-            return
-        if round_num % self.pacer_window != 0:
-            return
-        if self._preferred_t is None:
-            return
-
-        recent = self._round_utility_history[-self.pacer_window :]
-        previous = self._round_utility_history[
-            -2 * self.pacer_window : -self.pacer_window
-        ]
-        if sum(recent) < sum(previous):
-            delta = (
-                self.pacer_delta
-                if self.pacer_delta is not None
-                else 0.05 * self._preferred_t
-            )
-            self._preferred_t += float(delta)
+    # ======================================================================
+    # Exploration / sampling helpers
+    # ======================================================================
 
     def _sample_unexplored(self, unexplored: list[int], count: int) -> list[int]:
         if count <= 0 or not unexplored:
@@ -273,7 +293,7 @@ class OortStrategy(BaseStrategy):
                     num_samples=max(1, state.num_samples),
                     local_epochs=1,
                 )
-                w = 1 / max(1e-6, est)
+                w = 1 / max(1e-6, est)  # faster clients preferred (SampleBySpeed)
             else:
                 w = 1
             weighted_pool.append((pid, w))
@@ -284,7 +304,6 @@ class OortStrategy(BaseStrategy):
         if self.max_participation_rounds <= 0:
             self._last_participation_excluded = 0
             return list(client_ids)
-
         eligible = [
             pid
             for pid in client_ids
@@ -293,17 +312,6 @@ class OortStrategy(BaseStrategy):
         self._last_participation_excluded = len(client_ids) - len(eligible)
         return eligible
 
-    def _clip_utilities(
-        self, utilities: dict[int, float]
-    ) -> tuple[dict[int, float], float]:
-        if not utilities:
-            return {}, 0.0
-
-        vals = np.array(list(utilities.values()), dtype=float)
-        cap = float(np.percentile(vals, self.utility_clip_percentile))
-        clipped = {pid: min(float(u), cap) for pid, u in utilities.items()}
-        return clipped, cap
-
     def _weighted_sample_without_replacement(
         self,
         weighted_items: list[tuple[int, float]],
@@ -311,7 +319,6 @@ class OortStrategy(BaseStrategy):
     ) -> list[int]:
         if k <= 0 or not weighted_items:
             return []
-
         items = [(pid, max(0.0, float(w))) for pid, w in weighted_items]
         chosen: list[int] = []
 
@@ -336,7 +343,6 @@ class OortStrategy(BaseStrategy):
                     break
             pid, _ = items.pop(idx)
             chosen.append(pid)
-
         return chosen
 
     def _update_epsilon(self, num_rounds: int) -> None:
@@ -344,6 +350,46 @@ class OortStrategy(BaseStrategy):
             return
         new_epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
         self.epsilon = new_epsilon
+
+    # ======================================================================
+    # Logging
+    # ======================================================================
+
+    def log_metrics(self, round_num, replies, selected_pids, extra_metrics=None):
+        round_utility = (
+            self._round_utility_history[-1]
+            if self._round_utility_history
+            else float("nan")
+        )
+        oort_extras = {
+            "strategy/oort_round_utility": float(round_utility),
+            "strategy/oort_preferred_t": float(self._preferred_t or 0.0),
+            "strategy/oort_round_threshold": float(self._round_threshold),
+            "strategy/oort_epsilon": float(self.epsilon),
+            "strategy/oort_excluded_by_participation": float(
+                self._last_participation_excluded
+            ),
+            "strategy/oort_utility_clip_cap": float(self._last_utility_clip_cap),
+            "strategy/oort_exploit_k": float(self._last_exploit_k),
+            "strategy/oort_explore_k": float(self._last_explore_k),
+            "strategy/oort_pacer_delta": float(self.pacer_delta),
+            "strategy/oort_explored_clients": float(
+                len([p for p in self.client_states if self.client_states[p].explored])
+            ),
+            "strategy/oort_unexplored_clients": float(
+                len(
+                    [
+                        p
+                        for p in self.client_states
+                        if not self.client_states[p].explored
+                    ]
+                )
+            ),
+        }
+
+        if extra_metrics:
+            oort_extras.update(extra_metrics)
+        return super().log_metrics(round_num, replies, selected_pids, oort_extras)
 
     def _strategy_name(self) -> str:
         return (

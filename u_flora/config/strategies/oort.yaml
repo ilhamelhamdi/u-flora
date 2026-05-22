@@ -10,3 +10,6 @@ overrides:
   - "strategy.oort.cutoff-c=0.95"
   - "strategy.oort.max-participation-rounds=20"
   - "strategy.oort.utility-clip-percentile=95"
+  - "strategy.oort.t-mode=percentile"
+  - "strategy.oort.round-threshold-init=20"
+  - "strategy.oort.pacer-delta=20"

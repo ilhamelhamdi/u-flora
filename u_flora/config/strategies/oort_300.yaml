@@ -1,5 +1,6 @@
 # Oort pool-tuned params for 300-client pool
 # Timing calibrated to MNLI round duration
+# Note: not used because Oort's timing use percentile-based timing, configured in oort.yaml
 overrides:
-  - "strategy.oort.pacer-delta=75"
-  - "strategy.oort.initial-t=750"
+  # - "strategy.oort.pacer-delta=75"
+  # - "strategy.oort.initial-t=750"
