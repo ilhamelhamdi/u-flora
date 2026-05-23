@@ -224,7 +224,7 @@ class OortStrategy(BaseStrategy):
         if not durations:
             self._preferred_t = None  # no penalty until we observe durations
             return
-        if self._round_threshold >= 100.0:
+        if self._round_threshold > 100.0:
             self._preferred_t = float("inf")  # penalty disabled
             return
         idx = min(
@@ -248,7 +248,7 @@ class OortStrategy(BaseStrategy):
 
         # One-sided relaxation (paper direction).
         if recent <= previous:
-            self._round_threshold = min(100.0, self._round_threshold + self.pacer_delta)
+            self._round_threshold = min(100.0, max(0.0, self._round_threshold + self.pacer_delta))
         # --- Optional codebase two-sided variant (re-tighten on sharp gains) ---
         # elif recent >= previous * 6.0:  # |Δ| >= 5x previous
         #     self._round_threshold = max(
