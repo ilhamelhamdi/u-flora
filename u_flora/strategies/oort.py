@@ -119,8 +119,14 @@ class OortStrategy(BaseStrategy):
         ]
 
         k = min(self.num_to_select, len(eligible_pids))
-        explore_k = min(k, max(0, int(round(self.epsilon * k))))
+        desired_explore_k = min(k, max(0, int(round(self.epsilon * k))))
+        explore_k = min(desired_explore_k, len(unexplored))
         exploit_k = k - explore_k
+
+        # No client left for exploration
+        if all(self.client_states[p].explored for p in self.client_states):
+            self.epsilon = 0.0
+            self.epsilon_min = 0.0
 
         self._last_exploit_k = exploit_k
         self._last_explore_k = explore_k
