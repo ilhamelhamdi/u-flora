@@ -16,11 +16,3 @@ experiments:
       bases: [pools/300, datasets/mnli, strategies/oort],
       overrides: ["seed=42", "wandb.run-name=a0.5-v5", "dataset.partition.dirichlet.alpha=0.5"],
     }
-
-  # ====================== IID ======================
-  # ====================== seed = 42 ======================
-  - {
-      name: g2_oort_mnli_iid_s42,
-      bases: [pools/300, datasets/mnli, strategies/oort],
-      overrides: ["seed=42", "wandb.run-name=iid-v5", "dataset.partition.strategy=iid"],
-    }
