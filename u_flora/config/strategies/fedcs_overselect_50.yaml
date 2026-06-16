@@ -1,8 +1,0 @@
-# FedCS overselect variant for 50-client pool (Group 3 comparison baseline)
-# num-to-select = 2*K* = 10 — overrides pool default of 5
-# Deadline-fill up to this cap; isolates overselection mechanism vs U-Flora's optional set
-overrides:
-  - "strategy.name=fedcs"
-  - "strategy.fedcs.c-fraction=0.5"
-  - "strategy.fedcs.round-deadline-s=120.0"
-  - "strategy.num-to-select=10"

@@ -1,7 +1,0 @@
-# FedCS overselect variant for 300-client pool (Group 3 comparison baseline)
-# num-to-select = 2*K* = 60 — overrides pool default of 30
-overrides:
-  - "strategy.name=fedcs"
-  - "strategy.fedcs.c-fraction=0.5"
-  - "strategy.fedcs.round-deadline-s=750.0"
-  - "strategy.num-to-select=60"
