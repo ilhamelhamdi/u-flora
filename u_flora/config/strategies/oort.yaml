@@ -1,5 +1,4 @@
-# Strategy: Oort — pool-independent hyperparams
-# Combine with oort_50.yaml or oort_300.yaml for pool-tuned timing params
+# Strategy: Oort
 overrides:
   - "strategy.name=oort"
   - "strategy.oort.epsilon=0.9"

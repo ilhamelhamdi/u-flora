@@ -1,0 +1,23 @@
+superlink-connection: "local-300"
+max-experiment-duration-s: 28800 # 8 hours hard kill per experiment
+experiments:
+  # ====================== seed = 42 ======================
+  - {
+      name: g1_oort_mnli_s42,
+      bases: [pools/300, datasets/mnli, strategies/oort, strategies/oort_no_sys],
+      overrides: ["seed=42"],
+    }
+
+  # # ====================== seed = 123 ======================
+  # - {
+  #     name: g1_oort_mnli_s123,
+  #     bases: [pools/300, datasets/mnli, strategies/oort],
+  #     overrides: ["seed=123", "wandb.run-name=a2-v1"],
+  #   }
+
+  # # ====================== seed = 456 ======================
+  # - {
+  #     name: g1_oort_mnli_s456,
+  #     bases: [pools/300, datasets/mnli, strategies/oort],
+  #     overrides: ["seed=456", "wandb.run-name=a2-v1"],
+  #   }

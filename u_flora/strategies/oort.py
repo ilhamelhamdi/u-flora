@@ -143,7 +143,9 @@ class OortStrategy(BaseStrategy):
             kth_utility = ranked_utils[kth_idx][1]
             threshold = self.cutoff_c * kth_utility
             pool = [(pid, u) for pid, u in ranked_utils if u >= threshold]
-
+            logger.info(
+                f"Oort exploitation: {len(pool)} clients above {self.cutoff_c:.2f}x threshold"
+            )
             selected.extend(self._weighted_sample_without_replacement(pool, exploit_k))
 
         # ---- Exploration: sample unexplored by speed --------------------------
@@ -156,6 +158,9 @@ class OortStrategy(BaseStrategy):
             if remaining:
                 additon = self._rng.sample(
                     remaining, min(k - len(selected), len(remaining))
+                )
+                logger.info(
+                    f"Oort top-up: {len(additon)} additional clients selected to fill quota"
                 )
                 selected.extend(additon)
 
@@ -294,6 +299,7 @@ class OortStrategy(BaseStrategy):
             return []
 
         weighted_pool: list[tuple[int, float]] = []
+        sampled_by_speed, sampled_randomly = 0, 0
         for pid in unexplored:
             state = self.client_states[pid]
             if state.profile is not None:
@@ -303,9 +309,15 @@ class OortStrategy(BaseStrategy):
                     local_epochs=1,
                 )
                 w = 1 / max(1e-6, est)  # faster clients preferred (SampleBySpeed)
+                sampled_by_speed += 1
             else:
                 w = 1
+                sampled_randomly += 1
             weighted_pool.append((pid, w))
+        
+        logger.info(
+            f"Oort exploration: {sampled_by_speed} by speed, {sampled_randomly} randomly"
+        )
 
         return self._weighted_sample_without_replacement(weighted_pool, count)
 
