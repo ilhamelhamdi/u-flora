@@ -21,8 +21,8 @@ from .random import RandomStrategy
 from .fedcs import FedCSStrategy
 from .tifl import TiFLStrategy
 from .oort import OortStrategy
-from .oort_fair import OortFairStrategy
-from .uflora import UFloraStrategy
+# from .oort_fair import OortFairStrategy
+# from .uflora import UFloraStrategy
 
 
 __all__ = [
@@ -31,6 +31,6 @@ __all__ = [
     "FedCSStrategy",
     "TiFLStrategy",
     "OortStrategy",
-    "OortFairStrategy",
-    "UFloraStrategy",
+    # "OortFairStrategy",
+    # "UFloraStrategy",
 ]

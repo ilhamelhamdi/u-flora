@@ -2,7 +2,7 @@ import logging
 
 from omegaconf import DictConfig
 
-from . import BaseStrategy, RandomStrategy, FedCSStrategy, TiFLStrategy, OortStrategy, OortFairStrategy, UFloraStrategy
+from . import BaseStrategy, RandomStrategy, FedCSStrategy, TiFLStrategy, OortStrategy
 from ..client_profile.typing import ClientState
 
 logger = logging.getLogger(__name__)
@@ -84,39 +84,39 @@ def build_strategy(
             **common,
         )
 
-    if strategy_name == "oort_fair":
-        return OortFairStrategy(
-            num_to_select=num_to_select,
-            epsilon=strategy.oort.epsilon,
-            epsilon_decay=strategy.oort.epsilon_decay,
-            epsilon_min=strategy.oort.epsilon_min,
-            alpha=strategy.oort.alpha,
-            pacer_window=strategy.oort.pacer_window,
-            pacer_delta=strategy.oort.pacer_delta,
-            initial_t=strategy.oort.initial_t,
-            cutoff_c=strategy.oort.cutoff_c,
-            max_participation_rounds=strategy.oort.max_participation_rounds,
-            utility_clip_percentile=strategy.oort.utility_clip_percentile,
-            lambda_max=strategy.oort_fair.lambda_max,
-            dm_ema_beta=strategy.oort_fair.dm_ema_beta,
-            seed=seed,
-            **common,
-        )
+    # if strategy_name == "oort_fair":
+    #     return OortFairStrategy(
+    #         num_to_select=num_to_select,
+    #         epsilon=strategy.oort.epsilon,
+    #         epsilon_decay=strategy.oort.epsilon_decay,
+    #         epsilon_min=strategy.oort.epsilon_min,
+    #         alpha=strategy.oort.alpha,
+    #         pacer_window=strategy.oort.pacer_window,
+    #         pacer_delta=strategy.oort.pacer_delta,
+    #         initial_t=strategy.oort.initial_t,
+    #         cutoff_c=strategy.oort.cutoff_c,
+    #         max_participation_rounds=strategy.oort.max_participation_rounds,
+    #         utility_clip_percentile=strategy.oort.utility_clip_percentile,
+    #         lambda_max=strategy.oort_fair.lambda_max,
+    #         dm_ema_beta=strategy.oort_fair.dm_ema_beta,
+    #         seed=seed,
+    #         **common,
+    #     )
 
-    if strategy_name == "uflora":
-        return UFloraStrategy(
-            min_k=strategy.uflora.min_k,
-            d_max=strategy.uflora.d_max,
-            p_max=strategy.uflora.p_max,
-            oort_alpha=strategy.oort.alpha,
-            utility_clip_percentile=strategy.oort.utility_clip_percentile,
-            lambda_max=strategy.uflora.lambda_max,
-            dm_ema_beta=strategy.uflora.dm_ema_beta,
-            alpha_ema=strategy.uflora.alpha_ema,
-            local_epochs=local_epochs,
-            seed=seed,
-            **common,
-        )
+    # if strategy_name == "uflora":
+    #     return UFloraStrategy(
+    #         min_k=strategy.uflora.min_k,
+    #         d_max=strategy.uflora.d_max,
+    #         p_max=strategy.uflora.p_max,
+    #         oort_alpha=strategy.oort.alpha,
+    #         utility_clip_percentile=strategy.oort.utility_clip_percentile,
+    #         lambda_max=strategy.uflora.lambda_max,
+    #         dm_ema_beta=strategy.uflora.dm_ema_beta,
+    #         alpha_ema=strategy.uflora.alpha_ema,
+    #         local_epochs=local_epochs,
+    #         seed=seed,
+    #         **common,
+    #     )
 
     logger.warning("Unknown strategy '%s', falling back to Random", strategy_name)
     return RandomStrategy(num_to_select=num_to_select, seed=seed, **common)
