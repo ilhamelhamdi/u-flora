@@ -8,16 +8,16 @@ experiments:
       overrides: ["seed=42"],
     }
 
-  # # ====================== seed = 123 ======================
-  # - {
-  #     name: g1_oort_mnli_s123,
-  #     bases: [pools/300, datasets/mnli, strategies/oort],
-  #     overrides: ["seed=123", "wandb.run-name=a2-v1"],
-  #   }
+  # ====================== seed = 123 ======================
+  - {
+      name: g1_oort_mnli_s123,
+      bases: [pools/300, datasets/mnli, strategies/oort],
+      overrides: ["seed=123", "wandb.run-name=a2-v1"],
+    }
 
-  # # ====================== seed = 456 ======================
-  # - {
-  #     name: g1_oort_mnli_s456,
-  #     bases: [pools/300, datasets/mnli, strategies/oort],
-  #     overrides: ["seed=456", "wandb.run-name=a2-v1"],
-  #   }
+  # ====================== seed = 456 ======================
+  - {
+      name: g1_oort_mnli_s456,
+      bases: [pools/300, datasets/mnli, strategies/oort],
+      overrides: ["seed=456", "wandb.run-name=a2-v1"],
+    }

@@ -1,5 +1,4 @@
 # Strategy: Oort — without system heterogeneity (ablation)
 # Combine with oort.yaml (place after it)
 overrides:
-  - "strategy.name=oort_no_sys"
   - "strategy.oort.alpha=0.0"   # no system heterogeneity
